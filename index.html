@@ -1,0 +1,999 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>🍅 番茄小说下载器 | 极速体验</title>
+    <style>
+        /* 基础重置和变量 */
+        :root {
+            --primary: #ff4757;
+            --primary-dark: #ff3838;
+            --secondary: #3742fa;
+            --accent: #ff9f43;
+            --light: #f8f9fa;
+            --dark: #2d3436;
+            --success: #2ed573;
+            --warning: #ffa502;
+            --danger: #ff4757;
+            --gray: #a4b0be;
+            --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+            --shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.15);
+            --radius: 16px;
+            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            padding: 20px;
+            position: relative;
+            overflow-x: hidden;
+        }
+        
+        /* 背景动画 */
+        .bg-animation {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            z-index: -1;
+            overflow: hidden;
+        }
+        
+        .floating-element {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 50%;
+            animation: float 20s infinite linear;
+        }
+        
+        .floating-element:nth-child(1) {
+            width: 300px;
+            height: 300px;
+            top: -150px;
+            left: -150px;
+            animation-delay: 0s;
+        }
+        
+        .floating-element:nth-child(2) {
+            width: 200px;
+            height: 200px;
+            bottom: -100px;
+            right: -100px;
+            animation-delay: -5s;
+        }
+        
+        .floating-element:nth-child(3) {
+            width: 150px;
+            height: 150px;
+            top: 50%;
+            right: -75px;
+            animation-delay: -10s;
+        }
+        
+        @keyframes float {
+            0% {
+                transform: translate(0, 0) rotate(0deg);
+            }
+            25% {
+                transform: translate(100px, 100px) rotate(90deg);
+            }
+            50% {
+                transform: translate(200px, 0) rotate(180deg);
+            }
+            75% {
+                transform: translate(100px, -100px) rotate(270deg);
+            }
+            100% {
+                transform: translate(0, 0) rotate(360deg);
+            }
+        }
+        
+        /* 主容器 */
+        .container {
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            padding: 40px;
+            width: 100%;
+            max-width: 800px;
+            box-shadow: var(--shadow);
+            position: relative;
+            overflow: hidden;
+            animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+        }
+        
+        @keyframes slideUp {
+            from {
+                opacity: 0;
+                transform: translateY(50px) scale(0.9);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0) scale(1);
+            }
+        }
+        
+        /* 装饰元素 */
+        .decoration {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 200px;
+            height: 200px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 0 0 0 100%;
+            opacity: 0.1;
+        }
+        
+        /* 标题区域 */
+        .header {
+            text-align: center;
+            margin-bottom: 40px;
+            position: relative;
+        }
+        
+        .title {
+            font-size: 3.5rem;
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: 10px;
+            position: relative;
+            display: inline-block;
+        }
+        
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: -10px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 100px;
+            height: 4px;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 2px;
+        }
+        
+        .subtitle {
+            color: var(--dark);
+            font-size: 1.2rem;
+            opacity: 0.8;
+            margin-top: 20px;
+        }
+        
+        /* 输入区域 */
+        .input-section {
+            margin-bottom: 40px;
+            animation: fadeIn 0.8s ease 0.2s both;
+        }
+        
+        @keyframes fadeIn {
+            from {
+                opacity: 0;
+                transform: translateY(20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateY(0);
+            }
+        }
+        
+        .input-label {
+            display: block;
+            font-size: 1.1rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .input-label i {
+            color: var(--primary);
+            font-size: 1.3rem;
+        }
+        
+        .input-wrapper {
+            position: relative;
+            margin-bottom: 20px;
+        }
+        
+        .input-field {
+            width: 100%;
+            padding: 20px 25px;
+            font-size: 1.1rem;
+            border: 2px solid #e0e0e0;
+            border-radius: 12px;
+            background: var(--light);
+            transition: var(--transition);
+            outline: none;
+            color: var(--dark);
+        }
+        
+        .input-field:focus {
+            border-color: var(--primary);
+            background: white;
+            box-shadow: 0 0 0 4px rgba(255, 71, 87, 0.1);
+            transform: translateY(-2px);
+        }
+        
+        .input-field::placeholder {
+            color: var(--gray);
+        }
+        
+        .input-hint {
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            color: var(--gray);
+            font-size: 0.9rem;
+            margin-top: 8px;
+            padding-left: 5px;
+        }
+        
+        /* 按钮 */
+        .button-group {
+            display: flex;
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+        
+        .btn {
+            flex: 1;
+            padding: 20px;
+            font-size: 1.1rem;
+            font-weight: 600;
+            border: none;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: var(--transition);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: 10px;
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .btn::before {
+            content: '';
+            position: absolute;
+            top: 50%;
+            left: 50%;
+            width: 0;
+            height: 0;
+            border-radius: 50%;
+            background: rgba(255, 255, 255, 0.2);
+            transform: translate(-50%, -50%);
+            transition: width 0.6s, height 0.6s;
+        }
+        
+        .btn:hover::before {
+            width: 300px;
+            height: 300px;
+        }
+        
+        .btn-primary {
+            background: linear-gradient(45deg, var(--primary), var(--primary-dark));
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        .btn-secondary {
+            background: linear-gradient(45deg, var(--secondary), #4834d4);
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            transform: translateY(-3px);
+            box-shadow: var(--shadow-hover);
+        }
+        
+        /* 加载动画 */
+        .loading-section {
+            text-align: center;
+            margin: 40px 0;
+            display: none;
+        }
+        
+        .loading-spinner {
+            width: 80px;
+            height: 80px;
+            margin: 0 auto 20px;
+            position: relative;
+        }
+        
+        .spinner-ring {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            border: 8px solid transparent;
+            border-radius: 50%;
+            animation: spin 1.5s linear infinite;
+        }
+        
+        .spinner-ring:nth-child(1) {
+            border-top-color: var(--primary);
+            animation-delay: 0s;
+        }
+        
+        .spinner-ring:nth-child(2) {
+            border-right-color: var(--accent);
+            animation-delay: 0.2s;
+        }
+        
+        .spinner-ring:nth-child(3) {
+            border-bottom-color: var(--secondary);
+            animation-delay: 0.4s;
+        }
+        
+        @keyframes spin {
+            0% {
+                transform: rotate(0deg);
+            }
+            100% {
+                transform: rotate(360deg);
+            }
+        }
+        
+        .loading-text {
+            font-size: 1.2rem;
+            color: var(--dark);
+            font-weight: 500;
+            margin-bottom: 20px;
+        }
+        
+        /* 进度条 */
+        .progress-container {
+            width: 100%;
+            height: 12px;
+            background: var(--light);
+            border-radius: 6px;
+            overflow: hidden;
+            margin: 20px 0;
+            display: none;
+        }
+        
+        .progress-bar {
+            height: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            width: 0%;
+            border-radius: 6px;
+            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            position: relative;
+            overflow: hidden;
+        }
+        
+        .progress-bar::after {
+            content: '';
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: linear-gradient(90deg, 
+                transparent, 
+                rgba(255, 255, 255, 0.4), 
+                transparent);
+            animation: shimmer 2s infinite;
+        }
+        
+        @keyframes shimmer {
+            0% {
+                transform: translateX(-100%);
+            }
+            100% {
+                transform: translateX(100%);
+            }
+        }
+        
+        /* 结果区域 */
+        .result-section {
+            margin: 30px 0;
+            display: none;
+            animation: slideIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        @keyframes slideIn {
+            from {
+                opacity: 0;
+                transform: translateX(-20px);
+            }
+            to {
+                opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .result-card {
+            background: linear-gradient(135deg, var(--light), white);
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 5px solid var(--primary);
+            box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+        }
+        
+        .result-title {
+            font-size: 1.3rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .result-message {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--dark);
+        }
+        
+        .result-success {
+            border-left-color: var(--success);
+        }
+        
+        .result-error {
+            border-left-color: var(--danger);
+        }
+        
+        .result-warning {
+            border-left-color: var(--warning);
+        }
+        
+        /* 下载链接 */
+        .download-link {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 15px 30px;
+            background: linear-gradient(45deg, var(--success), #1dd1a1);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: 0 5px 15px rgba(46, 213, 115, 0.3);
+        }
+        
+        .download-link:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(46, 213, 115, 0.4);
+        }
+        
+        /* 信息区域 */
+        .info-section {
+            margin-top: 40px;
+            padding: 25px;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.05), rgba(55, 66, 250, 0.05));
+            border-radius: 12px;
+            border: 1px solid rgba(255, 71, 87, 0.1);
+        }
+        
+        .info-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--dark);
+            margin-bottom: 15px;
+            display: flex;
+            align-items: center;
+            gap: 10px;
+        }
+        
+        .info-list {
+            list-style: none;
+        }
+        
+        .info-list li {
+            padding: 10px 0;
+            color: var(--dark);
+            display: flex;
+            align-items: center;
+            gap: 10px;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+        }
+        
+        .info-list li:last-child {
+            border-bottom: none;
+        }
+        
+        .info-list i {
+            color: var(--primary);
+            font-size: 1.1rem;
+        }
+        
+        /* 响应式设计 */
+        @media (max-width: 768px) {
+            .container {
+                padding: 25px;
+            }
+            
+            .title {
+                font-size: 2.5rem;
+            }
+            
+            .button-group {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+        }
+        
+        /* 粒子效果 */
+        .particles {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            pointer-events: none;
+            z-index: -1;
+        }
+        
+        .particle {
+            position: absolute;
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 50%;
+            animation: particle-float 20s infinite linear;
+        }
+        
+        @keyframes particle-float {
+            0% {
+                transform: translateY(100vh) rotate(0deg);
+                opacity: 0;
+            }
+            10% {
+                opacity: 1;
+            }
+            90% {
+                opacity: 1;
+            }
+            100% {
+                transform: translateY(-100px) rotate(360deg);
+                opacity: 0;
+            }
+        }
+    </style>
+</head>
+<body>
+    <!-- 背景动画 -->
+    <div class="bg-animation">
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+        <div class="floating-element"></div>
+    </div>
+    
+    <!-- 粒子效果 -->
+    <div class="particles" id="particles"></div>
+    
+    <!-- 主容器 -->
+    <div class="container">
+        <div class="decoration"></div>
+        
+        <!-- 标题 -->
+        <div class="header">
+            <h1 class="title">🍅 番茄小说下载器</h1>
+            <p class="subtitle">极速下载 · 流畅体验 · 精美设计</p>
+        </div>
+        
+        <!-- 输入区域 -->
+        <div class="input-section">
+            <label class="input-label">
+                <i>📚</i>
+                输入番茄小说ID
+            </label>
+            <div class="input-wrapper">
+                <input type="text" 
+                       class="input-field" 
+                       id="bookId" 
+                       placeholder="例如：7580453443874081816"
+                       autocomplete="off">
+            </div>
+            <div class="input-hint">
+                <i>💡</i>
+                小说ID通常在URL中可以找到，复制粘贴即可
+            </div>
+        </div>
+        
+        <!-- 按钮组 -->
+        <div class="button-group">
+            <button class="btn btn-primary" onclick="startDownload()" id="downloadBtn">
+                <i>🚀</i                <span>开始下载</span>
+            </button>
+            <button class="btn btn-secondary" onclick="showExample()">
+                <i>📋</i>
+                <span>查看示例</span>
+            </button>
+        </div>
+        
+        <!-- 加载动画 -->
+        <div class="loading-section" id="loadingSection">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-text" id="loadingText">正在准备下载，请稍候...</div>
+            
+            <!-- 进度条 -->
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+        
+        <!-- 结果区域 -->
+        <div class="result-section" id="resultSection">
+            <div class="result-card" id="resultCard">
+                <div class="result-title">
+                    <i id="resultIcon">📥</i>
+                    <span id="resultTitle">下载准备完成</span>
+                </div>
+                <div class="result-message" id="resultMessage">
+                    文件已准备就绪，正在开始下载...
+                </div>
+                <a href="#" class="download-link" id="downloadLink" target="_blank" style="display: none;">
+                    <i>⬇️</i>
+                    手动下载文件
+                </a>
+            </div>
+        </div>
+        
+        <!-- 信息区域 -->
+        <div class="info-section">
+            <div class="info-title">
+                <i>📖</i>
+                使用说明
+            </div>
+            <ul class="info-list">
+                <li>
+                    <i>1️⃣</i>
+                    <span>在输入框中输入番茄小说的ID（通常在URL中可以找到）</span>
+                </li>
+                <li>
+                    <i>2️⃣</i>
+                    <span>点击"开始下载"按钮，等待下载准备完成</span>
+                </li>
+                <li>
+                    <i>3️⃣</i>
+                    <span>下载完成后，文件会自动保存到您的设备</span>
+                </li>
+                <li>
+                    <i>⚠️</i>
+                    <span>如果浏览器阻止了自动下载，请手动点击下载链接</span>
+                </li>
+                <li>
+                    <i>💡</i>
+                    <span>支持.txt格式，下载速度取决于网络状况</span>
+                </li>
+            </ul>
+        </div>
+    </div>
+
+    <script>
+        // 创建粒子效果
+        function createParticles() {
+            const particlesContainer = document.getElementById('particles');
+            const particleCount = 30;
+            
+            for (let i = 0; i < particleCount; i++) {
+                const particle = document.createElement('div');
+                particle.className = 'particle';
+                
+                // 随机大小
+                const size = Math.random() * 10 + 5;
+                particle.style.width = `${size}px`;
+                particle.style.height = `${size}px`;
+                
+                // 随机位置
+                particle.style.left = `${Math.random() * 100}%`;
+                
+                // 随机动画延迟和持续时间
+                const delay = Math.random() * 20;
+                const duration = Math.random() * 10 + 15;
+                particle.style.animationDelay = `${delay}s`;
+                particle.style.animationDuration = `${duration}s`;
+                
+                // 随机颜色
+                const colors = [
+                    'rgba(255, 71, 87, 0.3)',
+                    'rgba(255, 159, 67, 0.3)',
+                    'rgba(55, 66, 250, 0.3)',
+                    'rgba(46, 213, 115, 0.3)'
+                ];
+                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
+                
+                particlesContainer.appendChild(particle);
+            }
+        }
+        
+        // 显示示例
+        function showExample() {
+            const bookIdInput = document.getElementById('bookId');
+            bookIdInput.value = '7580453443874081816';
+            
+            // 添加输入动画
+            bookIdInput.style.animation = 'none';
+            setTimeout(() => {
+                bookIdInput.style.animation = 'fadeIn 0.5s ease';
+            }, 10);
+            
+            // 显示提示
+            showResult('示例ID已填入，点击"开始下载"按钮测试功能', 'info');
+        }
+        
+        // 开始下载
+        function startDownload() {
+            const bookId = document.getElementById('bookId').value.trim();
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loadingSection = document.getElementById('loadingSection');
+            const resultSection = document.getElementById('resultSection');
+            const progressBar = document.getElementById('progressBar');
+            const loadingText = document.getElementById('loadingText');
+            
+            // 验证输入
+            if (!bookId) {
+                showResult('请输入有效的番茄小说ID', 'error');
+                return;
+            }
+            
+            // 重置界面
+            resetUI();
+            
+            // 禁用按钮
+            downloadBtn.disabled = true;
+            downloadBtn.innerHTML = '<i>⏳</i><span>处理中...</span>';
+            
+            // 显示加载动画
+            loadingSection.style.display = 'block';
+            resultSection.style.display = 'none';
+            
+            // 构建下载URL
+            const downloadUrl = `https://rose.reading.xingmian.icu/api/content?tab=下载&book_id=${bookId}&download=1`;
+            const fileName = `番茄小说-${bookId}.txt`;
+            
+            // 更新进度
+            updateProgress(10, '正在验证ID...');
+            
+            // 模拟下载过程
+            simulateDownloadProcess(() => {
+                // 完成进度
+                updateProgress(100, '下载准备完成！');
+                
+                // 显示结果
+                setTimeout(() => {
+                    loadingSection.style.display = 'none';
+                    resultSection.style.display = 'block';
+                    downloadBtn.disabled = false;
+                    downloadBtn.innerHTML = '<i>🚀</i><span>开始下载</span>';
+                    
+                    // 显示下载链接
+                    const downloadLink = document.getElementById('downloadLink');
+                    downloadLink.href = downloadUrl;
+                    downloadLink.download = fileName;
+                    downloadLink.style.display = 'inline-block';
+                    
+                    // 尝试自动下载
+                    attemptAutoDownload(downloadUrl, fileName);
+                    
+                    showResult(`小说《ID: ${bookId}》下载准备完成！`, 'success');
+                }, 800);
+            });
+        }
+        
+        // 模拟下载过程
+        function simulateDownloadProcess(onComplete) {
+            let progress = 10;
+            const steps = [
+                { target: 25, text: '正在连接服务器...' },
+                { target: 45, text: '正在获取小说信息...' },
+                { target: 65, text: '正在解析章节内容...' },
+                { target: 85, text: '正在生成下载文件...' },
+                { target: 95, text: '正在准备下载链接...' }
+            ];
+            
+            let currentStep = 0;
+            
+            const interval = setInterval(() => {
+                if (currentStep < steps.length) {
+                    const step = steps[currentStep];
+                    progress += 2;
+                    
+                    if (progress >= step.target) {
+                        updateProgress(progress, step.text);
+                        currentStep++;
+                    } else {
+                        updateProgress(progress, step.text);
+                    }
+                } else {
+                    clearInterval(interval);
+                    onComplete();
+                }
+            }, 100);
+        }
+        
+        // 更新进度
+        function updateProgress(percent, text) {
+            const progressBar = document.getElementById('progressBar');
+            const loadingText = document.getElementById('loadingText');
+            
+            progressBar.style.width = `${percent}%`;
+            loadingText.textContent = text;
+            
+            // 显示进度容器
+            document.getElementById('progressContainer').style.display = 'block';
+        }
+        
+        // 尝试自动下载
+        function attemptAutoDownload(url, filename) {
+            setTimeout(() => {
+                try {
+                    // 创建隐藏的下载链接
+                    const link = document.createElement('a');
+                    link.href = url;
+                    link.download = filename;
+                    link.style.display = 'none';
+                    document.body.appendChild(link);
+                    
+                    // 尝试点击
+                    link.click();
+                    
+                    // 清理
+                    setTimeout(() => {
+                        document.body.removeChild(link);
+                    }, 1000);
+                    
+                    // 检查是否下载成功
+                    setTimeout(() => {
+                        showResult('自动下载已触发，请检查下载文件夹', 'success');
+                    }, 1500);
+                    
+                } catch (error) {
+                    showResult('自动下载被阻止，请手动点击下载链接', 'warning');
+                }
+            }, 500);
+        }
+        
+        // 显示结果
+        function showResult(message, type = 'info') {
+            const resultCard = document.getElementById('resultCard');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultSection = document.getElementById('resultSection');
+            
+            // 设置类型样式
+            resultCard.className = 'result-card';
+            switch (type) {
+                case 'success':
+                    resultCard.classList.add('result-success');
+                    resultIcon.textContent = '✅';
+                    resultTitle.textContent = '下载成功';
+                    break;
+                case 'error':
+                    resultCard.classList.add('result-error');
+                    resultIcon.textContent = '❌';
+                    resultTitle.textContent = '下载失败';
+                    break;
+                case 'warning':
+                    resultCard.classList.add('result-warning');
+                    resultIcon.textContent = '⚠️';
+                    resultTitle.textContent = '注意';
+                    break;
+                default:
+                    resultCard.classList.add('result-success');
+                    resultIcon.textContent = '💡';
+                    resultTitle.textContent = '提示';
+            }
+            
+            resultMessage.textContent = message;
+            resultSection.style.display = 'block';
+            
+            // 自动隐藏信息提示
+            if (type === 'info') {
+                setTimeout(() => {
+                    resultSection.style.display = 'none';
+                }, 3000);
+            }
+        }
+        
+        // 重置界面
+        function resetUI() {
+            document.getElementById('loadingSection').style.display = 'none';
+            document.getElementById('resultSection').style.display = 'none';
+            document.getElementById('progressBar').style.width = '0%';
+            document.getElementById('downloadLink').style.display = 'none';
+        }
+        
+        // 输入框回车触发下载
+        document.getElementById('bookId').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                startDownload();
+            }
+        });
+        
+        // 页面加载完成后的初始化
+        document.addEventListener('DOMContentLoaded', function() {
+            // 创建粒子效果
+            createParticles();
+            
+            // 添加输入框焦点效果
+            const inputField = document.getElementById('bookId');
+            inputField.addEventListener('focus', function() {
+                this.parentElement.style.transform = 'translateY(-2px)';
+            });
+            
+            inputField.addEventListener('blur', function() {
+                this.parentElement.style.transform = 'translateY(0)';
+            });
+            
+            // 显示欢迎信息
+            setTimeout(() => {
+                showResult('欢迎使用番茄小说下载器！输入小说ID开始下载吧！', 'info');
+            }, 1000);
+            
+            // 添加按钮点击动画
+            document.querySelectorAll('.btn').forEach(btn => {
+                btn.addEventListener('click', function() {
+                    this.style.transform = 'scale(0.95)';
+                    setTimeout(() => {
+                        this.style.transform = '';
+                    }, 200);
+                });
+            });
+            
+            // 添加卡片悬停效果
+            const cards = document.querySelectorAll('.result-card, .info-section');
+            cards.forEach(card => {
+                card.addEventListener('mouseenter', function() {
+                    this.style.transform = 'translateY(-5px)';
+                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.1)';
+                });
+                
+                card.addEventListener('mouseleave', function() {
+                    this.style.transform = 'translateY(0)';
+                    this.style.boxShadow = '';
+                });
+            });
+        });
+        
+        // 添加页面滚动动画
+        let lastScrollTop = 0;
+        window.addEventListener('scroll', function() {
+            const st = window.pageYOffset || document.documentElement.scrollTop;
+            const container = document.querySelector('.container');
+            
+            if (st > lastScrollTop) {
+                // 向下滚动
+                container.style.transform = `translateY(${Math.min(st * 0.1, 20)}px)`;
+            } else {
+                // 向上滚动
+                container.style.transform = `translateY(${Math.min(st * 0.05, 10)}px)`;
+            }
+            
+            lastScrollTop = st <= 0 ? 0 : st;
+        });
+    </script>
+</body>
+</html>
