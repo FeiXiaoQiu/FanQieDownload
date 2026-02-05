@@ -41,6 +41,120 @@
             overflow-x: hidden;
         }
         
+        /* 随机弹窗 */
+        .random-popup {
+            position: fixed;
+            top: -150px;
+            left: 50%;
+            transform: translateX(-50%);
+            width: 90%;
+            max-width: 600px;
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98));
+            backdrop-filter: blur(20px);
+            border-radius: var(--radius);
+            padding: 20px;
+            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
+            z-index: 1000;
+            border: 2px solid var(--primary);
+            animation: slideDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            display: none;
+        }
+        
+        @keyframes slideDown {
+            0% {
+                top: -150px;
+                opacity: 0;
+            }
+            100% {
+                top: 30px;
+                opacity: 1;
+            }
+        }
+        
+        .popup-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 15px;
+        }
+        
+        .popup-title {
+            font-size: 1.2rem;
+            font-weight: 600;
+            color: var(--primary);
+            display: flex;
+            align-items: center;
+            gap: 8px;
+        }
+        
+        .popup-close {
+            background: none;
+            border: none;
+            font-size: 1.5rem;
+            color: var(--gray);
+            cursor: pointer;
+            transition: var(--transition);
+            width: 30px;
+            height: 30px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        .popup-close:hover {
+            background: rgba(255, 71, 87, 0.1);
+            color: var(--primary);
+        }
+        
+        .popup-content {
+            font-size: 1.1rem;
+            line-height: 1.6;
+            color: var(--dark);
+            text-align: center;
+            padding: 15px 10px;
+            max-height: 200px;
+            overflow-y: auto;
+            margin-bottom: 15px;
+            background: rgba(255, 255, 255, 0.5);
+            border-radius: 10px;
+            border: 1px solid rgba(255, 71, 87, 0.1);
+        }
+        
+        .popup-timer {
+            width: 100%;
+            height: 8px;
+            background: var(--light);
+            border-radius: 4px;
+            overflow: hidden;
+            position: relative;
+        }
+        
+        .timer-bar {
+            height: 100%;
+            width: 100%;
+            background: linear-gradient(90deg, var(--primary), var(--accent));
+            border-radius: 4px;
+            animation: countdown 5s linear forwards;
+        }
+        
+        @keyframes countdown {
+            0% {
+                width: 100%;
+            }
+            100% {
+                width: 0%;
+            }
+        }
+        
+        .timer-text {
+            text-align: center;
+            font-size: 0.9rem;
+            color: var(--gray);
+            margin-top: 8px;
+            font-weight: 500;
+        }
+        
         /* 背景动画 */
         .bg-animation {
             position: fixed;
@@ -310,6 +424,28 @@
             box-shadow: var(--shadow-hover);
         }
         
+        /* 降级版本按钮 */
+        .downgrade-btn {
+            display: inline-block;
+            margin-top: 15px;
+            padding: 15px 25px;
+            background: linear-gradient(45deg, var(--warning), #ff9f43);
+            color: white;
+            text-decoration: none;
+            border-radius: 10px;
+            font-weight: 600;
+            transition: var(--transition);
+            box-shadow: 0 5px 15px rgba(255, 165, 2, 0.3);
+            border: none;
+            cursor: pointer;
+            font-size: 1rem;
+        }
+        
+        .downgrade-btn:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 8px 25px rgba(255, 165, 2, 0.4);
+        }
+        
         /* 加载动画 */
         .loading-section {
             text-align: center;
@@ -539,6 +675,11 @@
             .btn {
                 width: 100%;
             }
+            
+            .random-popup {
+                width: 95%;
+                top: 20px;
+            }
         }
         
         /* 粒子效果 */
@@ -578,6 +719,24 @@
     </style>
 </head>
 <body>
+    <!-- 随机弹窗 -->
+    <div class="random-popup" id="randomPopup">
+        <div class="popup-header">
+            <div class="popup-title">
+                <i>💬</i>
+                每日一言
+            </div>
+            <button class="popup-close" onclick="closePopup()">×</button>
+        </div>
+        <div class="popup-content" id="popupContent">
+            正在加载中...
+        </div>
+        <div class="popup-timer">
+            <div class="timer-bar"></div>
+        </div>
+        <div class="timer-text">5秒后自动关闭</div>
+    </div>
+    
     <!-- 背景动画 -->
     <div class="bg-animation">
         <div class="floating-element"></div>
@@ -602,25 +761,26 @@
         <div class="input-section">
             <label class="input-label">
                 <i>📚</i>
-                输入番茄小说ID
+                输入番茄小说ID或分享链接
             </label>
             <div class="input-wrapper">
                 <input type="text" 
                        class="input-field" 
                        id="bookId" 
-                       placeholder="例如：7580453443874081816"
+                       placeholder="例如：7580453443874081816 或完整分享链接"
                        autocomplete="off">
             </div>
             <div class="input-hint">
                 <i>💡</i>
-                小说ID通常在URL中可以找到，复制粘贴即可
+                支持粘贴完整分享链接，系统自动提取小说ID
             </div>
         </div>
         
         <!-- 按钮组 -->
         <div class="button-group">
             <button class="btn btn-primary" onclick="startDownload()" id="downloadBtn">
-                <i>🚀</i                <span>开始下载</span>
+                <i>🚀</i>
+                <span>开始下载</span>
             </button>
             <button class="btn btn-secondary" onclick="showExample()">
                 <i>📋</i>
@@ -657,6 +817,10 @@
                     <i>⬇️</i>
                     手动下载文件
                 </a>
+                <button class="downgrade-btn" id="downgradeBtn" style="display: none;" onclick="window.open('https://m.wandoujia.com/apps/8048758/history_v68132', '_blank')">
+                    <i>⬇️</i>
+                    点击前往更换版本
+                </button>
             </div>
         </div>
         
@@ -669,11 +833,11 @@
             <ul class="info-list">
                 <li>
                     <i>1️⃣</i>
-                    <span>在输入框中输入番茄小说的ID（通常在URL中可以找到）</span>
+                    <span>在输入框中输入番茄小说的ID或完整分享链接</span>
                 </li>
                 <li>
                     <i>2️⃣</i>
-                    <span>点击"开始下载"按钮，等待下载准备完成</span>
+                    <span>系统自动提取小说ID，自动或手动开始下载</span>
                 </li>
                 <li>
                     <i>3️⃣</i>
@@ -689,15 +853,157 @@
                 </li>
             </ul>
         </div>
-        <!-- 分隔线 -->
-<hr style="margin: 40px 0; border: none; border-top: 1px solid #e0e0e0;">
 
-<!-- 版权信息 -->
-<div style="text-align: center; padding: 20px 0; color: #666; font-size: 14px; font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;">
-    番茄小说下载器 by 是非酋啊awa
+        <!-- 分隔线 -->
+        <hr style="margin: 40px 0; border: none; border-top: 1px solid #e0e0e0;">
+        
+        <!-- 版权信息 -->
+        <div style="text-align: center; padding: 20px 0; color: #666; font-size: 14px; font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;">
+            番茄小说下载器 by 是非酋啊awa
+        </div>
     </div>
 
     <script>
+        // 存储随机消息的数组
+        let randomMessages = [];
+        
+        // 从文件加载随机消息
+        async function loadRandomMessages() {
+            try {
+                const response = await fetch('/random_messages.txt');
+                if (!response.ok) throw new Error('文件加载失败');
+                
+                const text = await response.text();
+                // 按行分割，过滤空行
+                randomMessages = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+                
+                if (randomMessages.length > 0) {
+                    showRandomPopup();
+                }
+            } catch (error) {
+                console.warn('无法加载随机消息文件:', error);
+                // 使用默认消息
+                randomMessages = [
+                    "Ciallo ～(∠・ω <) ⌒⭐️",
+                    "你怎么这么自私…呸！",
+                    "鸡汤来喽…哈哈…",
+                    "欸，wc牢镜怎么这么坏（",
+                    "你个老六我真的服了……",
+                    "田文镜，我CNM！",
+                    "巴巴尔你这个狗杂种……",
+                    "唱，跳，rap，篮球……",
+                    "我是不是给你脸给多了！",
+                    "赐你天谴！",
+                    "转圈圈～",
+                    "所以我出手了……",
+                    "我是…终将升起的烈阳！",
+                    "剑出，山顷！",
+                    "少看看小说，多看看世界……",
+                    "世界那么大，我想去看看",
+                    "吃个桃桃～",
+                    "仙路尽头谁为峰，一见无始道成空……",
+                    "落魄谷中寒风吹，春秋蝉鸣少年归",
+                    "荡魂山处石人泪，定仙游走魔向北",
+                    "逆流河上万仙退，爱情不敌坚持泪",
+                    "宿命天成命中败，仙尊悔而我不悔",
+                    "早岁已知世事艰，仍许飞鸿荡云间",
+                    "一路寒风身如絮，命海沉浮客独行",
+                    "千磨万击心铸铁，殚精竭虑铸一剑",
+                    "今朝剑指叠云处，炼蛊炼人还炼天",
+                    "我只想打死两位…或者…被两位给打死…",
+                    "第一日，赐以真实😞",
+                    "第二日，赐以历法😔",
+                    "第三日，赐以言语😟",
+                    "第四日，赐以价值😣",
+                    "第五日，赐以规则😖",
+                    "第六日，赐以意义😫",
+                    "第七日，赐以尊严😩……即将见证，太初有为！😆",
+                    "生命因何而沉睡……",
+                    "以『愛』之名，8秒24肘！",
+                    "吴荔橙？果粒橙！",
+                    "Sakura最好了……",
+                    "愿此行，终抵群星！"
+                ];
+                showRandomPopup();
+            }
+        }
+        
+        // 显示随机弹窗
+        function showRandomPopup() {
+            if (randomMessages.length === 0) return;
+            
+            const popup = document.getElementById('randomPopup');
+            const content = document.getElementById('popupContent');
+            
+            // 随机选择一条消息
+            const randomIndex = Math.floor(Math.random() * randomMessages.length);
+            content.textContent = randomMessages[randomIndex];
+            
+            // 显示弹窗
+            popup.style.display = 'block';
+            
+            // 5秒后自动关闭
+            setTimeout(() => {
+                closePopup();
+            }, 5000);
+        }
+        
+        // 关闭弹窗
+        function closePopup() {
+            const popup = document.getElementById('randomPopup');
+            popup.style.display = 'none';
+        }
+        
+        // 提取小说ID函数
+        function extractBookId(input) {
+            if (!input || input.trim() === '') return null;
+            
+            let processedInput = input.trim();
+            
+            // 去除中文文本（如小说标题）
+            processedInput = processedInput.replace(/[\u4e00-\u9fa5]/g, '');
+            
+            // 方案1：从URL参数中提取book_id
+            const urlPattern = /book_id=(\d+)/;
+            const urlMatch = processedInput.match(urlPattern);
+            if (urlMatch && urlMatch[1]) {
+                return urlMatch[1];
+            }
+            
+            // 方案2：匹配长数字ID（15-20位）
+            const longIdPattern = /\d{15,20}/;
+            const longIdMatch = processedInput.match(longIdPattern);
+            if (longIdMatch) {
+                return longIdMatch[0];
+            }
+            
+            // 方案3：匹配纯数字ID
+            const pureNumberPattern = /^(\d+)$/;
+            const pureNumberMatch = processedInput.match(pureNumberPattern);
+            if (pureNumberMatch) {
+                return pureNumberMatch[1];
+            }
+            
+            // 方案4：尝试从常见URL格式中提取
+            const commonPatterns = [
+                /id=(\d+)/,
+                /novel\/(\d+)/,
+                /book\/(\d+)/,
+                /read\/(\d+)/
+            ];
+            
+            for (const pattern of commonPatterns) {
+                const match = processedInput.match(pattern);
+                if (match && match[1]) {
+                    return match[1];
+                }
+            }
+            
+            return null;
+        }
+
         // 创建粒子效果
         function createParticles() {
             const particlesContainer = document.getElementById('particles');
@@ -737,7 +1043,8 @@
         // 显示示例
         function showExample() {
             const bookIdInput = document.getElementById('bookId');
-            bookIdInput.value = '7580453443874081816';
+            // 设置示例分享链接
+            bookIdInput.value = '抽象职校生存手册https://changdunovel.com/wap/share-v2.html?aid=1967&book_id=7580453443874081816&share_type=0&share_code=MeVoWuNyA1m8aItA4vEDxNQTJGdwexgxH8bTBCJ5Vd4%3D&uid=58de3bf8453b70260cb293a6c989a99c&share_id=usv247aO-6mWiXmQ_7vqC-2rfGjPfIBKVCwQi5EFAIg%3D&use_open_launch_app=1&user_id=39ddfd798d752408537a128386f52a74&did=58de3bf8453b70260cb293a6c989a99c&entrance=book_reading_share_button&zlink=https%3A%2F%2Fzlink.fqnovel.com%2FdhVGe&gd_label=click_schema_lhft_share_novelapp_android&source_channel=system&share_channel=system&type=book&share_timestamp=1767153829&report_params=%7B%22entrance%22%3A%22book_reading_share_button%22%2C%22type%22%3A%22book_reading%22%2C%22content_type%22%3A%22novel%22%2C%22content_id%22%3A%227580680290960425496%22%2C%22content_id_key%22%3A%22chapter_id%22%2C%22share_timestamp%22%3A%221767153829%22%7D&share_token=ecfe7535-e785-4dfd-8e8f-8938f89955b9';
             
             // 添加输入动画
             bookIdInput.style.animation = 'none';
@@ -746,23 +1053,55 @@
             }, 10);
             
             // 显示提示
-            showResult('示例ID已填入，点击"开始下载"按钮测试功能', 'info');
+            showResult('示例分享链接已填入，系统将自动提取小说ID', 'info');
         }
         
         // 开始下载
         function startDownload() {
-            const bookId = document.getElementById('bookId').value.trim();
+            const userInput = document.getElementById('bookId').value.trim();
             const downloadBtn = document.getElementById('downloadBtn');
             const loadingSection = document.getElementById('loadingSection');
             const resultSection = document.getElementById('resultSection');
             const progressBar = document.getElementById('progressBar');
             const loadingText = document.getElementById('loadingText');
             
+            // 提取小说ID
+            const bookId = extractBookId(userInput);
+            
             // 验证输入
             if (!bookId) {
-                showResult('请输入有效的番茄小说ID', 'error');
+                // 显示降级版本提示
+                showDowngradePrompt();
                 return;
             }
+            
+            // 如果是纯ID输入（直接输入ID），需要手动点击下载
+            // 如果是分享链接（包含其他内容），自动下载
+            const isPureId = /^\d+$/.test(userInput.trim());
+            
+            // 显示提取的ID信息
+            if (userInput !== bookId) {
+                showResult(`已从输入中提取小说ID：${bookId}，开始自动下载...`, 'info');
+                
+                // 如果是分享链接，自动开始下载流程
+                if (!isPureId) {
+                    // 延迟一下，让用户看到提示信息
+                    setTimeout(() => {
+                        executeDownload(bookId, userInput);
+                    }, 800);
+                    return;
+                }
+            }
+            
+            // 纯ID输入，执行下载
+            executeDownload(bookId, userInput);
+        }
+        
+        // 执行下载流程
+        function executeDownload(bookId, userInput) {
+            const downloadBtn = document.getElementById('downloadBtn');
+            const loadingSection = document.getElementById('loadingSection');
+            const resultSection = document.getElementById('resultSection');
             
             // 重置界面
             resetUI();
@@ -800,12 +1139,39 @@
                     downloadLink.download = fileName;
                     downloadLink.style.display = 'inline-block';
                     
+                    // 隐藏降级按钮
+                    document.getElementById('downgradeBtn').style.display = 'none';
+                    
                     // 尝试自动下载
                     attemptAutoDownload(downloadUrl, fileName);
                     
                     showResult(`小说《ID: ${bookId}》下载准备完成！`, 'success');
                 }, 800);
             });
+        }
+        
+        // 显示降级版本提示
+        function showDowngradePrompt() {
+            const resultCard = document.getElementById('resultCard');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultSection = document.getElementById('resultSection');
+            const downloadLink = document.getElementById('downloadLink');
+            const downgradeBtn = document.getElementById('downgradeBtn');
+            
+            // 设置警告样式
+            resultCard.className = 'result-card result-warning';
+            resultIcon.textContent = '⚠️';
+            resultTitle.textContent = '没有检测到ID哦(ó﹏ò｡)';
+            resultMessage.innerHTML = '请用户您降级"番茄免费小说"的版本<br><br>↓↓↓点击下方前往更换版本↓↓↓';
+            
+            // 隐藏下载链接，显示降级按钮
+            downloadLink.style.display = 'none';
+            downgradeBtn.style.display = 'inline-block';
+            
+            // 显示结果区域
+            resultSection.style.display = 'block';
         }
         
         // 模拟下载过程
@@ -888,6 +1254,8 @@
             const resultMessage = document.getElementById('resultMessage');
             const resultIcon = document.getElementById('resultIcon');
             const resultSection = document.getElementById('resultSection');
+            const downloadLink = document.getElementById('downloadLink');
+            const downgradeBtn = document.getElementById('downgradeBtn');
             
             // 设置类型样式
             resultCard.className = 'result-card';
@@ -916,6 +1284,10 @@
             resultMessage.textContent = message;
             resultSection.style.display = 'block';
             
+            // 隐藏降级按钮，显示下载链接
+            downgradeBtn.style.display = 'none';
+            downloadLink.style.display = 'none';
+            
             // 自动隐藏信息提示
             if (type === 'info') {
                 setTimeout(() => {
@@ -930,6 +1302,7 @@
             document.getElementById('resultSection').style.display = 'none';
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('downloadLink').style.display = 'none';
+            document.getElementById('downgradeBtn').style.display = 'none';
         }
         
         // 输入框回车触发下载
@@ -939,10 +1312,55 @@
             }
         });
         
+        // 实时显示提取的ID和自动下载检测
+        document.getElementById('bookId').addEventListener('input', function(e) {
+            const userInput = this.value.trim();
+            if (!userInput) return;
+            
+            const extractedId = extractBookId(userInput);
+            if (extractedId) {
+                // 在输入框下方显示提取结果
+                const hintElement = document.querySelector('.input-hint');
+                if (hintElement) {
+                    const isPureId = /^\d+$/.test(userInput.trim());
+                    
+                    if (extractedId !== userInput) {
+                        hintElement.innerHTML = `<i>🔍</i>已识别到小说ID：${extractedId} - 输入完成后自动下载`;
+                        
+                        // 如果是分享链接（非纯ID），延迟后自动开始下载
+                        if (!isPureId) {
+                            // 使用防抖，等待用户输入完成
+                            clearTimeout(window.autoDownloadTimeout);
+                            window.autoDownloadTimeout = setTimeout(() => {
+                                if (extractBookId(this.value) === extractedId) {
+                                    showResult(`已自动检测到分享链接，开始下载ID：${extractedId}`, 'info');
+                                    setTimeout(() => {
+                                        executeDownload(extractedId, this.value);
+                                    }, 1000);
+                                }
+                            }, 1500);
+                        }
+                    } else {
+                        hintElement.innerHTML = `<i>🔍</i>已识别到小说ID：${extractedId} - 请点击下载按钮`;
+                    }
+                    
+                    setTimeout(() => {
+                        hintElement.innerHTML = '<i>💡</i>支持粘贴完整分享链接，系统自动提取小说ID';
+                    }, 5000);
+                }
+            } else {
+                // 清除之前的定时器
+                clearTimeout(window.autoDownloadTimeout);
+            }
+        });
+        
         // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', function() {
             // 创建粒子效果
             createParticles();
+            
+            // 加载随机消息
+            loadRandomMessages();
             
             // 添加输入框焦点效果
             const inputField = document.getElementById('bookId');
@@ -956,7 +1374,7 @@
             
             // 显示欢迎信息
             setTimeout(() => {
-                showResult('欢迎使用番茄小说下载器！输入小说ID开始下载吧！', 'info');
+                showResult('欢迎使用番茄小说下载器！输入小说ID或分享链接开始下载吧！', 'info');
             }, 1000);
             
             // 添加按钮点击动画
