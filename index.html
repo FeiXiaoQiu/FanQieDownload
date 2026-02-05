@@ -1008,7 +1008,7 @@
                 <input type="text" 
                        class="input-field" 
                        id="bookId" 
-                       placeholder="例如：7580453443874081816 或完整分享链接"
+                       placeholder="例如：7580453443874081816或分享链接"
                        autocomplete="off">
             </div>
             <div class="input-hint">
@@ -1247,7 +1247,7 @@
         async function loadDailyMessage() {
             try {
                 // 尝试从文件加载
-                const response = await fetch('/每日一言/每日一言.txt');
+                const response = await fetch('/Speech/Speech.txt');
                 if (!response.ok) throw new Error('文件加载失败');
                 
                 const text = await response.text();
