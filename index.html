@@ -2,10 +2,16 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>🍅 番茄小说下载器 | 极速体验</title>
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
+    <title>🍅 番茄小说下载器 🍅</title>
     <style>
-        /* 基础重置和变量 */
+        /* 性能优化：减少重绘和回流 */
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
         :root {
             --primary: #ff4757;
             --primary-dark: #ff3838;
@@ -20,13 +26,18 @@
             --shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
             --shadow-hover: 0 15px 40px rgba(0, 0, 0, 0.15);
             --radius: 16px;
-            --transition: all 0.4s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-        }
-        
-        * {
-            margin: 0;
-            padding: 0;
-            box-sizing: border-box;
+            --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+            
+            /* 响应式变量 */
+            --container-max-width: 800px;
+            --container-padding: clamp(20px, 5vw, 40px);
+            --title-font-size: clamp(2rem, 5vw, 3.5rem);
+            --subtitle-font-size: clamp(0.9rem, 2vw, 1.2rem);
+            --content-font-size: clamp(14px, 1.1vw, 18px);
+            --button-font-size: clamp(1rem, 1.2vw, 1.1rem);
+            --input-font-size: clamp(1rem, 1.1vw, 1.1rem);
+            --input-padding: clamp(14px, 2vw, 18px);
+            --gap-size: clamp(15px, 2vw, 20px);
         }
         
         body {
@@ -36,38 +47,119 @@
             display: flex;
             justify-content: center;
             align-items: center;
-            padding: 20px;
+            padding: clamp(10px, 2vw, 20px);
             position: relative;
             overflow-x: hidden;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            will-change: auto;
         }
         
-        /* 随机弹窗 */
-        .random-popup {
+        /* 固定侧边按钮 */
+        .daily-button {
             position: fixed;
-            top: -150px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 90%;
-            max-width: 600px;
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.95), rgba(255, 255, 255, 0.98));
+            right: clamp(15px, 2vw, 25px);
+            bottom: clamp(20px, 3vw, 30px);
+            width: clamp(50px, 8vw, 65px);
+            height: clamp(50px, 8vw, 65px);
+            background: linear-gradient(135deg, var(--primary), var(--accent));
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            color: white;
+            font-size: clamp(1.5rem, 3vw, 2rem);
+            cursor: pointer;
+            box-shadow: 0 6px 20px rgba(255, 71, 87, 0.4);
+            z-index: 999;
+            transition: var(--transition);
+            border: 3px solid white;
+            user-select: none;
+        }
+        
+        .daily-button:hover {
+            transform: scale(1.15) rotate(15deg);
+            box-shadow: 0 10px 30px rgba(255, 71, 87, 0.6);
+        }
+        
+        .daily-button:active {
+            transform: scale(0.95) rotate(-15deg);
+        }
+        
+        /* 每日一言弹窗容器 */
+        .popup-container {
+            position: fixed;
+            top: clamp(20px, 3vw, 30px);
+            right: clamp(20px, 3vw, 30px);
+            bottom: clamp(85px, 12vw, 100px);
+            z-index: 9998;
+            display: flex;
+            flex-direction: column;
+            gap: clamp(10px, 1.5vw, 15px);
+            overflow-y: auto;
+            padding-right: 5px;
+            width: clamp(280px, 35vw, 350px);
+            max-width: 95vw;
+        }
+        
+        /* 滚动条美化 */
+        .popup-container::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .popup-container::-webkit-scrollbar-track {
+            background: rgba(255, 255, 255, 0.1);
+            border-radius: 3px;
+        }
+        
+        .popup-container::-webkit-scrollbar-thumb {
+            background: rgba(255, 71, 87, 0.3);
+            border-radius: 3px;
+        }
+        
+        .popup-container::-webkit-scrollbar-thumb:hover {
+            background: rgba(255, 71, 87, 0.5);
+        }
+        
+        /* 单个弹窗样式 */
+        .daily-popup {
+            width: 100%;
+            background: rgba(255, 255, 255, 0.98);
             backdrop-filter: blur(20px);
             border-radius: var(--radius);
-            padding: 20px;
-            box-shadow: 0 15px 50px rgba(0, 0, 0, 0.25);
-            z-index: 1000;
-            border: 2px solid var(--primary);
-            animation: slideDown 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
-            display: none;
+            padding: clamp(15px, 2vw, 20px);
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
+            border: 3px solid var(--primary);
+            opacity: 0;
+            transform: translateX(50px);
+            animation: popupSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            position: relative;
+            will-change: transform, opacity;
         }
         
-        @keyframes slideDown {
+        @keyframes popupSlideIn {
             0% {
-                top: -150px;
                 opacity: 0;
+                transform: translateX(50px);
             }
             100% {
-                top: 30px;
                 opacity: 1;
+                transform: translateX(0);
+            }
+        }
+        
+        .daily-popup.closing {
+            animation: popupSlideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+        }
+        
+        @keyframes popupSlideOut {
+            0% {
+                opacity: 1;
+                transform: translateX(0);
+            }
+            100% {
+                opacity: 0;
+                transform: translateX(50px);
             }
         }
         
@@ -75,59 +167,77 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 1.5vw, 15px);
+            padding-bottom: clamp(8px, 1vw, 12px);
+            border-bottom: 2px solid rgba(255, 71, 87, 0.2);
         }
         
         .popup-title {
-            font-size: 1.2rem;
-            font-weight: 600;
+            font-size: clamp(1.1rem, 1.5vw, 1.3rem);
+            font-weight: 700;
             color: var(--primary);
             display: flex;
             align-items: center;
-            gap: 8px;
+            gap: clamp(6px, 1vw, 10px);
         }
         
         .popup-close {
             background: none;
             border: none;
-            font-size: 1.5rem;
+            font-size: clamp(1.4rem, 1.8vw, 1.6rem);
             color: var(--gray);
             cursor: pointer;
             transition: var(--transition);
-            width: 30px;
-            height: 30px;
+            width: clamp(28px, 3vw, 32px);
+            height: clamp(28px, 3vw, 32px);
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
+            will-change: transform;
+            flex-shrink: 0;
         }
         
         .popup-close:hover {
-            background: rgba(255, 71, 87, 0.1);
+            background: rgba(255, 71, 87, 0.15);
             color: var(--primary);
+            transform: scale(1.2) rotate(90deg);
         }
         
         .popup-content {
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 1.3vw, 1.15rem);
             line-height: 1.6;
             color: var(--dark);
             text-align: center;
-            padding: 15px 10px;
-            max-height: 200px;
-            overflow-y: auto;
-            margin-bottom: 15px;
-            background: rgba(255, 255, 255, 0.5);
+            padding: clamp(12px, 1.5vw, 15px) clamp(10px, 1.2vw, 12px);
+            margin-bottom: clamp(12px, 1.5vw, 15px);
+            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.9));
             border-radius: 10px;
-            border: 1px solid rgba(255, 71, 87, 0.1);
+            border: 2px solid rgba(255, 71, 87, 0.15);
+            min-height: clamp(45px, 6vw, 50px);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
+            font-weight: 500;
+            word-break: break-word;
+        }
+        
+        .popup-timer-container {
+            background: rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: clamp(6px, 1vw, 8px);
+            margin-top: clamp(8px, 1vw, 10px);
         }
         
         .popup-timer {
             width: 100%;
-            height: 8px;
-            background: var(--light);
+            height: clamp(6px, 0.8vw, 8px);
+            background: rgba(255, 255, 255, 0.5);
             border-radius: 4px;
             overflow: hidden;
             position: relative;
+            margin-bottom: clamp(6px, 0.8vw, 8px);
         }
         
         .timer-bar {
@@ -135,210 +245,146 @@
             width: 100%;
             background: linear-gradient(90deg, var(--primary), var(--accent));
             border-radius: 4px;
-            animation: countdown 5s linear forwards;
-        }
-        
-        @keyframes countdown {
-            0% {
-                width: 100%;
-            }
-            100% {
-                width: 0%;
-            }
+            will-change: width;
+            box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+            transition: width 0.1s linear;
         }
         
         .timer-text {
             text-align: center;
-            font-size: 0.9rem;
-            color: var(--gray);
-            margin-top: 8px;
-            font-weight: 500;
+            font-size: clamp(0.85rem, 1vw, 0.95rem);
+            color: var(--primary);
+            font-weight: 600;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            gap: clamp(4px, 0.8vw, 6px);
         }
         
-        /* 背景动画 */
-        .bg-animation {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            z-index: -1;
-            overflow: hidden;
+        .time-number {
+            font-size: clamp(1rem, 1.2vw, 1.1rem);
+            font-weight: 700;
+            color: var(--primary-dark);
+            min-width: clamp(18px, 2vw, 20px);
+            text-align: center;
         }
         
-        .floating-element {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 50%;
-            animation: float 20s infinite linear;
-        }
-        
-        .floating-element:nth-child(1) {
-            width: 300px;
-            height: 300px;
-            top: -150px;
-            left: -150px;
-            animation-delay: 0s;
-        }
-        
-        .floating-element:nth-child(2) {
-            width: 200px;
-            height: 200px;
-            bottom: -100px;
-            right: -100px;
-            animation-delay: -5s;
-        }
-        
-        .floating-element:nth-child(3) {
-            width: 150px;
-            height: 150px;
-            top: 50%;
-            right: -75px;
-            animation-delay: -10s;
-        }
-        
-        @keyframes float {
-            0% {
-                transform: translate(0, 0) rotate(0deg);
-            }
-            25% {
-                transform: translate(100px, 100px) rotate(90deg);
-            }
-            50% {
-                transform: translate(200px, 0) rotate(180deg);
-            }
-            75% {
-                transform: translate(100px, -100px) rotate(270deg);
-            }
-            100% {
-                transform: translate(0, 0) rotate(360deg);
-            }
-        }
-        
-        /* 主容器 */
+        /* 主容器优化 */
         .container {
-            background: rgba(255, 255, 255, 0.95);
-            backdrop-filter: blur(20px);
+            background: rgba(255, 255, 255, 0.92);
+            backdrop-filter: blur(15px);
             border-radius: var(--radius);
-            padding: 40px;
+            padding: var(--container-padding);
             width: 100%;
-            max-width: 800px;
+            max-width: var(--container-max-width);
             box-shadow: var(--shadow);
             position: relative;
             overflow: hidden;
-            animation: slideUp 0.8s cubic-bezier(0.175, 0.885, 0.32, 1.275);
-            border: 1px solid rgba(255, 255, 255, 0.2);
+            opacity: 0;
+            transform: translateY(20px);
+            will-change: transform, opacity;
+            border: 1px solid rgba(255, 255, 255, 0.15);
+        }
+        
+        .container.loaded {
+            animation: slideUp 0.6s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         
         @keyframes slideUp {
-            from {
-                opacity: 0;
-                transform: translateY(50px) scale(0.9);
-            }
-            to {
-                opacity: 1;
-                transform: translateY(0) scale(1);
-            }
-        }
-        
-        /* 装饰元素 */
-        .decoration {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: 200px;
-            height: 200px;
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            border-radius: 0 0 0 100%;
-            opacity: 0.1;
-        }
-        
-        /* 标题区域 */
-        .header {
-            text-align: center;
-            margin-bottom: 40px;
-            position: relative;
-        }
-        
-        .title {
-            font-size: 3.5rem;
-            font-weight: 800;
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            background-clip: text;
-            margin-bottom: 10px;
-            position: relative;
-            display: inline-block;
-        }
-        
-        .title::after {
-            content: '';
-            position: absolute;
-            bottom: -10px;
-            left: 50%;
-            transform: translateX(-50%);
-            width: 100px;
-            height: 4px;
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            border-radius: 2px;
-        }
-        
-        .subtitle {
-            color: var(--dark);
-            font-size: 1.2rem;
-            opacity: 0.8;
-            margin-top: 20px;
-        }
-        
-        /* 输入区域 */
-        .input-section {
-            margin-bottom: 40px;
-            animation: fadeIn 0.8s ease 0.2s both;
-        }
-        
-        @keyframes fadeIn {
-            from {
-                opacity: 0;
-                transform: translateY(20px);
-            }
             to {
                 opacity: 1;
                 transform: translateY(0);
             }
         }
         
+        .decoration {
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: clamp(120px, 20vw, 200px);
+            height: clamp(120px, 20vw, 200px);
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 0 0 0 100%;
+            opacity: 0.08;
+            pointer-events: none;
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: clamp(25px, 4vw, 45px);
+            position: relative;
+        }
+        
+        .title {
+            font-size: var(--title-font-size);
+            font-weight: 800;
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
+            margin-bottom: clamp(8px, 1vw, 12px);
+            position: relative;
+            display: inline-block;
+            will-change: transform;
+        }
+        
+        .title::after {
+            content: '';
+            position: absolute;
+            bottom: clamp(-8px, -1vw, -10px);
+            left: 50%;
+            transform: translateX(-50%);
+            width: clamp(60px, 8vw, 90px);
+            height: clamp(3px, 0.4vw, 5px);
+            background: linear-gradient(45deg, var(--primary), var(--accent));
+            border-radius: 2px;
+            will-change: width;
+        }
+        
+        .subtitle {
+            color: var(--dark);
+            font-size: var(--subtitle-font-size);
+            opacity: 0.8;
+            margin-top: clamp(15px, 2vw, 22px);
+            line-height: 1.5;
+        }
+        
+        .input-section {
+            margin-bottom: clamp(30px, 4vw, 45px);
+        }
+        
         .input-label {
             display: block;
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 1.3vw, 1.2rem);
             font-weight: 600;
             color: var(--dark);
-            margin-bottom: 15px;
+            margin-bottom: clamp(12px, 1.5vw, 18px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: clamp(8px, 1vw, 10px);
         }
         
         .input-label i {
             color: var(--primary);
-            font-size: 1.3rem;
+            font-size: clamp(1.1rem, 1.4vw, 1.3rem);
         }
         
         .input-wrapper {
             position: relative;
-            margin-bottom: 20px;
+            margin-bottom: clamp(15px, 2vw, 20px);
         }
         
         .input-field {
             width: 100%;
-            padding: 20px 25px;
-            font-size: 1.1rem;
+            padding: var(--input-padding) clamp(16px, 2vw, 22px);
+            font-size: var(--input-font-size);
             border: 2px solid #e0e0e0;
-            border-radius: 12px;
+            border-radius: clamp(10px, 1.2vw, 12px);
             background: var(--light);
             transition: var(--transition);
             outline: none;
             color: var(--dark);
+            will-change: transform, border-color;
         }
         
         .input-field:focus {
@@ -350,40 +396,43 @@
         
         .input-field::placeholder {
             color: var(--gray);
+            font-size: clamp(0.9rem, 1vw, 1rem);
         }
         
         .input-hint {
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: clamp(6px, 1vw, 10px);
             color: var(--gray);
-            font-size: 0.9rem;
-            margin-top: 8px;
+            font-size: clamp(0.8rem, 1vw, 0.9rem);
+            margin-top: clamp(6px, 0.8vw, 8px);
             padding-left: 5px;
         }
         
-        /* 按钮 */
         .button-group {
             display: flex;
-            gap: 20px;
-            margin-bottom: 30px;
+            gap: var(--gap-size);
+            margin-bottom: clamp(25px, 3vw, 35px);
+            flex-wrap: wrap;
         }
         
         .btn {
             flex: 1;
-            padding: 20px;
-            font-size: 1.1rem;
+            min-width: clamp(140px, 15vw, 180px);
+            padding: clamp(15px, 2vw, 18px);
+            font-size: var(--button-font-size);
             font-weight: 600;
             border: none;
-            border-radius: 12px;
+            border-radius: clamp(10px, 1.2vw, 12px);
             cursor: pointer;
             transition: var(--transition);
             display: flex;
             align-items: center;
             justify-content: center;
-            gap: 10px;
+            gap: clamp(8px, 1vw, 10px);
             position: relative;
             overflow: hidden;
+            will-change: transform;
         }
         
         .btn::before {
@@ -396,7 +445,7 @@
             border-radius: 50%;
             background: rgba(255, 255, 255, 0.2);
             transform: translate(-50%, -50%);
-            transition: width 0.6s, height 0.6s;
+            transition: width 0.5s, height 0.5s;
         }
         
         .btn:hover::before {
@@ -410,7 +459,7 @@
         }
         
         .btn-primary:hover {
-            transform: translateY(-3px);
+            transform: translateY(-3px) scale(1.02);
             box-shadow: var(--shadow-hover);
         }
         
@@ -420,43 +469,42 @@
         }
         
         .btn-secondary:hover {
-            transform: translateY(-3px);
+            transform: translateY(-3px) scale(1.02);
             box-shadow: var(--shadow-hover);
         }
         
-        /* 降级版本按钮 */
         .downgrade-btn {
             display: inline-block;
-            margin-top: 15px;
-            padding: 15px 25px;
+            margin-top: clamp(12px, 1.5vw, 15px);
+            padding: clamp(12px, 1.5vw, 15px) clamp(20px, 2.5vw, 25px);
             background: linear-gradient(45deg, var(--warning), #ff9f43);
             color: white;
             text-decoration: none;
-            border-radius: 10px;
+            border-radius: clamp(8px, 1vw, 10px);
             font-weight: 600;
             transition: var(--transition);
             box-shadow: 0 5px 15px rgba(255, 165, 2, 0.3);
             border: none;
             cursor: pointer;
-            font-size: 1rem;
+            font-size: clamp(0.9rem, 1.1vw, 1rem);
+            will-change: transform;
         }
         
         .downgrade-btn:hover {
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.05);
             box-shadow: 0 8px 25px rgba(255, 165, 2, 0.4);
         }
         
-        /* 加载动画 */
         .loading-section {
             text-align: center;
-            margin: 40px 0;
+            margin: clamp(30px, 4vw, 45px) 0;
             display: none;
         }
         
         .loading-spinner {
-            width: 80px;
-            height: 80px;
-            margin: 0 auto 20px;
+            width: clamp(50px, 8vw, 80px);
+            height: clamp(50px, 8vw, 80px);
+            margin: 0 auto clamp(15px, 2vw, 20px);
             position: relative;
         }
         
@@ -464,9 +512,10 @@
             position: absolute;
             width: 100%;
             height: 100%;
-            border: 8px solid transparent;
+            border: clamp(4px, 0.8vw, 6px) solid transparent;
             border-radius: 50%;
-            animation: spin 1.5s linear infinite;
+            animation: spin 1.2s linear infinite;
+            will-change: transform;
         }
         
         .spinner-ring:nth-child(1) {
@@ -476,38 +525,33 @@
         
         .spinner-ring:nth-child(2) {
             border-right-color: var(--accent);
-            animation-delay: 0.2s;
+            animation-delay: 0.15s;
         }
         
         .spinner-ring:nth-child(3) {
             border-bottom-color: var(--secondary);
-            animation-delay: 0.4s;
+            animation-delay: 0.3s;
         }
         
         @keyframes spin {
-            0% {
-                transform: rotate(0deg);
-            }
-            100% {
-                transform: rotate(360deg);
-            }
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
         }
         
         .loading-text {
-            font-size: 1.2rem;
+            font-size: clamp(1rem, 1.3vw, 1.2rem);
             color: var(--dark);
             font-weight: 500;
-            margin-bottom: 20px;
+            margin-bottom: clamp(15px, 2vw, 20px);
         }
         
-        /* 进度条 */
         .progress-container {
             width: 100%;
-            height: 12px;
+            height: clamp(8px, 1vw, 10px);
             background: var(--light);
-            border-radius: 6px;
+            border-radius: 5px;
             overflow: hidden;
-            margin: 20px 0;
+            margin: clamp(15px, 2vw, 20px) 0;
             display: none;
         }
         
@@ -515,10 +559,11 @@
             height: 100%;
             background: linear-gradient(90deg, var(--primary), var(--accent));
             width: 0%;
-            border-radius: 6px;
-            transition: width 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+            border-radius: 5px;
+            transition: width 0.4s cubic-bezier(0.4, 0, 0.2, 1);
             position: relative;
             overflow: hidden;
+            will-change: width;
         }
         
         .progress-bar::after {
@@ -532,29 +577,27 @@
                 transparent, 
                 rgba(255, 255, 255, 0.4), 
                 transparent);
-            animation: shimmer 2s infinite;
+            animation: shimmer 1.5s infinite;
         }
         
         @keyframes shimmer {
-            0% {
-                transform: translateX(-100%);
-            }
-            100% {
-                transform: translateX(100%);
-            }
+            0% { transform: translateX(-100%); }
+            100% { transform: translateX(100%); }
         }
         
-        /* 结果区域 */
         .result-section {
-            margin: 30px 0;
+            margin: clamp(25px, 3vw, 35px) 0;
             display: none;
-            animation: slideIn 0.6s cubic-bezier(0.175, 0.885, 0.32, 1.275);
+        }
+        
+        .result-section.show {
+            animation: slideIn 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
         }
         
         @keyframes slideIn {
             from {
                 opacity: 0;
-                transform: translateX(-20px);
+                transform: translateX(-15px);
             }
             to {
                 opacity: 1;
@@ -564,24 +607,30 @@
         
         .result-card {
             background: linear-gradient(135deg, var(--light), white);
-            border-radius: 12px;
-            padding: 25px;
+            border-radius: clamp(10px, 1.2vw, 12px);
+            padding: clamp(18px, 2.2vw, 24px);
             border-left: 5px solid var(--primary);
             box-shadow: 0 5px 20px rgba(0, 0, 0, 0.05);
+            will-change: transform;
+        }
+        
+        .result-card:hover {
+            transform: translateY(-3px);
+            box-shadow: 0 8px 30px rgba(0, 0, 0, 0.1);
         }
         
         .result-title {
-            font-size: 1.3rem;
+            font-size: clamp(1.1rem, 1.4vw, 1.3rem);
             font-weight: 600;
             color: var(--dark);
-            margin-bottom: 15px;
+            margin-bottom: clamp(10px, 1.2vw, 14px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: clamp(8px, 1vw, 10px);
         }
         
         .result-message {
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 1.2vw, 1.1rem);
             line-height: 1.6;
             color: var(--dark);
         }
@@ -598,42 +647,54 @@
             border-left-color: var(--warning);
         }
         
-        /* 下载链接 */
         .download-link {
             display: inline-block;
-            margin-top: 15px;
-            padding: 15px 30px;
+            margin-top: clamp(12px, 1.5vw, 15px);
+            padding: clamp(12px, 1.5vw, 15px) clamp(22px, 2.8vw, 30px);
             background: linear-gradient(45deg, var(--success), #1dd1a1);
             color: white;
             text-decoration: none;
-            border-radius: 10px;
+            border-radius: clamp(8px, 1vw, 10px);
             font-weight: 600;
             transition: var(--transition);
             box-shadow: 0 5px 15px rgba(46, 213, 115, 0.3);
+            will-change: transform;
         }
         
         .download-link:hover {
-            transform: translateY(-2px);
+            transform: translateY(-2px) scale(1.05);
             box-shadow: 0 8px 25px rgba(46, 213, 115, 0.4);
         }
         
-        /* 信息区域 */
+        .manual-download-hint {
+            display: block;
+            margin-top: clamp(10px, 1.2vw, 12px);
+            font-size: clamp(0.85rem, 1vw, 0.95rem);
+            color: var(--gray);
+            font-style: italic;
+        }
+        
         .info-section {
-            margin-top: 40px;
-            padding: 25px;
+            margin-top: clamp(30px, 4vw, 45px);
+            padding: clamp(18px, 2.2vw, 24px);
             background: linear-gradient(135deg, rgba(255, 71, 87, 0.05), rgba(55, 66, 250, 0.05));
-            border-radius: 12px;
+            border-radius: clamp(10px, 1.2vw, 12px);
             border: 1px solid rgba(255, 71, 87, 0.1);
+            will-change: transform;
+        }
+        
+        .info-section:hover {
+            transform: translateY(-2px);
         }
         
         .info-title {
-            font-size: 1.2rem;
+            font-size: clamp(1.1rem, 1.3vw, 1.2rem);
             font-weight: 600;
             color: var(--dark);
-            margin-bottom: 15px;
+            margin-bottom: clamp(12px, 1.5vw, 16px);
             display: flex;
             align-items: center;
-            gap: 10px;
+            gap: clamp(8px, 1vw, 10px);
         }
         
         .info-list {
@@ -641,12 +702,12 @@
         }
         
         .info-list li {
-            padding: 10px 0;
+            padding: clamp(8px, 1vw, 10px) 0;
             color: var(--dark);
             display: flex;
             align-items: center;
-            gap: 10px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            gap: clamp(8px, 1vw, 10px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.03);
         }
         
         .info-list li:last-child {
@@ -655,17 +716,39 @@
         
         .info-list i {
             color: var(--primary);
-            font-size: 1.1rem;
+            font-size: clamp(1rem, 1.2vw, 1.1rem);
+            flex-shrink: 0;
         }
         
-        /* 响应式设计 */
-        @media (max-width: 768px) {
-            .container {
-                padding: 25px;
+        /* 分隔线 */
+        hr {
+            margin: clamp(30px, 4vw, 45px) 0;
+            border: none;
+            border-top: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        
+        /* 版权信息 */
+        .copyright {
+            text-align: center;
+            padding: clamp(15px, 2vw, 20px) 0;
+            color: #666;
+            font-size: clamp(12px, 1vw, 14px);
+            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+        
+        /* ========== 设备特定优化 ========== */
+        
+        /* 手机设备（小于768px） */
+        @media (max-width: 767px) {
+            :root {
+                --container-max-width: 95vw;
+                --gap-size: 12px;
             }
             
-            .title {
-                font-size: 2.5rem;
+            body {
+                padding: 10px;
+                align-items: flex-start;
+                padding-top: 20px;
             }
             
             .button-group {
@@ -676,85 +759,243 @@
                 width: 100%;
             }
             
-            .random-popup {
-                width: 95%;
-                top: 20px;
+            .popup-container {
+                right: 10px;
+                top: 15px;
+                bottom: 75px;
+                width: calc(100% - 20px);
+                max-width: 300px;
+            }
+            
+            .daily-popup {
+                width: 100%;
+            }
+            
+            .info-list li {
+                flex-wrap: wrap;
+                line-height: 1.4;
+            }
+            
+            .title::after {
+                width: 60px;
             }
         }
         
-        /* 粒子效果 */
-        .particles {
-            position: fixed;
-            top: 0;
-            left: 0;
-            width: 100%;
-            height: 100%;
-            pointer-events: none;
-            z-index: -1;
+        /* 平板设备（768px - 1024px） */
+        @media (min-width: 768px) and (max-width: 1024px) {
+            :root {
+                --container-max-width: 90vw;
+                --title-font-size: clamp(2.2rem, 4vw, 2.8rem);
+            }
+            
+            body {
+                padding: 15px;
+            }
+            
+            .popup-container {
+                width: clamp(280px, 40vw, 320px);
+                right: clamp(15px, 2vw, 20px);
+            }
+            
+            .button-group {
+                flex-wrap: nowrap;
+            }
+            
+            .btn {
+                min-width: auto;
+            }
+            
+            .title::after {
+                width: 70px;
+            }
+            
+            .subtitle {
+                padding: 0 10px;
+            }
         }
         
-        .particle {
-            position: absolute;
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 50%;
-            animation: particle-float 20s infinite linear;
+        /* 电脑设备（大于1024px） */
+        @media (min-width: 1025px) {
+            :root {
+                --container-max-width: min(900px, 85vw);
+                --title-font-size: clamp(2.5rem, 4vw, 3.5rem);
+            }
+            
+            .container {
+                max-width: var(--container-max-width);
+            }
+            
+            .button-group {
+                justify-content: center;
+            }
+            
+            .btn {
+                flex: 0 1 auto;
+                min-width: 200px;
+            }
+            
+            .title::after {
+                width: 80px;
+            }
+            
+            /* 电脑端增加更多装饰元素，让界面更充实 */
+            .header::before {
+                content: '📚';
+                position: absolute;
+                top: -10px;
+                left: 10%;
+                font-size: 2.5rem;
+                opacity: 0.1;
+                transform: rotate(-15deg);
+            }
+            
+            .header::after {
+                content: '🔥';
+                position: absolute;
+                bottom: -10px;
+                right: 10%;
+                font-size: 2.5rem;
+                opacity: 0.1;
+                transform: rotate(15deg);
+            }
+            
+            .input-section::before {
+                content: '';
+                position: absolute;
+                left: -20px;
+                top: 50%;
+                transform: translateY(-50%);
+                width: 4px;
+                height: 80%;
+                background: linear-gradient(to bottom, var(--primary), var(--accent));
+                border-radius: 2px;
+                opacity: 0.3;
+            }
         }
         
-        @keyframes particle-float {
-            0% {
-                transform: translateY(100vh) rotate(0deg);
-                opacity: 0;
+        /* 超大屏幕设备（大于1440px） */
+        @media (min-width: 1440px) {
+            :root {
+                --container-max-width: 1000px;
+                --container-padding: 45px;
+                --title-font-size: 3.2rem;
             }
-            10% {
-                opacity: 1;
+            
+            body {
+                padding: 30px;
             }
-            90% {
-                opacity: 1;
+            
+            .info-section {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 30px;
             }
-            100% {
-                transform: translateY(-100px) rotate(360deg);
-                opacity: 0;
+            
+            .info-title {
+                grid-column: 1 / -1;
+            }
+            
+            .info-list {
+                display: contents;
+            }
+            
+            .info-list li:nth-child(odd) {
+                grid-column: 1;
+            }
+            
+            .info-list li:nth-child(even) {
+                grid-column: 2;
+            }
+            
+            .info-list li {
+                border-bottom: none;
+                padding: 12px 0;
+            }
+        }
+        
+        /* 横屏模式优化 */
+        @media (orientation: landscape) and (max-height: 600px) {
+            body {
+                padding: 10px;
+                align-items: flex-start;
+            }
+            
+            .container {
+                margin-top: 20px;
+                margin-bottom: 20px;
+            }
+            
+            .popup-container {
+                bottom: 80px;
+                max-height: 70vh;
+            }
+            
+            .button-group {
+                flex-direction: row;
+                flex-wrap: wrap;
+            }
+            
+            .btn {
+                flex: 1;
+                min-width: 120px;
+            }
+        }
+        
+        /* 暗色模式支持 */
+        @media (prefers-color-scheme: dark) {
+            :root {
+                --light: #2d3436;
+                --dark: #f8f9fa;
+                --gray: #a4b0be;
+            }
+            
+            .container {
+                background: rgba(45, 52, 54, 0.92);
+                border: 1px solid rgba(255, 255, 255, 0.1);
+            }
+            
+            .daily-popup {
+                background: rgba(45, 52, 54, 0.98);
+                color: var(--dark);
+            }
+            
+            .popup-content {
+                background: linear-gradient(135deg, rgba(45, 52, 54, 0.7), rgba(45, 52, 54, 0.9));
+            }
+            
+            .input-field {
+                background: rgba(255, 255, 255, 0.1);
+                color: var(--dark);
+                border-color: rgba(255, 255, 255, 0.2);
+            }
+            
+            .input-field:focus {
+                background: rgba(255, 255, 255, 0.15);
+            }
+            
+            .info-section {
+                background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(55, 66, 250, 0.1));
             }
         }
     </style>
 </head>
 <body>
-    <!-- 随机弹窗 -->
-    <div class="random-popup" id="randomPopup">
-        <div class="popup-header">
-            <div class="popup-title">
-                <i>💬</i>
-                每日一言
-            </div>
-            <button class="popup-close" onclick="closePopup()">×</button>
-        </div>
-        <div class="popup-content" id="popupContent">
-            正在加载中...
-        </div>
-        <div class="popup-timer">
-            <div class="timer-bar"></div>
-        </div>
-        <div class="timer-text">5秒后自动关闭</div>
-    </div>
+    <!-- 每日一言弹窗容器 -->
+    <div class="popup-container" id="popupContainer"></div>
     
-    <!-- 背景动画 -->
-    <div class="bg-animation">
-        <div class="floating-element"></div>
-        <div class="floating-element"></div>
-        <div class="floating-element"></div>
+    <!-- 固定侧边按钮 -->
+    <div class="daily-button" onclick="createDailyPopup()" title="点击查看每日一言">
+        💬
     </div>
-    
-    <!-- 粒子效果 -->
-    <div class="particles" id="particles"></div>
     
     <!-- 主容器 -->
-    <div class="container">
+    <div class="container" id="mainContainer">
         <div class="decoration"></div>
         
         <!-- 标题 -->
         <div class="header">
             <h1 class="title">🍅 番茄小说下载器</h1>
-            <p class="subtitle">极速下载 · 流畅体验 · 精美设计</p>
+            <p class="subtitle">极速下载 · 流畅体验 · 精美设计 · 全设备适配</p>
         </div>
         
         <!-- 输入区域 -->
@@ -817,9 +1058,12 @@
                     <i>⬇️</i>
                     手动下载文件
                 </a>
+                <span class="manual-download-hint" id="manualHint" style="display: none;">
+                    若下载没有自动开始，请点击上方手动下载按钮
+                </span>
                 <button class="downgrade-btn" id="downgradeBtn" style="display: none;" onclick="window.open('https://m.wandoujia.com/apps/8048758/history_v68132', '_blank')">
                     <i>⬇️</i>
-                    点击前往更换版本
+                    前往更换版本
                 </button>
             </div>
         </div>
@@ -845,148 +1089,460 @@
                 </li>
                 <li>
                     <i>⚠️</i>
-                    <span>如果浏览器阻止了自动下载，请手动点击下载链接</span>
+                    <span>如果浏览器阻止了自动下载，请点击手动下载按钮</span>
                 </li>
                 <li>
                     <i>💡</i>
                     <span>支持.txt格式，下载速度取决于网络状况</span>
                 </li>
+                <li>
+                    <i>📱</i>
+                    <span>完美适配手机、平板、电脑各种设备</span>
+                </li>
+                <li>
+                    <i>🌙</i>
+                    <span>自动支持深色模式，保护您的眼睛</span>
+                </li>
+                <li>
+                    <i>⚡</i>
+                    <span>优化性能，确保流畅的操作体验</span>
+                </li>
             </ul>
         </div>
 
         <!-- 分隔线 -->
-        <hr style="margin: 40px 0; border: none; border-top: 1px solid #e0e0e0;">
+        <hr>
         
         <!-- 版权信息 -->
-        <div style="text-align: center; padding: 20px 0; color: #666; font-size: 14px; font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;">
-            番茄小说下载器 by 是非酋啊awa
+        <div class="copyright">
+            番茄小说下载器 by 是非酋啊awa | 版本 2.0 | 全设备优化版
         </div>
     </div>
 
+    <!-- JavaScript 部分保持完全不变 -->
     <script>
-        // 存储随机消息的数组
-        let randomMessages = [];
+        // ========== 每日一言核心功能 ==========
+        // 内置默认消息
+        const DAILY_MESSAGES = [
+            "Ciallo ～(∠・ω <) ⌒⭐️",
+            "你怎么这么自私…呸！",
+            "鸡汤来喽…哈哈…",
+            "欸，wc牢镜怎么这么坏（",
+            "你个老六我真的服了……",
+            "田文镜，我CNM！",
+            "巴巴尔你这个狗杂种……",
+            "唱，跳，rap，篮球……",
+            "我是不是给你脸给多了！",
+            "赐你天谴！",
+            "转圈圈～",
+            "所以我出手了……",
+            "我是…终将升起的烈阳！",
+            "剑出，山顷！",
+            "少看看小说，多看看世界……",
+            "世界那么大，我想去看看",
+            "吃个桃桃～",
+            "仙路尽头谁为峰，一见无始道成空……",
+            "落魄谷中寒风吹，春秋蝉鸣少年归",
+            "荡魂山处石人泪，定仙游走魔向北",
+            "逆流河上万仙退，爱情不敌坚持泪",
+            "宿命天成命中败，仙尊悔而我不悔",
+            "早岁已知世事艰，仍许飞鸿荡云间",
+            "一路寒风身如絮，命海沉浮客独行",
+            "千磨万击心铸铁，殚精竭虑铸一剑",
+            "今朝剑指叠云处，炼蛊炼人还炼天",
+            "我只想打死两位…或者…被两位给打死…",
+            "第一日，赐以真实😞",
+            "第二日，赐以历法😔",
+            "第三日，赐以言语😟",
+            "第四日，赐以价值😣",
+            "第五日，赐以规则😖",
+            "第六日，赐以意义😫",
+            "第七日，赐以尊严😩……即将见证，太初有为！😆",
+            "生命因何而沉睡……",
+            "以『愛』之名，8秒24肘！",
+            "吴荔橙？果粒橙！",
+            "Sakura最好了……",
+            "愿此行，终抵群星！"
+        ];
         
-        // 从文件加载随机消息
-        async function loadRandomMessages() {
-            try {
-                const response = await fetch('/random_messages.txt');
-                if (!response.ok) throw new Error('文件加载失败');
+        // 存储活动的弹窗
+        let activePopups = [];
+        // 最大弹窗数量限制
+        const MAX_POPUPS = 8;
+        // 弹窗计数器（用于生成唯一ID）
+        let popupCounter = 0;
+        // 防止重复初始化的标志
+        let initialPopupShown = false;
+        
+        // 清理过时弹窗（确保不会残留）
+        function cleanupStalePopups() {
+            const currentTime = Date.now();
+            const maxAge = 10000; // 10秒最大寿命
+            
+            for (let i = activePopups.length - 1; i >= 0; i--) {
+                const popupInfo = activePopups[i];
+                const popupElement = document.getElementById(popupInfo.id);
                 
-                const text = await response.text();
-                // 按行分割，过滤空行
-                randomMessages = text.split('\n')
-                    .map(line => line.trim())
-                    .filter(line => line.length > 0);
-                
-                if (randomMessages.length > 0) {
-                    showRandomPopup();
+                // 如果弹窗元素不存在，清理记录
+                if (!popupElement) {
+                    // 清除定时器
+                    if (popupInfo.timer) clearTimeout(popupInfo.timer);
+                    if (popupInfo.interval) clearInterval(popupInfo.interval);
+                    activePopups.splice(i, 1);
+                    continue;
                 }
-            } catch (error) {
-                console.warn('无法加载随机消息文件:', error);
-                // 使用默认消息
-                randomMessages = [
-                    "Ciallo ～(∠・ω <) ⌒⭐️",
-                    "你怎么这么自私…呸！",
-                    "鸡汤来喽…哈哈…",
-                    "欸，wc牢镜怎么这么坏（",
-                    "你个老六我真的服了……",
-                    "田文镜，我CNM！",
-                    "巴巴尔你这个狗杂种……",
-                    "唱，跳，rap，篮球……",
-                    "我是不是给你脸给多了！",
-                    "赐你天谴！",
-                    "转圈圈～",
-                    "所以我出手了……",
-                    "我是…终将升起的烈阳！",
-                    "剑出，山顷！",
-                    "少看看小说，多看看世界……",
-                    "世界那么大，我想去看看",
-                    "吃个桃桃～",
-                    "仙路尽头谁为峰，一见无始道成空……",
-                    "落魄谷中寒风吹，春秋蝉鸣少年归",
-                    "荡魂山处石人泪，定仙游走魔向北",
-                    "逆流河上万仙退，爱情不敌坚持泪",
-                    "宿命天成命中败，仙尊悔而我不悔",
-                    "早岁已知世事艰，仍许飞鸿荡云间",
-                    "一路寒风身如絮，命海沉浮客独行",
-                    "千磨万击心铸铁，殚精竭虑铸一剑",
-                    "今朝剑指叠云处，炼蛊炼人还炼天",
-                    "我只想打死两位…或者…被两位给打死…",
-                    "第一日，赐以真实😞",
-                    "第二日，赐以历法😔",
-                    "第三日，赐以言语😟",
-                    "第四日，赐以价值😣",
-                    "第五日，赐以规则😖",
-                    "第六日，赐以意义😫",
-                    "第七日，赐以尊严😩……即将见证，太初有为！😆",
-                    "生命因何而沉睡……",
-                    "以『愛』之名，8秒24肘！",
-                    "吴荔橙？果粒橙！",
-                    "Sakura最好了……",
-                    "愿此行，终抵群星！"
-                ];
-                showRandomPopup();
+                
+                // 如果弹窗存在但已经超时，强制关闭
+                if (currentTime - popupInfo.createdTime > maxAge) {
+                    forceClosePopup(popupInfo.id, i);
+                }
             }
         }
         
-        // 显示随机弹窗
-        function showRandomPopup() {
-            if (randomMessages.length === 0) return;
+        // 强制关闭弹窗（用于清理残留弹窗）
+        function forceClosePopup(popupId, index = -1) {
+            const popupElement = document.getElementById(popupId);
+            if (!popupElement) return;
             
-            const popup = document.getElementById('randomPopup');
-            const content = document.getElementById('popupContent');
+            // 清除可能的定时器
+            let popupIndex = index;
+            if (popupIndex === -1) {
+                popupIndex = activePopups.findIndex(p => p.id === popupId);
+            }
             
-            // 随机选择一条消息
-            const randomIndex = Math.floor(Math.random() * randomMessages.length);
-            content.textContent = randomMessages[randomIndex];
+            if (popupIndex !== -1) {
+                const popupInfo = activePopups[popupIndex];
+                if (popupInfo) {
+                    if (popupInfo.timer) clearTimeout(popupInfo.timer);
+                    if (popupInfo.interval) clearInterval(popupInfo.interval);
+                }
+            }
             
-            // 显示弹窗
-            popup.style.display = 'block';
+            // 直接移除元素
+            if (popupElement.parentNode) {
+                popupElement.parentNode.removeChild(popupElement);
+            }
             
-            // 5秒后自动关闭
-            setTimeout(() => {
-                closePopup();
-            }, 5000);
+            // 从数组中移除记录
+            if (popupIndex !== -1) {
+                activePopups.splice(popupIndex, 1);
+            }
         }
         
-        // 关闭弹窗
-        function closePopup() {
-            const popup = document.getElementById('randomPopup');
-            popup.style.display = 'none';
+        // 关闭最早的一个弹窗
+        function closeOldestPopup() {
+            if (activePopups.length === 0) return;
+            
+            // 找到最旧的弹窗
+            const oldestPopup = activePopups.reduce((oldest, current) => {
+                return current.createdTime < oldest.createdTime ? current : oldest;
+            });
+            
+            if (oldestPopup) {
+                closeDailyPopup(oldestPopup.id);
+            }
         }
+        
+        // 加载每日一言
+        async function loadDailyMessage() {
+            try {
+                // 尝试从文件加载
+                const response = await fetch('/每日一言/每日一言.txt');
+                if (!response.ok) throw new Error('文件加载失败');
+                
+                const text = await response.text();
+                const lines = text.split('\n')
+                    .map(line => line.trim())
+                    .filter(line => line.length > 0);
+                
+                if (lines.length > 0) {
+                    // 返回文件中的随机消息
+                    return lines[Math.floor(Math.random() * lines.length)];
+                }
+            } catch (error) {
+                // 文件加载失败，使用默认消息
+                console.log('使用内置每日一言消息');
+            }
+            
+            // 返回默认消息
+            return DAILY_MESSAGES[Math.floor(Math.random() * DAILY_MESSAGES.length)];
+        }
+        
+        // 创建每日一言弹窗
+        async function createDailyPopup(message = null) {
+            // 清理可能残留的弹窗
+            cleanupStalePopups();
+            
+            // 限制最大弹窗数量
+            if (activePopups.length >= MAX_POPUPS) {
+                // 自动关闭最早的一个弹窗
+                closeOldestPopup();
+            }
+            
+            // 获取消息
+            const popupMessage = message || await loadDailyMessage();
+            
+            // 创建弹窗ID（使用计数器确保唯一性）
+            popupCounter++;
+            const popupId = 'daily-popup-' + popupCounter + '-' + Date.now();
+            
+            // 创建弹窗元素
+            const popup = document.createElement('div');
+            popup.className = 'daily-popup';
+            popup.id = popupId;
+            popup.dataset.popupId = popupId;
+            popup.innerHTML = `
+                <div class="popup-header">
+                    <div class="popup-title">
+                        <i>💬</i>
+                        每日一言
+                    </div>
+                    <button class="popup-close" data-popup-id="${popupId}">×</button>
+                </div>
+                <div class="popup-content">
+                    ${popupMessage}
+                </div>
+                <div class="popup-timer-container">
+                    <div class="popup-timer">
+                        <div class="timer-bar" id="timer-bar-${popupId}" style="width: 100%"></div>
+                    </div>
+                    <div class="timer-text">
+                        <i>⏱️</i>
+                        <span class="time-number" id="time-number-${popupId}">5</span>秒后关闭
+                    </div>
+                </div>
+            `;
+            
+            // 添加到容器
+            const container = document.getElementById('popupContainer');
+            if (container) {
+                container.appendChild(popup);
+                
+                // 滚动到最新消息
+                setTimeout(() => {
+                    container.scrollTop = container.scrollHeight;
+                }, 100);
+            }
+            
+            // 存储弹窗信息
+            const popupInfo = {
+                id: popupId,
+                element: popup,
+                timer: null,
+                interval: null,
+                startTime: Date.now(),
+                createdTime: Date.now(),
+                isClosing: false
+            };
+            
+            activePopups.push(popupInfo);
+            
+            // 开始倒计时
+            startSmoothCountdown(popupInfo);
+            
+            return popupId;
+        }
+        
+        // 开始平滑倒计时
+        function startSmoothCountdown(popupInfo) {
+            const timerBar = document.getElementById(`timer-bar-${popupInfo.id}`);
+            const timeNumber = document.getElementById(`time-number-${popupInfo.id}`);
+            
+            if (!timerBar || !timeNumber) {
+                // 如果元素不存在，清理这个弹窗
+                const index = activePopups.findIndex(p => p.id === popupInfo.id);
+                if (index !== -1) {
+                    activePopups.splice(index, 1);
+                }
+                return;
+            }
+            
+            // 清除之前的定时器
+            if (popupInfo.interval) {
+                clearInterval(popupInfo.interval);
+            }
+            if (popupInfo.timer) {
+                clearTimeout(popupInfo.timer);
+            }
+            
+            const duration = 5000; // 5秒 = 5000毫秒
+            const startTime = Date.now();
+            
+            // 立即更新一次显示
+            updateTimerDisplay(popupInfo.id, duration, duration);
+            
+            // 每100毫秒更新一次（比每秒更新更平滑）
+            popupInfo.interval = setInterval(() => {
+                // 检查弹窗是否还在数组和DOM中
+                const popupIndex = activePopups.findIndex(p => p.id === popupInfo.id);
+                const popupElement = document.getElementById(popupInfo.id);
+                
+                if (popupIndex === -1 || !popupElement || popupInfo.isClosing) {
+                    clearInterval(popupInfo.interval);
+                    return;
+                }
+                
+                const elapsed = Date.now() - startTime;
+                const remaining = Math.max(0, duration - elapsed);
+                
+                // 更新显示
+                updateTimerDisplay(popupInfo.id, remaining, duration);
+                
+                // 倒计时结束
+                if (remaining <= 0) {
+                    clearInterval(popupInfo.interval);
+                    // 确保进度条完全归零
+                    if (timerBar) {
+                        timerBar.style.width = '0%';
+                    }
+                    // 关闭弹窗
+                    closeDailyPopup(popupInfo.id);
+                }
+            }, 100);
+            
+            // 设置5秒后自动关闭的备用定时器
+            popupInfo.timer = setTimeout(() => {
+                if (timerBar) {
+                    timerBar.style.width = '0%';
+                }
+                closeDailyPopup(popupInfo.id);
+            }, duration);
+        }
+        
+        // 更新倒计时显示
+        function updateTimerDisplay(popupId, remainingMs, totalMs) {
+            const timerBar = document.getElementById(`timer-bar-${popupId}`);
+            const timeNumber = document.getElementById(`time-number-${popupId}`);
+            
+            if (!timerBar || !timeNumber) return;
+            
+            // 确保剩余时间不会变成负数
+            const safeRemainingMs = Math.max(0, remainingMs);
+            
+            // 计算百分比和剩余秒数
+            const percentage = (safeRemainingMs / totalMs) * 100;
+            const remainingSeconds = Math.ceil(safeRemainingMs / 1000);
+            
+            // 更新进度条（确保不会超过100%或低于0%）
+            timerBar.style.width = Math.max(0, Math.min(100, percentage)) + '%';
+            
+            // 更新数字显示（确保不会显示负数）
+            timeNumber.textContent = Math.max(0, remainingSeconds);
+        }
+        
+        // 关闭每日一言弹窗
+        function closeDailyPopup(popupId) {
+            const popupIndex = activePopups.findIndex(p => p.id === popupId);
+            if (popupIndex === -1) return;
+            
+            const popupInfo = activePopups[popupIndex];
+            
+            // 防止重复关闭
+            if (popupInfo.isClosing) return;
+            popupInfo.isClosing = true;
+            
+            const popupElement = document.getElementById(popupId);
+            
+            // 清除定时器
+            if (popupInfo.timer) {
+                clearTimeout(popupInfo.timer);
+                popupInfo.timer = null;
+            }
+            if (popupInfo.interval) {
+                clearInterval(popupInfo.interval);
+                popupInfo.interval = null;
+            }
+            
+            // 确保进度条完全归零
+            const timerBar = document.getElementById(`timer-bar-${popupId}`);
+            if (timerBar) {
+                timerBar.style.width = '0%';
+            }
+            
+            if (!popupElement) {
+                // 如果元素不存在，直接从数组中移除
+                activePopups.splice(popupIndex, 1);
+                return;
+            }
+            
+            // 添加关闭动画
+            popupElement.classList.add('closing');
+            
+            // 动画完成后移除元素
+            setTimeout(() => {
+                if (popupElement.parentNode) {
+                    try {
+                        popupElement.parentNode.removeChild(popupElement);
+                    } catch (e) {
+                        console.log('弹窗移除失败，可能已被其他操作移除');
+                    }
+                }
+                
+                // 从数组中移除
+                const finalIndex = activePopups.findIndex(p => p.id === popupId);
+                if (finalIndex !== -1) {
+                    activePopups.splice(finalIndex, 1);
+                }
+            }, 400);
+        }
+        
+        // 增强关闭按钮的事件处理
+        document.addEventListener('click', function(e) {
+            const closeButton = e.target.closest('.popup-close');
+            if (closeButton) {
+                const popupId = closeButton.dataset.popupId;
+                if (popupId) {
+                    closeDailyPopup(popupId);
+                    e.stopPropagation();
+                }
+            }
+        });
+        
+        // 页面卸载时清理所有定时器
+        window.addEventListener('beforeunload', function() {
+            activePopups.forEach(popupInfo => {
+                if (popupInfo.timer) clearTimeout(popupInfo.timer);
+                if (popupInfo.interval) clearInterval(popupInfo.interval);
+            });
+            activePopups = [];
+        });
+        
+        // 显示初始每日一言（安全版，防止重复显示）
+        async function showInitialDailyMessage() {
+            if (initialPopupShown) return;
+            initialPopupShown = true;
+            
+            const initialMessage = await loadDailyMessage();
+            createDailyPopup(initialMessage);
+        }
+        
+        // ========== 其他功能保持不变 ==========
         
         // 提取小说ID函数
         function extractBookId(input) {
             if (!input || input.trim() === '') return null;
             
             let processedInput = input.trim();
-            
-            // 去除中文文本（如小说标题）
             processedInput = processedInput.replace(/[\u4e00-\u9fa5]/g, '');
             
-            // 方案1：从URL参数中提取book_id
             const urlPattern = /book_id=(\d+)/;
             const urlMatch = processedInput.match(urlPattern);
             if (urlMatch && urlMatch[1]) {
                 return urlMatch[1];
             }
             
-            // 方案2：匹配长数字ID（15-20位）
             const longIdPattern = /\d{15,20}/;
             const longIdMatch = processedInput.match(longIdPattern);
             if (longIdMatch) {
                 return longIdMatch[0];
             }
             
-            // 方案3：匹配纯数字ID
             const pureNumberPattern = /^(\d+)$/;
             const pureNumberMatch = processedInput.match(pureNumberPattern);
             if (pureNumberMatch) {
                 return pureNumberMatch[1];
             }
             
-            // 方案4：尝试从常见URL格式中提取
             const commonPatterns = [
                 /id=(\d+)/,
                 /novel\/(\d+)/,
@@ -1003,89 +1559,36 @@
             
             return null;
         }
-
-        // 创建粒子效果
-        function createParticles() {
-            const particlesContainer = document.getElementById('particles');
-            const particleCount = 30;
-            
-            for (let i = 0; i < particleCount; i++) {
-                const particle = document.createElement('div');
-                particle.className = 'particle';
-                
-                // 随机大小
-                const size = Math.random() * 10 + 5;
-                particle.style.width = `${size}px`;
-                particle.style.height = `${size}px`;
-                
-                // 随机位置
-                particle.style.left = `${Math.random() * 100}%`;
-                
-                // 随机动画延迟和持续时间
-                const delay = Math.random() * 20;
-                const duration = Math.random() * 10 + 15;
-                particle.style.animationDelay = `${delay}s`;
-                particle.style.animationDuration = `${duration}s`;
-                
-                // 随机颜色
-                const colors = [
-                    'rgba(255, 71, 87, 0.3)',
-                    'rgba(255, 159, 67, 0.3)',
-                    'rgba(55, 66, 250, 0.3)',
-                    'rgba(46, 213, 115, 0.3)'
-                ];
-                particle.style.background = colors[Math.floor(Math.random() * colors.length)];
-                
-                particlesContainer.appendChild(particle);
-            }
-        }
         
         // 显示示例
         function showExample() {
             const bookIdInput = document.getElementById('bookId');
-            // 设置示例分享链接
             bookIdInput.value = '抽象职校生存手册https://changdunovel.com/wap/share-v2.html?aid=1967&book_id=7580453443874081816&share_type=0&share_code=MeVoWuNyA1m8aItA4vEDxNQTJGdwexgxH8bTBCJ5Vd4%3D&uid=58de3bf8453b70260cb293a6c989a99c&share_id=usv247aO-6mWiXmQ_7vqC-2rfGjPfIBKVCwQi5EFAIg%3D&use_open_launch_app=1&user_id=39ddfd798d752408537a128386f52a74&did=58de3bf8453b70260cb293a6c989a99c&entrance=book_reading_share_button&zlink=https%3A%2F%2Fzlink.fqnovel.com%2FdhVGe&gd_label=click_schema_lhft_share_novelapp_android&source_channel=system&share_channel=system&type=book&share_timestamp=1767153829&report_params=%7B%22entrance%22%3A%22book_reading_share_button%22%2C%22type%22%3A%22book_reading%22%2C%22content_type%22%3A%22novel%22%2C%22content_id%22%3A%227580680290960425496%22%2C%22content_id_key%22%3A%22chapter_id%22%2C%22share_timestamp%22%3A%221767153829%22%7D&share_token=ecfe7535-e785-4dfd-8e8f-8938f89955b9';
             
-            // 添加输入动画
             bookIdInput.style.animation = 'none';
             setTimeout(() => {
                 bookIdInput.style.animation = 'fadeIn 0.5s ease';
             }, 10);
             
-            // 显示提示
             showResult('示例分享链接已填入，系统将自动提取小说ID', 'info');
         }
         
         // 开始下载
         function startDownload() {
             const userInput = document.getElementById('bookId').value.trim();
-            const downloadBtn = document.getElementById('downloadBtn');
-            const loadingSection = document.getElementById('loadingSection');
-            const resultSection = document.getElementById('resultSection');
-            const progressBar = document.getElementById('progressBar');
-            const loadingText = document.getElementById('loadingText');
-            
-            // 提取小说ID
             const bookId = extractBookId(userInput);
             
-            // 验证输入
             if (!bookId) {
-                // 显示降级版本提示
                 showDowngradePrompt();
                 return;
             }
             
-            // 如果是纯ID输入（直接输入ID），需要手动点击下载
-            // 如果是分享链接（包含其他内容），自动下载
             const isPureId = /^\d+$/.test(userInput.trim());
             
-            // 显示提取的ID信息
             if (userInput !== bookId) {
                 showResult(`已从输入中提取小说ID：${bookId}，开始自动下载...`, 'info');
                 
-                // 如果是分享链接，自动开始下载流程
                 if (!isPureId) {
-                    // 延迟一下，让用户看到提示信息
                     setTimeout(() => {
                         executeDownload(bookId, userInput);
                     }, 800);
@@ -1093,7 +1596,6 @@
                 }
             }
             
-            // 纯ID输入，执行下载
             executeDownload(bookId, userInput);
         }
         
@@ -1103,51 +1605,60 @@
             const loadingSection = document.getElementById('loadingSection');
             const resultSection = document.getElementById('resultSection');
             
-            // 重置界面
             resetUI();
             
-            // 禁用按钮
             downloadBtn.disabled = true;
             downloadBtn.innerHTML = '<i>⏳</i><span>处理中...</span>';
             
-            // 显示加载动画
             loadingSection.style.display = 'block';
             resultSection.style.display = 'none';
             
-            // 构建下载URL
             const downloadUrl = `https://rose.reading.xingmian.icu/api/content?tab=下载&book_id=${bookId}&download=1`;
             const fileName = `番茄小说-${bookId}.txt`;
             
-            // 更新进度
             updateProgress(10, '正在验证ID...');
             
-            // 模拟下载过程
             simulateDownloadProcess(() => {
-                // 完成进度
                 updateProgress(100, '下载准备完成！');
                 
-                // 显示结果
                 setTimeout(() => {
                     loadingSection.style.display = 'none';
                     resultSection.style.display = 'block';
+                    resultSection.classList.add('show');
                     downloadBtn.disabled = false;
                     downloadBtn.innerHTML = '<i>🚀</i><span>开始下载</span>';
                     
-                    // 显示下载链接
                     const downloadLink = document.getElementById('downloadLink');
+                    const manualHint = document.getElementById('manualHint');
                     downloadLink.href = downloadUrl;
                     downloadLink.download = fileName;
                     downloadLink.style.display = 'inline-block';
+                    manualHint.style.display = 'block';
                     
-                    // 隐藏降级按钮
                     document.getElementById('downgradeBtn').style.display = 'none';
                     
-                    // 尝试自动下载
                     attemptAutoDownload(downloadUrl, fileName);
                     
-                    showResult(`小说《ID: ${bookId}》下载准备完成！`, 'success');
+                    showDownloadSuccess(bookId);
                 }, 800);
             });
+        }
+        
+        // 显示下载成功消息
+        function showDownloadSuccess(bookId) {
+            const resultCard = document.getElementById('resultCard');
+            const resultTitle = document.getElementById('resultTitle');
+            const resultMessage = document.getElementById('resultMessage');
+            const resultIcon = document.getElementById('resultIcon');
+            const resultSection = document.getElementById('resultSection');
+            
+            resultCard.className = 'result-card result-success';
+            resultIcon.textContent = '✅';
+            resultTitle.textContent = '下载准备完成';
+            resultMessage.textContent = `小说《ID: ${bookId}》下载准备完成！`;
+            
+            resultSection.style.display = 'block';
+            resultSection.classList.add('show');
         }
         
         // 显示降级版本提示
@@ -1159,19 +1670,19 @@
             const resultSection = document.getElementById('resultSection');
             const downloadLink = document.getElementById('downloadLink');
             const downgradeBtn = document.getElementById('downgradeBtn');
+            const manualHint = document.getElementById('manualHint');
             
-            // 设置警告样式
             resultCard.className = 'result-card result-warning';
             resultIcon.textContent = '⚠️';
-            resultTitle.textContent = '没有检测到ID哦(ó﹏ò｡)';
-            resultMessage.innerHTML = '请用户您降级"番茄免费小说"的版本<br><br>↓↓↓点击下方前往更换版本↓↓↓';
+            resultTitle.textContent = '没有检测到ID哦';
+            resultMessage.innerHTML = '<span style="font-size: 0.9em; color: var(--gray); display: block; margin-bottom: 10px;">(ó﹏ò｡)</span>请用户您降级<br><span style="color: var(--primary); font-weight: bold; font-size: 1.2em;">番茄免费小说</span>';
             
-            // 隐藏下载链接，显示降级按钮
             downloadLink.style.display = 'none';
+            manualHint.style.display = 'none';
             downgradeBtn.style.display = 'inline-block';
             
-            // 显示结果区域
             resultSection.style.display = 'block';
+            resultSection.classList.add('show');
         }
         
         // 模拟下载过程
@@ -1200,7 +1711,9 @@
                     }
                 } else {
                     clearInterval(interval);
-                    onComplete();
+                    setTimeout(() => {
+                        onComplete();
+                    }, 100);
                 }
             }, 100);
         }
@@ -1213,7 +1726,6 @@
             progressBar.style.width = `${percent}%`;
             loadingText.textContent = text;
             
-            // 显示进度容器
             document.getElementById('progressContainer').style.display = 'block';
         }
         
@@ -1221,28 +1733,30 @@
         function attemptAutoDownload(url, filename) {
             setTimeout(() => {
                 try {
-                    // 创建隐藏的下载链接
                     const link = document.createElement('a');
                     link.href = url;
                     link.download = filename;
                     link.style.display = 'none';
                     document.body.appendChild(link);
                     
-                    // 尝试点击
                     link.click();
                     
-                    // 清理
                     setTimeout(() => {
                         document.body.removeChild(link);
                     }, 1000);
                     
-                    // 检查是否下载成功
                     setTimeout(() => {
-                        showResult('自动下载已触发，请检查下载文件夹', 'success');
+                        const resultMessage = document.getElementById('resultMessage');
+                        if (resultMessage) {
+                            resultMessage.innerHTML = `小说《ID: ${filename.match(/\d+/)[0]}》下载准备完成！<br><small style="color: var(--success);">自动下载已触发，请检查下载文件夹</small>`;
+                        }
                     }, 1500);
                     
                 } catch (error) {
-                    showResult('自动下载被阻止，请手动点击下载链接', 'warning');
+                    const resultMessage = document.getElementById('resultMessage');
+                    if (resultMessage) {
+                        resultMessage.innerHTML = `小说《ID: ${filename.match(/\d+/)[0]}》下载准备完成！<br><small style="color: var(--warning);">自动下载被阻止，请点击上方手动下载按钮</small>`;
+                    }
                 }
             }, 500);
         }
@@ -1256,8 +1770,8 @@
             const resultSection = document.getElementById('resultSection');
             const downloadLink = document.getElementById('downloadLink');
             const downgradeBtn = document.getElementById('downgradeBtn');
+            const manualHint = document.getElementById('manualHint');
             
-            // 设置类型样式
             resultCard.className = 'result-card';
             switch (type) {
                 case 'success':
@@ -1283,15 +1797,18 @@
             
             resultMessage.textContent = message;
             resultSection.style.display = 'block';
+            resultSection.classList.add('show');
             
-            // 隐藏降级按钮，显示下载链接
             downgradeBtn.style.display = 'none';
             downloadLink.style.display = 'none';
+            manualHint.style.display = 'none';
             
-            // 自动隐藏信息提示
             if (type === 'info') {
                 setTimeout(() => {
-                    resultSection.style.display = 'none';
+                    resultSection.classList.remove('show');
+                    setTimeout(() => {
+                        resultSection.style.display = 'none';
+                    }, 400);
                 }, 3000);
             }
         }
@@ -1299,10 +1816,13 @@
         // 重置界面
         function resetUI() {
             document.getElementById('loadingSection').style.display = 'none';
-            document.getElementById('resultSection').style.display = 'none';
+            const resultSection = document.getElementById('resultSection');
+            resultSection.style.display = 'none';
+            resultSection.classList.remove('show');
             document.getElementById('progressBar').style.width = '0%';
             document.getElementById('downloadLink').style.display = 'none';
             document.getElementById('downgradeBtn').style.display = 'none';
+            document.getElementById('manualHint').style.display = 'none';
         }
         
         // 输入框回车触发下载
@@ -1312,55 +1832,28 @@
             }
         });
         
-        // 实时显示提取的ID和自动下载检测
-        document.getElementById('bookId').addEventListener('input', function(e) {
-            const userInput = this.value.trim();
-            if (!userInput) return;
-            
-            const extractedId = extractBookId(userInput);
-            if (extractedId) {
-                // 在输入框下方显示提取结果
-                const hintElement = document.querySelector('.input-hint');
-                if (hintElement) {
-                    const isPureId = /^\d+$/.test(userInput.trim());
-                    
-                    if (extractedId !== userInput) {
-                        hintElement.innerHTML = `<i>🔍</i>已识别到小说ID：${extractedId} - 输入完成后自动下载`;
-                        
-                        // 如果是分享链接（非纯ID），延迟后自动开始下载
-                        if (!isPureId) {
-                            // 使用防抖，等待用户输入完成
-                            clearTimeout(window.autoDownloadTimeout);
-                            window.autoDownloadTimeout = setTimeout(() => {
-                                if (extractBookId(this.value) === extractedId) {
-                                    showResult(`已自动检测到分享链接，开始下载ID：${extractedId}`, 'info');
-                                    setTimeout(() => {
-                                        executeDownload(extractedId, this.value);
-                                    }, 1000);
-                                }
-                            }, 1500);
-                        }
-                    } else {
-                        hintElement.innerHTML = `<i>🔍</i>已识别到小说ID：${extractedId} - 请点击下载按钮`;
-                    }
-                    
-                    setTimeout(() => {
-                        hintElement.innerHTML = '<i>💡</i>支持粘贴完整分享链接，系统自动提取小说ID';
-                    }, 5000);
-                }
-            } else {
-                // 清除之前的定时器
-                clearTimeout(window.autoDownloadTimeout);
-            }
-        });
-        
         // 页面加载完成后的初始化
-        document.addEventListener('DOMContentLoaded', function() {
-            // 创建粒子效果
-            createParticles();
+        document.addEventListener('DOMContentLoaded', async function() {
+            console.log('页面加载完成，开始初始化...');
             
-            // 加载随机消息
-            loadRandomMessages();
+            // 显示主容器
+            const container = document.getElementById('mainContainer');
+            container.classList.add('loaded');
+            
+            // 检测设备类型
+            const isMobile = /iPhone|iPad|iPod|Android/i.test(navigator.userAgent);
+            const isTablet = /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent) || 
+                           (window.innerWidth >= 768 && window.innerWidth <= 1024);
+            
+            console.log(`设备检测: ${isMobile ? '手机' : isTablet ? '平板' : '电脑'}`);
+            
+            // 500ms后显示初始每日一言（安全版）
+            setTimeout(() => {
+                showInitialDailyMessage();
+            }, 500);
+            
+            // 滚动到顶部
+            window.scrollTo(0, 0);
             
             // 添加输入框焦点效果
             const inputField = document.getElementById('bookId');
@@ -1374,7 +1867,8 @@
             
             // 显示欢迎信息
             setTimeout(() => {
-                showResult('欢迎使用番茄小说下载器！输入小说ID或分享链接开始下载吧！', 'info');
+                const deviceType = isMobile ? '手机' : isTablet ? '平板' : '电脑';
+                showResult(`欢迎使用番茄小说下载器！当前设备：${deviceType}，已自动适配最佳显示效果！`, 'info');
             }, 1000);
             
             // 添加按钮点击动画
@@ -1387,36 +1881,33 @@
                 });
             });
             
-            // 添加卡片悬停效果
-            const cards = document.querySelectorAll('.result-card, .info-section');
-            cards.forEach(card => {
-                card.addEventListener('mouseenter', function() {
-                    this.style.transform = 'translateY(-5px)';
-                    this.style.boxShadow = '0 15px 40px rgba(0, 0, 0, 0.1)';
-                });
-                
-                card.addEventListener('mouseleave', function() {
-                    this.style.transform = 'translateY(0)';
-                    this.style.boxShadow = '';
-                });
+            // 添加定期清理任务（每30秒清理一次可能残留的弹窗）
+            setInterval(cleanupStalePopups, 30000);
+            
+            // 监听窗口大小变化，实时适配
+            let resizeTimer;
+            window.addEventListener('resize', function() {
+                clearTimeout(resizeTimer);
+                resizeTimer = setTimeout(function() {
+                    // 在窗口调整后更新布局
+                    const container = document.getElementById('mainContainer');
+                    container.style.transform = 'scale(0.99)';
+                    setTimeout(() => {
+                        container.style.transform = 'scale(1)';
+                    }, 100);
+                }, 200);
             });
         });
         
-        // 添加页面滚动动画
-        let lastScrollTop = 0;
-        window.addEventListener('scroll', function() {
-            const st = window.pageYOffset || document.documentElement.scrollTop;
-            const container = document.querySelector('.container');
-            
-            if (st > lastScrollTop) {
-                // 向下滚动
-                container.style.transform = `translateY(${Math.min(st * 0.1, 20)}px)`;
-            } else {
-                // 向上滚动
-                container.style.transform = `translateY(${Math.min(st * 0.05, 10)}px)`;
+        // 修复页面位置问题
+        window.addEventListener('load', function() {
+            if (window.scrollY > 0) {
+                window.scrollTo(0, 0);
             }
             
-            lastScrollTop = st <= 0 ? 0 : st;
+            setTimeout(() => {
+                window.scrollTo(0, 0);
+            }, 100);
         });
     </script>
 </body>
