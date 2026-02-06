@@ -1139,7 +1139,7 @@
         </div>
     </div>
 
-    <!-- JavaScript 部分保持不变 -->
+    <!-- JavaScript部分 - 已修复自动下载功能 -->
     <script>
         // ========== 每日一言核心功能 ==========
         // 内置默认消息
@@ -1536,6 +1536,47 @@
             createDailyPopup(initialMessage);
         }
         
+        // ========== 自动检测和下载功能 ==========
+        
+        // 防抖函数 - 防止频繁触发
+        function debounce(func, wait) {
+            let timeout;
+            return function executedFunction(...args) {
+                const later = () => {
+                    clearTimeout(timeout);
+                    func(...args);
+                };
+                clearTimeout(timeout);
+                timeout = setTimeout(later, wait);
+            };
+        }
+        
+        // 自动检测输入并触发下载
+        function autoDetectAndDownload() {
+            const userInput = document.getElementById('bookId').value.trim();
+            if (!userInput) return;
+            
+            const bookId = extractBookId(userInput);
+            
+            // 如果没有提取到ID，显示降级提示
+            if (!bookId) {
+                showDowngradePrompt();
+                return;
+            }
+            
+            // 如果是链接（输入内容不等于提取的ID），则自动下载
+            if (userInput !== bookId) {
+                // 显示自动下载提示
+                showResult(`检测到分享链接，已提取小说ID：${bookId}，开始自动下载...`, 'info');
+                
+                // 延迟执行下载，让用户看到提示
+                setTimeout(() => {
+                    executeDownload(bookId, userInput);
+                }, 800);
+            }
+            // 如果是纯ID，不自动下载，等待用户手动点击
+        }
+        
         // ========== 其他功能保持不变 ==========
         
         // 提取小说ID函数
@@ -1845,13 +1886,6 @@
             document.getElementById('manualHint').style.display = 'none';
         }
         
-        // 输入框回车触发下载
-        document.getElementById('bookId').addEventListener('keydown', function(e) {
-            if (e.key === 'Enter') {
-                startDownload();
-            }
-        });
-        
         // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', async function() {
             console.log('页面加载完成，开始初始化...');
@@ -1867,6 +1901,18 @@
             
             console.log(`设备检测: ${isMobile ? '手机' : isTablet ? '平板' : '电脑'}`);
             
+            // 为输入框添加自动检测功能
+            const bookIdInput = document.getElementById('bookId');
+            const debouncedAutoDetect = debounce(autoDetectAndDownload, 800);
+            bookIdInput.addEventListener('input', debouncedAutoDetect);
+            
+            // 输入框回车触发下载
+            bookIdInput.addEventListener('keydown', function(e) {
+                if (e.key === 'Enter') {
+                    startDownload();
+                }
+            });
+            
             // 500ms后显示初始每日一言（安全版）
             setTimeout(() => {
                 showInitialDailyMessage();
@@ -1876,12 +1922,11 @@
             window.scrollTo(0, 0);
             
             // 添加输入框焦点效果
-            const inputField = document.getElementById('bookId');
-            inputField.addEventListener('focus', function() {
+            bookIdInput.addEventListener('focus', function() {
                 this.parentElement.style.transform = 'translateY(-2px)';
             });
             
-            inputField.addEventListener('blur', function() {
+            bookIdInput.addEventListener('blur', function() {
                 this.parentElement.style.transform = 'translateY(0)';
             });
             
