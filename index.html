@@ -86,7 +86,7 @@
             transform: scale(0.95) rotate(-15deg);
         }
         
-        /* 每日一言弹窗容器 */
+        /* 每日一言弹窗容器 - 修复点：空容器不拦截点击 */
         .popup-container {
             position: fixed;
             top: clamp(20px, 3vw, 30px);
@@ -100,6 +100,7 @@
             padding-right: 5px;
             width: clamp(280px, 35vw, 350px);
             max-width: 95vw;
+            pointer-events: none; /* 新增：空容器不拦截点击 */
         }
         
         /* 滚动条美化 */
@@ -121,7 +122,7 @@
             background: rgba(255, 71, 87, 0.5);
         }
         
-        /* 单个弹窗样式 */
+        /* 单个弹窗样式 - 修复点：弹窗本身可点击 */
         .daily-popup {
             width: 100%;
             background: rgba(255, 255, 255, 0.98);
@@ -135,6 +136,7 @@
             animation: popupSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
             position: relative;
             will-change: transform, opacity;
+            pointer-events: auto; /* 新增：弹窗本身可点击 */
         }
         
         @keyframes popupSlideIn {
@@ -339,6 +341,7 @@
             background: linear-gradient(45deg, var(--primary), var(--accent));
             border-radius: 2px;
             will-change: width;
+            pointer-events: none;
         }
         
         .subtitle {
@@ -446,6 +449,7 @@
             background: rgba(255, 255, 255, 0.2);
             transform: translate(-50%, -50%);
             transition: width 0.5s, height 0.5s;
+            pointer-events: none;
         }
         
         .btn:hover::before {
@@ -516,6 +520,7 @@
             border-radius: 50%;
             animation: spin 1.2s linear infinite;
             will-change: transform;
+            pointer-events: none;
         }
         
         .spinner-ring:nth-child(1) {
@@ -578,6 +583,7 @@
                 rgba(255, 255, 255, 0.4), 
                 transparent);
             animation: shimmer 1.5s infinite;
+            pointer-events: none;
         }
         
         @keyframes shimmer {
@@ -765,10 +771,12 @@
                 bottom: 75px;
                 width: calc(100% - 20px);
                 max-width: 300px;
+                pointer-events: none; /* 确保移动端也生效 */
             }
             
             .daily-popup {
                 width: 100%;
+                pointer-events: auto; /* 确保移动端也生效 */
             }
             
             .info-list li {
@@ -795,6 +803,11 @@
             .popup-container {
                 width: clamp(280px, 40vw, 320px);
                 right: clamp(15px, 2vw, 20px);
+                pointer-events: none; /* 确保平板端也生效 */
+            }
+            
+            .daily-popup {
+                pointer-events: auto; /* 确保平板端也生效 */
             }
             
             .button-group {
@@ -838,7 +851,6 @@
                 width: 80px;
             }
             
-            /* 电脑端增加更多装饰元素，让界面更充实 */
             .header::before {
                 content: '📚';
                 position: absolute;
@@ -847,6 +859,7 @@
                 font-size: 2.5rem;
                 opacity: 0.1;
                 transform: rotate(-15deg);
+                pointer-events: none;
             }
             
             .header::after {
@@ -857,6 +870,7 @@
                 font-size: 2.5rem;
                 opacity: 0.1;
                 transform: rotate(15deg);
+                pointer-events: none;
             }
             
             .input-section::before {
@@ -870,6 +884,7 @@
                 background: linear-gradient(to bottom, var(--primary), var(--accent));
                 border-radius: 2px;
                 opacity: 0.3;
+                pointer-events: none;
             }
         }
         
@@ -928,6 +943,11 @@
             .popup-container {
                 bottom: 80px;
                 max-height: 70vh;
+                pointer-events: none; /* 确保横屏模式也生效 */
+            }
+            
+            .daily-popup {
+                pointer-events: auto; /* 确保横屏模式也生效 */
             }
             
             .button-group {
@@ -1119,7 +1139,7 @@
         </div>
     </div>
 
-    <!-- JavaScript 部分保持完全不变 -->
+    <!-- JavaScript 部分保持不变 -->
     <script>
         // ========== 每日一言核心功能 ==========
         // 内置默认消息
