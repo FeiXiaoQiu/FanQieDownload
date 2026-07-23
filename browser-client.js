@@ -1,6 +1,9 @@
 /**
- * GitHub Pages / 纯静态模式：浏览器直连第三方番茄 API（固定 5 节点 + CORS 代理）
- * 有 Node 后端时 index.html 不会调用本模块。
+ * GitHub Pages / 纯静态：固定节点 + CORS 代理
+ *
+ * 加速建议（强烈推荐）：部署仓库里的 cors-worker.js 到 Cloudflare Workers，然后：
+ *   localStorage.setItem('fq_cors_proxy', 'https://xxx.workers.dev')
+ * 或页面注入 window.FQ_CORS_PROXY
  */
 (function (global) {
   "use strict";
@@ -19,63 +22,121 @@
   ];
 
   const CACHE_PREFIX = "fq_ch_";
+  const SEARCH_CACHE_PREFIX = "fq_search_";
   const PROBE_ITEM = "7580458932431225368";
+  const LS_PROXY = "fq_cors_proxy";
+  const LS_PREF_PROXY = "fq_pref_proxy";
+  const LS_PREF_HOST = "fq_pref_host";
 
   let charset = null;
-  let hostIdx = 0;
   /** @type {{host:string,ok:boolean,latency:number}[]} */
-  let hostState = FIXED_HOSTS.map((h) => ({ host: h, ok: true, latency: 9999 }));
+  let hostState = FIXED_HOSTS.map(function (h) {
+    return { host: h, ok: true, latency: 9999 };
+  });
   let cancelFlag = false;
-  /** 最近成功的代理 id，下次优先 */
-  let preferredProxy = "allorigins-get";
+  let preferredProxy =
+    (typeof localStorage !== "undefined" && localStorage.getItem(LS_PREF_PROXY)) ||
+    "custom";
+  let preferredHost =
+    (typeof localStorage !== "undefined" && localStorage.getItem(LS_PREF_HOST)) ||
+    FIXED_HOSTS[0];
 
-  /**
-   * 公共 CORS 代理（纯静态站必需）。
-   * 节点本身无 ACAO，浏览器不能直连；优先 allorigins /get（目前最稳）。
-   */
-  const PROXY_DEFS = [
-    {
-      id: "allorigins-get",
-      build: function (url) {
-        return "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+  function readCustomProxyBase() {
+    try {
+      if (global.FQ_CORS_PROXY) return String(global.FQ_CORS_PROXY).trim();
+      if (typeof localStorage !== "undefined") {
+        const v = localStorage.getItem(LS_PROXY);
+        if (v) return String(v).trim();
+      }
+      if (typeof location !== "undefined" && location.search) {
+        const m = /[?&]proxy=([^&]+)/.exec(location.search);
+        if (m) return decodeURIComponent(m[1]).trim();
+      }
+    } catch (e) {
+      /* ignore */
+    }
+    return "";
+  }
+
+  function buildProxyDefs() {
+    const defs = [];
+    const custom = readCustomProxyBase().replace(/\/$/, "");
+    if (custom) {
+      defs.push({
+        id: "custom",
+        build: function (url) {
+          return custom + "/?url=" + encodeURIComponent(url);
+        },
+        parse: function (text) {
+          return JSON.parse(text || "{}");
+        },
+      });
+    }
+    // 公共代理不稳定，仅作兜底；优先 custom Worker
+    defs.push(
+      {
+        id: "allorigins-json",
+        build: function (url) {
+          return "https://api.allorigins.win/json?url=" + encodeURIComponent(url);
+        },
+        parse: function (text) {
+          const wrap = JSON.parse(text || "{}");
+          if (wrap && typeof wrap.contents === "string") {
+            return JSON.parse(wrap.contents || "{}");
+          }
+          if (wrap && wrap.contents && typeof wrap.contents === "object") {
+            return wrap.contents;
+          }
+          return wrap;
+        },
       },
-      parse: function (text) {
-        const wrap = JSON.parse(text || "{}");
-        if (wrap && typeof wrap.contents === "string") {
-          return JSON.parse(wrap.contents || "{}");
-        }
-        if (wrap && wrap.contents && typeof wrap.contents === "object") {
-          return wrap.contents;
-        }
-        return wrap;
-      },
-    },
-    {
-      id: "allorigins-raw",
-      build: function (url) {
-        return "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
-      },
-      parse: function (text) {
-        return JSON.parse(text || "{}");
-      },
-    },
-    {
-      id: "corsproxy-io",
-      build: function (url) {
-        return "https://corsproxy.io/?" + encodeURIComponent(url);
-      },
-      parse: function (text) {
-        return JSON.parse(text || "{}");
-      },
-    },
-  ];
+      {
+        id: "allorigins-get",
+        build: function (url) {
+          return "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+        },
+        parse: function (text) {
+          const wrap = JSON.parse(text || "{}");
+          if (wrap && typeof wrap.contents === "string") {
+            return JSON.parse(wrap.contents || "{}");
+          }
+          if (wrap && wrap.contents && typeof wrap.contents === "object") {
+            return wrap.contents;
+          }
+          return wrap;
+        },
+      }
+    );
+    return defs;
+  }
 
   function orderedProxies() {
-    return PROXY_DEFS.slice().sort(function (a, b) {
+    const defs = buildProxyDefs();
+    return defs.slice().sort(function (a, b) {
       if (a.id === preferredProxy) return -1;
       if (b.id === preferredProxy) return 1;
+      if (a.id === "custom") return -1;
+      if (b.id === "custom") return 1;
       return 0;
     });
+  }
+
+  function rememberProxy(id) {
+    preferredProxy = id;
+    try {
+      localStorage.setItem(LS_PREF_PROXY, id);
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
+  function rememberHost(host) {
+    preferredHost = host;
+    try {
+      localStorage.setItem(LS_PREF_HOST, host);
+    } catch (e) {
+      /* ignore */
+    }
   }
 
   function fetchViaProxy(proxy, url, timeout, signal) {
@@ -104,7 +165,7 @@
           throw new Error(proxy.id + " 非 JSON");
         }
         const data = proxy.parse(text);
-        preferredProxy = proxy.id;
+        rememberProxy(proxy.id);
         return data;
       })
       .finally(function () {
@@ -112,101 +173,119 @@
       });
   }
 
-  /** 同一目标 URL：多代理竞速，先成功者胜 */
-  async function fetchJson(url, timeout) {
-    timeout = timeout || 14000;
+  /** 串行：代理 × 节点，避免并发打爆免费代理 */
+  async function fetchJsonSerial(pathBuilder, opts) {
+    opts = opts || {};
+    const timeout = opts.timeout || 18000;
+    const hosts = orderHosts(opts.hosts || FIXED_HOSTS.slice());
     const proxies = orderedProxies();
-    const ctrl = new AbortController();
+    const ok =
+      opts.ok ||
+      function () {
+        return true;
+      };
     let lastErr = null;
-    let settled = false;
+
+    for (let pi = 0; pi < proxies.length; pi++) {
+      const proxy = proxies[pi];
+      for (let hi = 0; hi < hosts.length; hi++) {
+        const host = hosts[hi];
+        try {
+          const data = await fetchViaProxy(
+            proxy,
+            pathBuilder(host),
+            timeout,
+            null
+          );
+          if (!ok(data, host)) {
+            lastErr = new Error("节点无有效数据: " + host);
+            continue;
+          }
+          markOk(host, 0);
+          rememberHost(host);
+          return { data: data, host: host, proxy: proxy.id };
+        } catch (e) {
+          lastErr = e;
+          if (hi === hosts.length - 1) {
+            /* 该代理对全部节点失败，换下一个代理 */
+          } else {
+            markFailSoft(host);
+          }
+        }
+      }
+    }
+    throw lastErr || new Error("全部节点/代理失败");
+  }
+
+  /** 轻量竞速：仅首选代理 × 前 2 个节点 */
+  async function fetchJsonRace2(pathBuilder, opts) {
+    opts = opts || {};
+    const timeout = opts.timeout || 16000;
+    const hosts = orderHosts(opts.hosts || FIXED_HOSTS.slice()).slice(0, 2);
+    const proxy = orderedProxies()[0];
+    const ok =
+      opts.ok ||
+      function () {
+        return true;
+      };
+    if (!proxy || !hosts.length) throw new Error("无代理/节点");
 
     return new Promise(function (resolve, reject) {
-      let pending = proxies.length;
-      if (!pending) {
-        reject(new Error("无可用 CORS 代理"));
-        return;
-      }
-      proxies.forEach(function (proxy) {
-        fetchViaProxy(proxy, url, timeout, ctrl.signal)
+      const ctrl = new AbortController();
+      let pending = hosts.length;
+      let lastErr = null;
+      let settled = false;
+      hosts.forEach(function (host) {
+        fetchViaProxy(proxy, pathBuilder(host), timeout, ctrl.signal)
           .then(function (data) {
             if (settled) return;
+            if (!ok(data, host)) {
+              lastErr = new Error("节点无有效数据: " + host);
+              return;
+            }
             settled = true;
             ctrl.abort();
-            resolve(data);
+            markOk(host, 0);
+            rememberHost(host);
+            resolve({ data: data, host: host, proxy: proxy.id });
           })
           .catch(function (e) {
             lastErr = e;
+          })
+          .finally(function () {
             pending--;
             if (!settled && pending <= 0) {
-              reject(lastErr || new Error("CORS proxy failed"));
+              reject(lastErr || new Error("竞速失败"));
             }
           });
       });
     });
   }
 
-  function raceWithProxies(pathBuilder, hosts, proxies, timeout, ok) {
-    const ctrl = new AbortController();
-    let lastErr = null;
-    let pending = 0;
-    let settled = false;
-
-    return new Promise(function (resolve, reject) {
-      hosts.forEach(function (host) {
-        proxies.forEach(function (proxy) {
-          pending++;
-          fetchViaProxy(proxy, pathBuilder(host), timeout, ctrl.signal)
-            .then(function (data) {
-              if (settled) return;
-              if (!ok(data, host)) {
-                lastErr = new Error("节点无有效数据: " + host);
-                return;
-              }
-              settled = true;
-              ctrl.abort();
-              markOk(host, 0);
-              resolve({ data: data, host: host, proxy: proxy.id });
-            })
-            .catch(function (e) {
-              lastErr = e;
-            })
-            .finally(function () {
-              pending--;
-              if (!settled && pending <= 0) {
-                reject(lastErr || new Error("全部节点失败"));
-              }
-            });
-        });
-      });
-      if (!pending) reject(new Error("无节点"));
-    });
+  async function raceHosts(pathBuilder, opts) {
+    try {
+      return await fetchJsonRace2(pathBuilder, opts);
+    } catch (e1) {
+      return fetchJsonSerial(pathBuilder, opts);
+    }
   }
 
-  /**
-   * 多节点竞速：先只走「最近成功」的代理（少打慢代理），失败再全代理兜底
-   */
-  async function raceHosts(pathBuilder, opts) {
-    opts = opts || {};
-    const timeout = opts.timeout || 14000;
-    const hosts = opts.hosts || pickHosts();
-    const ok =
-      opts.ok ||
-      function () {
-        return true;
-      };
-    const ordered = orderedProxies();
-    try {
-      return await raceWithProxies(pathBuilder, hosts, [ordered[0]], timeout, ok);
-    } catch (e1) {
-      if (ordered.length <= 1) throw e1;
-      return raceWithProxies(
-        pathBuilder,
-        hosts,
-        ordered.slice(1),
-        timeout,
-        ok
-      );
-    }
+  function orderHosts(hosts) {
+    const list = hosts.slice();
+    list.sort(function (a, b) {
+      if (a === preferredHost) return -1;
+      if (b === preferredHost) return 1;
+      const sa = hostState.find(function (x) {
+        return x.host === a;
+      });
+      const sb = hostState.find(function (x) {
+        return x.host === b;
+      });
+      const la = sa && sa.ok ? sa.latency : 99999;
+      const lb = sb && sb.ok ? sb.latency : 99999;
+      return la - lb;
+    });
+    return list;
   }
 
   async function loadCharset() {
@@ -217,7 +296,9 @@
   }
 
   function decodeContent(content, mode, table) {
-    const [lo, hi] = CODE_RANGES[mode];
+    const lohi = CODE_RANGES[mode];
+    const lo = lohi[0];
+    const hi = lohi[1];
     let out = "";
     for (const char of content) {
       const uni = char.codePointAt(0);
@@ -241,23 +322,33 @@
       .replace(/&gt;/g, ">")
       .replace(/&amp;/g, "&")
       .replace(/&quot;/g, '"')
-      .replace(/&#(\d+);/g, (_, n) => String.fromCharCode(Number(n)))
-      .replace(/&#x([0-9a-f]+);/gi, (_, n) => String.fromCharCode(parseInt(n, 16)));
+      .replace(/&#(\d+);/g, function (_, n) {
+        return String.fromCharCode(Number(n));
+      })
+      .replace(/&#x([0-9a-f]+);/gi, function (_, n) {
+        return String.fromCharCode(parseInt(n, 16));
+      });
     return s
       .split(/\r?\n/)
-      .map((ln) => ln.trim())
+      .map(function (ln) {
+        return ln.trim();
+      })
       .filter(Boolean)
       .join("\n");
   }
 
   function pickMode(raw, tables) {
-    const score = (s) => {
-      let cjk = 0,
-        priv = 0;
+    const score = function (s) {
+      let cjk = 0;
+      let priv = 0;
       for (const c of s) {
         const code = c.codePointAt(0);
         if (code >= 0x4e00 && code <= 0x9fff) cjk++;
-        if ((code >= 0xe000 && code <= 0xf8ff) || (code >= 58344 && code <= 58716)) priv++;
+        if (
+          (code >= 0xe000 && code <= 0xf8ff) ||
+          (code >= 58344 && code <= 58716)
+        )
+          priv++;
       }
       return cjk * 2 - priv * 5;
     };
@@ -274,43 +365,61 @@
   }
 
   function aliveHosts() {
-    const ok = hostState.filter((h) => h.ok).sort((a, b) => a.latency - b.latency);
-    if (ok.length) return ok.map((h) => h.host);
+    const ok = hostState
+      .filter(function (h) {
+        return h.ok;
+      })
+      .sort(function (a, b) {
+        return a.latency - b.latency;
+      });
+    if (ok.length) return ok.map(function (h) {
+      return h.host;
+    });
     return FIXED_HOSTS.slice();
   }
 
-  function pickHosts() {
-    const hosts = aliveHosts();
-    const start = hostIdx % hosts.length;
-    hostIdx++;
-    return hosts.slice(start).concat(hosts.slice(0, start));
-  }
-
   function markOk(host, latency) {
-    const n = hostState.find((x) => x.host === host);
+    const n = hostState.find(function (x) {
+      return x.host === host;
+    });
     if (n) {
       n.ok = true;
-      n.latency = latency || n.latency;
+      if (latency) n.latency = latency;
     }
   }
 
+  function markFailSoft(host) {
+    const n = hostState.find(function (x) {
+      return x.host === host;
+    });
+    if (n) n.latency = Math.min(99999, (n.latency || 1000) + 2000);
+  }
+
   function markFail(host) {
-    const n = hostState.find((x) => x.host === host);
+    const n = hostState.find(function (x) {
+      return x.host === host;
+    });
     if (n) n.ok = false;
   }
 
   async function probeHosts() {
     await loadCharset();
-    // 首屏探活：只走首选代理 + 短超时，失败则默认全节点可用（避免卡死）
     const proxy = orderedProxies()[0];
+    const hasCustom = !!readCustomProxyBase();
+    // 只探 2 个节点，缩短首屏等待
+    const sample = orderHosts(FIXED_HOSTS.slice()).slice(0, hasCustom ? 3 : 2);
     await Promise.all(
-      hostState.map(async function (n) {
+      sample.map(async function (host) {
+        const n = hostState.find(function (x) {
+          return x.host === host;
+        });
+        if (!n || !proxy) return;
         const t0 = Date.now();
         try {
           const data = await fetchViaProxy(
             proxy,
-            n.host + "/content?item_id=" + PROBE_ITEM,
-            7000,
+            host + "/content?item_id=" + PROBE_ITEM,
+            hasCustom ? 8000 : 12000,
             null
           );
           const content =
@@ -321,17 +430,20 @@
           ) {
             n.ok = true;
             n.latency = Date.now() - t0;
+            rememberHost(host);
           } else {
             n.ok = false;
             n.latency = 9999;
           }
-        } catch {
+        } catch (e) {
           n.ok = false;
           n.latency = 9999;
         }
       })
     );
-    if (!hostState.some(function (h) { return h.ok; })) {
+    if (!hostState.some(function (h) {
+      return h.ok;
+    })) {
       hostState.forEach(function (h) {
         h.ok = true;
         h.latency = 5000;
@@ -339,24 +451,29 @@
     }
     return {
       total: hostState.length,
-      alive: hostState.filter((h) => h.ok).length,
-      nodes: hostState.map((h) => ({
-        host: h.host,
-        ok: h.ok,
-        latency: h.latency,
-      })),
+      alive: hostState.filter(function (h) {
+        return h.ok;
+      }).length,
+      nodes: hostState.map(function (h) {
+        return { host: h.host, ok: h.ok, latency: h.latency };
+      }),
       proxy: preferredProxy,
+      customProxy: readCustomProxyBase() || "",
     };
   }
 
   function parseSearch(data) {
     const books = [];
     const seen = new Set();
-    const push = (it) => {
+    const push = function (it) {
       if (!it || typeof it !== "object") return;
       if (Array.isArray(it.book_data) && it.book_data.length) {
         for (const bd of it.book_data) {
-          push({ ...bd, book_id: bd.book_id || it.book_id || it.search_result_id });
+          push(
+            Object.assign({}, bd, {
+              book_id: bd.book_id || it.book_id || it.search_result_id,
+            })
+          );
         }
         return;
       }
@@ -368,8 +485,8 @@
       if (!title && !it.author) return;
       seen.add(book_id);
       books.push({
-        book_id,
-        title,
+        book_id: book_id,
+        title: title,
         author: it.author || "",
         abstract: it.abstract || "",
         thumb_url: it.thumb_url || it.thumb_uri || "",
@@ -379,12 +496,14 @@
     };
     const tabs = data.search_tabs || [];
     const bookTab =
-      tabs.find((t) => t && (t.title === "书籍" || t.tab_type === 3)) || tabs[0];
+      tabs.find(function (t) {
+        return t && (t.title === "书籍" || t.tab_type === 3);
+      }) || tabs[0];
     if (bookTab && Array.isArray(bookTab.data)) {
       for (const cell of bookTab.data) push(cell);
       if (books.length) return books;
     }
-    const walk = (node, depth) => {
+    const walk = function (node, depth) {
       if (!node || depth > 8) return;
       if (Array.isArray(node)) {
         for (const x of node) walk(x, depth + 1);
@@ -399,7 +518,35 @@
     return books;
   }
 
+  function getSearchCache(query) {
+    try {
+      const raw = localStorage.getItem(SEARCH_CACHE_PREFIX + query);
+      if (!raw) return null;
+      const obj = JSON.parse(raw);
+      if (!obj || !obj.books || !obj.t) return null;
+      if (Date.now() - obj.t > 30 * 60 * 1000) return null;
+      return obj.books;
+    } catch (e) {
+      return null;
+    }
+  }
+
+  function setSearchCache(query, books) {
+    try {
+      localStorage.setItem(
+        SEARCH_CACHE_PREFIX + query,
+        JSON.stringify({ t: Date.now(), books: books })
+      );
+    } catch (e) {
+      /* ignore */
+    }
+  }
+
   async function search(query) {
+    const cached = getSearchCache(query);
+    if (cached && cached.length) {
+      return { code: 0, books: cached, source: "cache", proxy: preferredProxy };
+    }
     try {
       const raced = await raceHosts(
         function (host) {
@@ -411,7 +558,7 @@
           );
         },
         {
-          timeout: 16000,
+          timeout: readCustomProxyBase() ? 12000 : 20000,
           hosts: FIXED_HOSTS.slice(),
           ok: function (data) {
             if (data.code !== 0 && data.code !== "0") return false;
@@ -420,6 +567,7 @@
         }
       );
       const books = parseSearch(raced.data);
+      setSearchCache(query, books);
       return {
         code: 0,
         books: books,
@@ -427,11 +575,11 @@
         proxy: raced.proxy,
       };
     } catch (e) {
-      return {
-        code: -1,
-        message: "搜索失败: " + (e.message || String(e)),
-        books: [],
-      };
+      const hint = readCustomProxyBase()
+        ? e.message || String(e)
+        : (e.message || String(e)) +
+          "。公共 CORS 拥堵时请部署 cors-worker.js（Cloudflare 免费）并 localStorage.setItem('fq_cors_proxy', 'https://你的.workers.dev')";
+      return { code: -1, message: "搜索失败: " + hint, books: [] };
     }
   }
 
@@ -442,7 +590,7 @@
           return host + "/info?book_id=" + bookId;
         },
         {
-          timeout: 12000,
+          timeout: 15000,
           ok: function (data) {
             const d = data.data || data;
             return !!(d && (d.book_name || d.title || d.book_id));
@@ -456,27 +604,14 @@
         author: d.author || d.author_name || "未知",
         abstract: d.book_abstract_v2 || d.book_abstract || d.abstract || "",
       };
-    } catch {
-      /* fallthrough sequential */
+    } catch (e) {
+      return {
+        book_id: bookId,
+        title: "小说" + bookId,
+        author: "未知",
+        abstract: "",
+      };
     }
-    for (const host of pickHosts()) {
-      try {
-        const data = await fetchJson(host + "/info?book_id=" + bookId, 12000);
-        const d = data.data || data;
-        if (d && (d.book_name || d.title || d.book_id)) {
-          markOk(host, 0);
-          return {
-            book_id: bookId,
-            title: d.book_name || d.title || "小说" + bookId,
-            author: d.author || d.author_name || "未知",
-            abstract: d.book_abstract_v2 || d.book_abstract || d.abstract || "",
-          };
-        }
-      } catch {
-        markFail(host);
-      }
-    }
-    return { book_id: bookId, title: "小说" + bookId, author: "未知", abstract: "" };
   }
 
   function extractCatalog(data) {
@@ -511,7 +646,7 @@
           return host + "/catalog?book_id=" + bookId;
         },
         {
-          timeout: 18000,
+          timeout: 20000,
           ok: function (data) {
             const list = extractCatalog(data);
             return Array.isArray(list) && list.length > 0;
@@ -532,13 +667,16 @@
 
   async function getContent(itemId) {
     try {
+      const hosts = orderHosts(
+        aliveHosts().length ? aliveHosts() : FIXED_HOSTS.slice()
+      ).slice(0, 3);
       const raced = await raceHosts(
         function (host) {
           return host + "/content?item_id=" + itemId;
         },
         {
           timeout: 14000,
-          hosts: (aliveHosts().length ? aliveHosts() : FIXED_HOSTS.slice()).slice(0, 4),
+          hosts: hosts,
           ok: function (data) {
             return !!extractContent(data, itemId);
           },
@@ -564,7 +702,7 @@
       if (!raw) return null;
       const data = JSON.parse(raw);
       if (data && data.text && data.text.length > 20) return data;
-    } catch {
+    } catch (e) {
       /* ignore */
     }
     return null;
@@ -580,16 +718,18 @@
           t: Date.now(),
         })
       );
-    } catch {
+    } catch (e) {
       /* quota */
     }
   }
 
   function safeName(name) {
-    return String(name || "novel")
-      .replace(/[\\/:*?"<>|]+/g, "_")
-      .trim()
-      .slice(0, 80) || "novel";
+    return (
+      String(name || "novel")
+        .replace(/[\\/:*?"<>|]+/g, "_")
+        .trim()
+        .slice(0, 80) || "novel"
+    );
   }
 
   function requestCancel() {
@@ -600,14 +740,6 @@
     cancelFlag = false;
   }
 
-  /**
-   * @param {object} opts
-   * @param {string} opts.bookId
-   * @param {number} [opts.start_chapter]
-   * @param {number} [opts.end_chapter]
-   * @param {boolean} [opts.resume]
-   * @param {(pct:number,msg:string)=>void} [opts.onProgress]
-   */
   async function downloadBook(opts) {
     resetCancel();
     await loadCharset();
@@ -635,7 +767,8 @@
     let done = 0;
     let cached = 0;
     const errors = [];
-    const concurrency = 3;
+    // 公共代理并发过高会全挂；有自建代理可 3，否则 1
+    const concurrency = readCustomProxyBase() ? 3 : 1;
 
     async function worker(idx) {
       if (cancelFlag) return;
@@ -654,7 +787,7 @@
         if (cancelFlag) return;
         if (got.title) title = got.title;
         results[idx] = [title, got.text];
-        if (resume) saveCache(bookId, ch.item_id, { title, text: got.text });
+        if (resume) saveCache(bookId, ch.item_id, { title: title, text: got.text });
       } catch (e) {
         results[idx] = [title, "【本章获取失败: " + (e.message || e) + "】"];
         errors.push(String(e.message || e));
@@ -663,7 +796,11 @@
         const pct = 5 + Math.floor((done / total) * 90);
         onProgress(
           pct,
-          "下载中 " + done + "/" + total + (cached ? "（缓存 " + cached + "）" : "")
+          "下载中 " +
+            done +
+            "/" +
+            total +
+            (cached ? "（缓存 " + cached + "）" : "")
         );
       }
     }
@@ -701,55 +838,81 @@
       lines.push(item[0], "", item[1], "", "-".repeat(30), "");
     }
     const content = lines.join("\n");
-    const filename = safeName(meta.title) + "-" + bookId + (cancelFlag ? "-partial" : "") + ".txt";
+    const filename =
+      safeName(meta.title) +
+      "-" +
+      bookId +
+      (cancelFlag ? "-partial" : "") +
+      ".txt";
     const blob = new Blob([content], { type: "text/plain;charset=utf-8" });
     const url = URL.createObjectURL(blob);
 
     if (cancelFlag) {
-      onProgress(Math.min(99, 5 + Math.floor((done / total) * 90)), "已取消（可再次下载续传）");
+      onProgress(
+        Math.min(99, 5 + Math.floor((done / total) * 90)),
+        "已取消（可再次下载续传）"
+      );
       return {
         status: "cancelled",
-        filename,
-        url,
+        filename: filename,
+        url: url,
         title: meta.title,
         author: meta.author,
-        done,
-        total,
-        cached,
+        done: done,
+        total: total,
+        cached: cached,
         message: "已取消（已完成 " + done + "/" + total + " 章）",
         error_count: errors.length,
       };
     }
 
-    onProgress(100, cached ? "下载完成（其中 " + cached + " 章来自缓存）" : "下载完成");
+    onProgress(
+      100,
+      cached ? "下载完成（其中 " + cached + " 章来自缓存）" : "下载完成"
+    );
     return {
       status: "done",
-      filename,
-      url,
+      filename: filename,
+      url: url,
       title: meta.title,
       author: meta.author,
       done: total,
-      total,
-      cached,
-      message: cached ? "下载完成（其中 " + cached + " 章来自缓存）" : "下载完成",
+      total: total,
+      cached: cached,
+      message: cached
+        ? "下载完成（其中 " + cached + " 章来自缓存）"
+        : "下载完成",
       error_count: errors.length,
     };
   }
 
   global.FanqieBrowserClient = {
-    FIXED_HOSTS,
-    probeHosts,
-    search,
-    getInfo,
-    getCatalog,
-    downloadBook,
-    requestCancel,
-    resetCancel,
-    nodesSnapshot() {
+    FIXED_HOSTS: FIXED_HOSTS,
+    probeHosts: probeHosts,
+    search: search,
+    getInfo: getInfo,
+    getCatalog: getCatalog,
+    downloadBook: downloadBook,
+    requestCancel: requestCancel,
+    resetCancel: resetCancel,
+    setCorsProxy: function (base) {
+      try {
+        if (base) localStorage.setItem(LS_PROXY, String(base).replace(/\/$/, ""));
+        else localStorage.removeItem(LS_PROXY);
+      } catch (e) {
+        /* ignore */
+      }
+    },
+    getCorsProxy: readCustomProxyBase,
+    nodesSnapshot: function () {
       return {
         total: hostState.length,
-        alive: hostState.filter((h) => h.ok).length,
+        alive: hostState.filter(function (h) {
+          return h.ok;
+        }).length,
         nodes: hostState.slice(),
+        proxy: preferredProxy,
+        customProxy: readCustomProxyBase() || "",
       };
     },
   };

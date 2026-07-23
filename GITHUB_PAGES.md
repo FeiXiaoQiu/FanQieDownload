@@ -55,11 +55,36 @@ git push origin v2.2.0
 | `charset.json` | 字体解码 |
 | `Speech/Speech.txt` | 一言（可选） |
 
+## 加速搜索（强烈推荐）
+
+纯静态站**不能**直连番茄节点（无 CORS 头），必须经代理。公共 allorigins 等经常超时，搜半天没结果是这个原因，**挂 CDN 也解决不了**。
+
+### 免费方案：Cloudflare Worker（约 2 分钟）
+
+1. 打开 [Cloudflare Dashboard](https://dash.cloudflare.com) → Workers & Pages → Create Worker  
+2. 把仓库里的 `cors-worker.js` 全文粘贴进去 → Deploy  
+3. 复制给你的 `https://xxx.workers.dev`  
+4. 打开本站，浏览器控制台（F12）执行：
+
+```js
+localStorage.setItem('fq_cors_proxy', 'https://xxx.workers.dev')
+location.reload()
+```
+
+之后搜索/下载走你的 Worker，通常比公共代理快一个数量级。  
+也可在页面注入：`<script>window.FQ_CORS_PROXY='https://xxx.workers.dev'</script>`
+
+### 其它
+
+- 节点列表在 `browser-client.js` 的 `FIXED_HOSTS`  
+- 超长书可分章节范围下载  
+- 证书过期时：GitHub Pages → Custom domain → 重新勾选 HTTPS  
+
 ## 限制
 
-- 公共 CORS 代理可能变慢或不稳  
-- 第三方节点变更后需改代码中的固定列表  
-- 超长书可分章节范围下载，减轻浏览器压力  
+- 未配置自建代理时，依赖公共 CORS，可能很慢或失败  
+- 第三方节点变更后需改固定列表  
+
 
 ## 本地预览
 

@@ -60,7 +60,19 @@ Speech/             # 一言
 
 可选：`server.js` 为本机 Node 代理（非静态部署必需）。
 
+## 搜索很慢 / 没结果？
+
+静态站必须过 CORS 代理。公共代理常挂，**推荐免费部署 `cors-worker.js` 到 Cloudflare Workers**，再在控制台：
+
+```js
+localStorage.setItem('fq_cors_proxy', 'https://你的.workers.dev')
+location.reload()
+```
+
+详见 [GITHUB_PAGES.md](./GITHUB_PAGES.md)。挂 CDN 加速不了搜索。
+
 ## 说明
 
 - 仅供个人学习研究，请遵守版权与平台条款  
-- 静态模式依赖公共 CORS 代理与第三方节点；节点变了改 `browser-client.js`  
+- 节点列表在 `browser-client.js`；代理可自建可公共  
+

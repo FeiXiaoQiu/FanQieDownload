@@ -555,8 +555,11 @@
                     books = data.books || [];
                 }
                 if (!books.length) {
-                    box.innerHTML = '<div class="search-empty">未找到相关书籍</div>';
-                    showResult('未找到相关书籍', 'warning');
+                    const tip = (!backend && window.FanqieBrowserClient && !window.FanqieBrowserClient.getCorsProxy())
+                        ? '未找到结果。若一直失败，公共 CORS 可能拥堵：部署仓库 cors-worker.js 后执行 localStorage.setItem("fq_cors_proxy","https://你的.workers.dev")'
+                        : '未找到相关书籍';
+                    box.innerHTML = '<div class="search-empty">' + escapeHtml(tip) + '</div>';
+                    showResult(tip, 'warning');
                     return;
                 }
                 box.innerHTML = books.map(function(b) {
@@ -660,13 +663,16 @@
                 }
                 if (window.FanqieBrowserClient) {
                     const snap = await window.FanqieBrowserClient.probeHosts();
-                    const proxyHint = snap.proxy ? ' · 代理 ' + snap.proxy : '';
-                    el.textContent = '模式：静态 · 节点 ' + snap.alive + '/' + snap.total + ' 在线' + proxyHint + '（并行竞速）';
+                    if (snap.customProxy) {
+                        el.textContent = '模式：静态 · 自建代理 · 节点 ' + snap.alive + '/' + snap.total + ' 在线';
+                    } else {
+                        el.textContent = '模式：静态 · 公共 CORS（易拥堵）· 节点 ' + snap.alive + '/' + snap.total + ' · 建议部署 cors-worker.js';
+                    }
                     return;
                 }
-                el.textContent = '静态模式就绪 · 固定 5 节点 + CORS 竞速';
+                el.textContent = '静态模式就绪';
             } catch (e) {
-                el.textContent = '节点状态暂不可用（公共 CORS 代理可能拥堵）';
+                el.textContent = '公共 CORS 拥堵，请部署 cors-worker.js 加速（见 GitHub 仓库）';
             }
         }
 
