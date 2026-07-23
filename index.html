@@ -63,17 +63,15 @@
                 </button>
                 <div class="proxy-setup-body" id="proxySetupBody" hidden>
                     <div class="proxy-plan">
-                        <h4>办法 1（推荐·仍用 GitHub 仓库）：Vercel 一键部署</h4>
+                        <h4>办法 1（推荐）：域名绑到 Vercel，继续用 fanqie-dl.feixiaoqiu.top</h4>
                         <ol class="proxy-steps">
-                            <li>打开
-                                <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer">vercel.com/new</a>
-                                ，用 <b>GitHub 登录</b>
-                            </li>
-                            <li>导入仓库 <b>FeiXiaoQiu/FanQieDownload</b> → Framework 选 Other → Deploy</li>
-                            <li>打开生成的 <code>https://xxx.vercel.app</code>，搜索走同源 API，通常 1～3 秒</li>
-                            <li>可选：在 Vercel 绑自定义域名（比纯 Pages 更稳）</li>
+                            <li>手机打不开 <code>*.vercel.app</code> 很常见，改绑自己的域名即可</li>
+                            <li>Vercel 打开项目 <b>fan-qie-download</b> → <b>Settings</b> → <b>Domains</b></li>
+                            <li>添加域名：<code>fanqie-dl.feixiaoqiu.top</code>，按提示复制 CNAME 记录</li>
+                            <li>在你的域名 DNS 里，把 <code>fanqie-dl</code> 的 CNAME 指到 Vercel 给的目标（一般是 <code>cname.vercel-dns.com</code>）</li>
+                            <li>等几分钟生效后，仍打开 <a href="https://fanqie-dl.feixiaoqiu.top/" target="_blank" rel="noopener noreferrer">fanqie-dl.feixiaoqiu.top</a>，搜索会变快</li>
                         </ol>
-                        <p class="proxy-sub">代码仍在 GitHub；Pages 只适合纯静态，搜索必须有服务端代理才能快。</p>
+                        <p class="proxy-sub">绑域名后，GitHub Pages 可关掉；代码仍在 GitHub，推送会自动部署到 Vercel。</p>
                     </div>
                     <div class="proxy-plan">
                         <h4>办法 2：电脑本机运行</h4>

@@ -12,16 +12,17 @@ GitHub Pages 部署后自动走固定 5 个正文节点 + CORS 代理。
 
 示例书名：`抽象职校生存手册`
 
-## 在线要快：用 GitHub + Vercel（推荐）
+## 在线要快：GitHub 代码 + Vercel 部署（推荐）
 
-GitHub Pages **只能**托管静态文件，搜索必须经代理；公共代理常挂。  
-**代码仍放 GitHub**，用 Vercel 免费托管（含 `/api`）：
+GitHub Pages 只有静态文件，搜索慢。已支持 Vercel Serverless API。
 
-1. 打开 https://vercel.com/new → GitHub 登录  
-2. 导入本仓库 → Framework 选 **Other** → Deploy  
-3. 打开 `https://你的项目.vercel.app`（搜索约 1～3 秒）
+**国内常打不开 `*.vercel.app`**，请把已有域名绑上去：
 
-可选：Vercel → Domains 绑定 `fanqie-dl.feixiaoqiu.top`。
+1. Vercel 项目 → Settings → Domains → 添加 `fanqie-dl.feixiaoqiu.top`
+2. 域名 DNS：`fanqie-dl` CNAME → Vercel 提示的目标（多为 `cname.vercel-dns.com`）
+3. 仍访问 https://fanqie-dl.feixiaoqiu.top/ （证书由 Vercel 自动签）
+
+详见 `域名绑定说明.txt`。
 
 ## GitHub Pages（纯静态，搜索可能慢）
 

@@ -399,51 +399,108 @@
             };
         }
         
-        // 模式：优先同源 Node 后端；GitHub Pages 等静态托管走 browser-client（固定 5 节点）
-        const API_BASE = (function() {
+        // 同源优先；Pages 无 API 时回退到 Vercel 远程（也可 localStorage 自定义）
+        const DEFAULT_REMOTE_APIS = [
+            'https://fan-qie-download.vercel.app',
+        ];
+        let API_BASE = (function() {
             if (location.protocol === 'http:' || location.protocol === 'https:') {
                 return '';
             }
             return 'http://127.0.0.1:8787';
         })();
+        let REMOTE_API_BASE = '';
 
         let USE_BACKEND = null; // null=探测中, true=完整 Node 任务, false=静态
-        let API_PROXY_READY = null; // 同源 /api/proxy（Vercel 等）
+        let API_PROXY_READY = null; // 同源或远程 /api/proxy
         let staticJobActive = false;
 
         function apiUrl(path) {
-            return `${API_BASE}${path}`;
+            if (API_BASE) return API_BASE + path;
+            if (REMOTE_API_BASE) return REMOTE_API_BASE + path;
+            return path;
+        }
+
+        function readRemoteOverride() {
+            try {
+                if (window.FQ_API_BASE) return String(window.FQ_API_BASE).replace(/\/$/, '');
+                const v = localStorage.getItem('fq_api_base');
+                if (v) return String(v).replace(/\/$/, '');
+            } catch (e) { /* ignore */ }
+            return '';
+        }
+
+        async function probeApiBase(base, timeoutMs) {
+            const ctrl = new AbortController();
+            const timer = setTimeout(function () { ctrl.abort(); }, timeoutMs || 4000);
+            try {
+                const resp = await fetch(base + '/api/health', {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: ctrl.signal,
+                    mode: 'cors',
+                });
+                clearTimeout(timer);
+                if (!resp.ok) return null;
+                return await resp.json();
+            } catch (e) {
+                clearTimeout(timer);
+                return null;
+            }
         }
 
         async function detectBackend() {
             if (USE_BACKEND !== null) return USE_BACKEND;
+            // 1) 同源
             try {
-                const ctrl = new AbortController();
-                const timer = setTimeout(function () { ctrl.abort(); }, 2500);
-                const resp = await fetch(apiUrl('/api/health'), {
-                    method: 'GET',
-                    cache: 'no-store',
-                    signal: ctrl.signal,
-                });
-                clearTimeout(timer);
-                if (!resp.ok) throw new Error('bad status');
-                const data = await resp.json();
-                // 完整 Node 才走 job 下载；Vercel serverless 只当加速代理
-                const fullNode = !!(data && data.ok && data.runtime === 'node');
-                const vercelLike = !!(data && data.ok && (
-                    data.runtime === 'vercel-serverless' ||
-                    data.service === 'fanqie-proxy-vercel' ||
-                    data.mode === 'proxy'
-                ));
-                USE_BACKEND = fullNode;
-                if (vercelLike || fullNode) {
-                    API_PROXY_READY = true;
-                    autoBindSameOriginProxy();
+                const data = await probeApiBase(location.origin, 2500);
+                if (data && data.ok) {
+                    const fullNode = data.runtime === 'node';
+                    const vercelLike = (
+                        data.runtime === 'vercel-serverless' ||
+                        data.service === 'fanqie-proxy-vercel' ||
+                        data.mode === 'proxy'
+                    );
+                    USE_BACKEND = fullNode;
+                    if (vercelLike || fullNode) {
+                        API_BASE = '';
+                        REMOTE_API_BASE = '';
+                        API_PROXY_READY = true;
+                        bindProxyBase(location.origin + '/api/proxy');
+                    }
+                    return USE_BACKEND;
                 }
-            } catch {
-                USE_BACKEND = false;
+            } catch (e) { /* ignore */ }
+
+            USE_BACKEND = false;
+
+            // 2) 用户指定 / 默认远程 Vercel
+            const candidates = [];
+            const override = readRemoteOverride();
+            if (override) candidates.push(override);
+            for (let i = 0; i < DEFAULT_REMOTE_APIS.length; i++) {
+                if (candidates.indexOf(DEFAULT_REMOTE_APIS[i]) === -1) {
+                    candidates.push(DEFAULT_REMOTE_APIS[i]);
+                }
             }
-            // 再探测同源 proxy（即使 health 404，也可能有 /api/proxy）
+            for (let i = 0; i < candidates.length; i++) {
+                const base = candidates[i];
+                if (!base) continue;
+                // 与当前页同源则跳过（已测过）
+                try {
+                    if (new URL(base).host === location.host) continue;
+                } catch (e) { continue; }
+                const data = await probeApiBase(base, 5000);
+                if (data && data.ok) {
+                    REMOTE_API_BASE = base;
+                    API_PROXY_READY = true;
+                    bindProxyBase(base + '/api/proxy');
+                    try { localStorage.setItem('fq_api_base', base); } catch (e) {}
+                    return USE_BACKEND;
+                }
+            }
+
+            // 3) 再探测同源 proxy 路径
             if (API_PROXY_READY === null) {
                 try {
                     await ensureSameOriginProxy();
@@ -454,45 +511,51 @@
             return USE_BACKEND;
         }
 
-        function autoBindSameOriginProxy() {
-            if (typeof location === 'undefined') return;
-            if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
-            const base = location.origin;
+        function bindProxyBase(proxyUrl) {
             try {
                 if (window.FanqieBrowserClient && window.FanqieBrowserClient.setCorsProxy) {
-                    // 已有用户自定义代理则不覆盖
                     const cur = window.FanqieBrowserClient.getCorsProxy() || '';
-                    if (!cur || cur.indexOf(location.host) !== -1 || cur.indexOf('/api/proxy') !== -1) {
-                        window.FanqieBrowserClient.setCorsProxy(base + '/api/proxy');
+                    // 已有且不是公共代理残留时保留用户自定义
+                    if (cur && cur.indexOf('/api/proxy') === -1 && cur.indexOf('vercel.app') === -1) {
+                        return;
                     }
+                    window.FanqieBrowserClient.setCorsProxy(proxyUrl);
                 } else {
-                    localStorage.setItem('fq_cors_proxy', base + '/api/proxy');
+                    localStorage.setItem('fq_cors_proxy', proxyUrl);
                 }
             } catch (e) { /* ignore */ }
         }
 
+        function autoBindSameOriginProxy() {
+            if (typeof location === 'undefined') return;
+            if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+            bindProxyBase(location.origin + '/api/proxy');
+        }
+
         async function ensureSameOriginProxy() {
-            if (API_PROXY_READY !== null) return API_PROXY_READY;
+            if (API_PROXY_READY) return true;
             try {
                 const ctrl = new AbortController();
                 const t = setTimeout(function () { ctrl.abort(); }, 3000);
-                const resp = await fetch(apiUrl('/api/proxy'), {
+                const resp = await fetch((REMOTE_API_BASE || location.origin) + '/api/proxy', {
                     method: 'GET',
                     cache: 'no-store',
                     signal: ctrl.signal,
+                    mode: 'cors',
                 });
                 clearTimeout(t);
                 if (!resp.ok) throw new Error('no proxy');
                 const data = await resp.json();
                 if (data && (data.ok || data.usage)) {
                     API_PROXY_READY = true;
-                    autoBindSameOriginProxy();
+                    if (REMOTE_API_BASE) bindProxyBase(REMOTE_API_BASE + '/api/proxy');
+                    else autoBindSameOriginProxy();
                     return true;
                 }
             } catch (e) {
-                API_PROXY_READY = false;
+                if (!REMOTE_API_BASE) API_PROXY_READY = false;
             }
-            return false;
+            return !!API_PROXY_READY;
         }
 
         // 自动检测输入并触发下载
@@ -982,7 +1045,11 @@
                 await ensureSameOriginProxy();
                 if (API_PROXY_READY && window.FanqieBrowserClient) {
                     const snap = await window.FanqieBrowserClient.probeHosts();
-                    el.textContent = '模式：在线加速（同源 API）· 节点 ' + snap.alive + '/' + snap.total + ' · 搜索应较快';
+                    if (REMOTE_API_BASE) {
+                        el.textContent = '模式：远程加速 API · 搜索应较快（页面可继续用本域名）';
+                    } else {
+                        el.textContent = '模式：在线加速（同源 API）· 节点 ' + snap.alive + '/' + snap.total + ' · 搜索应较快';
+                    }
                     updateProxyHint();
                     return;
                 }
