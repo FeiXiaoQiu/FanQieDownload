@@ -22,17 +22,17 @@ jobs:
         run: |
           mkdir -p dist
 
-          # 完整版（宝塔 / Node）
-          zip -r dist/fanqie-dl-v2.2.zip \
+          # 静态站点包（Pages / 本地静态服务器）
+          zip -r dist/fanqie-dl-static.zip \
+            index.html styles.css app.js browser-client.js charset.json \
+            Speech CNAME GITHUB_PAGES.md README.md DEPLOY.txt
+
+          # 含可选 Node 代理的完整源码包
+          zip -r dist/fanqie-dl-full.zip \
             server.js browser-client.js app.js styles.css index.html charset.json \
             package.json start.sh README.md DEPLOY.txt GITHUB_PAGES.md \
             requirements.txt CNAME Speech \
             -x "*.pyc" -x "*__pycache__*" -x "downloads/*" -x ".git/*"
-
-          # GitHub Pages 精简包
-          zip -r dist/fanqie-dl-github-pages.zip \
-            index.html styles.css app.js browser-client.js charset.json \
-            Speech CNAME GITHUB_PAGES.md README.md
 
           ls -lh dist/
 
@@ -40,8 +40,8 @@ jobs:
         uses: softprops/action-gh-release@v2
         with:
           files: |
-            dist/fanqie-dl-v2.2.zip
-            dist/fanqie-dl-github-pages.zip
+            dist/fanqie-dl-static.zip
+            dist/fanqie-dl-full.zip
           generate_release_notes: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

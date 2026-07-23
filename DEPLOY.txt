@@ -1,14 +1,10 @@
-番茄小说下载器 v2.2 — 面板快速部署
+番茄小说下载器 v2.2 — 静态部署
 
-1. 服务器安装 Node.js >= 18
-2. 解压本压缩包到网站目录，例如 /www/wwwroot/fanqie-dl
-3. 启动：
-   cd /www/wwwroot/fanqie-dl
-   chmod +x start.sh
-   node server.js
-   # 或用 PM2：pm2 start server.js --name fanqie-dl
-4. 宝塔绑定域名，反向代理到 http://127.0.0.1:8787
-5. 浏览器打开你的域名即可使用
+推荐：推送到 GitHub，用 Actions 发布 Pages（见 GITHUB_PAGES.md）
 
-默认本机端口 8787，可改环境变量 PORT。
-详细说明见 README.md
+本地预览：
+  python3 -m http.server 5500
+  浏览器打开 http://127.0.0.1:5500
+
+必含文件：
+  index.html styles.css app.js browser-client.js charset.json Speech/
