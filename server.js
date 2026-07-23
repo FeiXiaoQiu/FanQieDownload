@@ -25,6 +25,22 @@ const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 " +
   "(KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+/** bytecdn 防盗链 403；统一改写为 byteimg */
+function normalizeCoverUrl(raw) {
+  let u = String(raw || "").trim();
+  if (!u) return "";
+  if (u.indexOf("bytecdn.cn") !== -1 && u.indexOf("novel-pic/") !== -1) {
+    const m = /novel-pic\/([^~?/]+)/.exec(u);
+    if (m) {
+      u =
+        "https://p3-novel.byteimg.com/img/novel-pic/" +
+        m[1] +
+        "~tplv-tt-cs0:440:440.image";
+    }
+  }
+  return u;
+}
+
 const SEARCH_URLS = [
   "https://api-lf.fanqiesdk.com/api/novel/channel/homepage/search/search/v1/",
   "https://novel.snssdk.com/api/novel/channel/homepage/search/search/v1/",
@@ -424,7 +440,9 @@ async function searchBooks(query, offset = 0) {
         title: it.title || "",
         author: it.author || "",
         abstract: it.abstract || "",
-        thumb_url: it.thumb_url || "",
+        thumb_url: normalizeCoverUrl(
+          it.thumb_uri || it.thumb_url || it.cover || ""
+        ),
         score: it.score || "",
         category: it.category || "",
         creation_status: it.creation_status,
@@ -472,7 +490,14 @@ function parseThirdPartySearch(data) {
       title,
       author: it.author || it.author_name || "",
       abstract: it.abstract || it.book_abstract || it.desc || it.intro || "",
-      thumb_url: it.thumb_url || it.cover || it.thumb_url_hd || it.thumb_uri || "",
+      thumb_url: normalizeCoverUrl(
+        it.thumb_uri ||
+          it.audio_thumb_uri ||
+          it.thumb_url ||
+          it.cover ||
+          it.thumb_url_hd ||
+          ""
+      ),
       score: it.score || it.grade || "",
       category: it.category || it.category_v2 || "",
       creation_status: it.creation_status,

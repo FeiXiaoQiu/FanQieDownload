@@ -1,10 +1,24 @@
-番茄小说下载器 v2.2 — 静态部署
+番茄小说下载器 — 部署说明
 
-推荐：推送到 GitHub，用 Actions 发布 Pages（见 GITHUB_PAGES.md）
+一、GitHub Pages（静态，已自动 Actions）
+  推 main 后自动部署。只含静态文件，搜索较慢。
 
-本地预览：
-  python3 -m http.server 5500
-  浏览器打开 http://127.0.0.1:5500
+二、Vercel（推荐，搜索/封面加速）— 若 Deploy 失败按下面做
+  1. https://vercel.com/new 导入 FeiXiaoQiu/FanQieDownload
+  2. Framework Preset 必须选 Other（不要选 Python / Next）
+  3. Build Command 留空；Install Command 留空；Output Directory 留空
+  4. Root Directory 留空（仓库根目录）
+  5. Deploy
 
-必含文件：
-  index.html styles.css app.js browser-client.js charset.json Speech/
+  失败常见原因：
+  - Framework 选成了 Python（仓库曾有 requirements.txt）
+  - 项目里 Override 了错误的 Build Command
+  处理：Project Settings → General → Framework = Other，
+        Build & Development Settings 全部关掉 Override，再 Redeploy。
+
+  仓库已含：api/health.js api/search.js api/proxy.js + vercel.json
+  本机完整下载仍用：node server.js 或 一键启动.bat
+
+三、本机
+  node server.js
+  浏览器 http://127.0.0.1:8787
