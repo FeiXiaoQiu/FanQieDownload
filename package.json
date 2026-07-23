@@ -1,0 +1,14 @@
+{
+  "name": "fanqie-download",
+  "version": "2.2.0",
+  "private": true,
+  "description": "番茄小说搜索与下载动态站点（Node 代理 + 自动节点探活）",
+  "main": "server.js",
+  "scripts": {
+    "start": "node server.js",
+    "dev": "node server.js"
+  },
+  "engines": {
+    "node": ">=18"
+  }
+}

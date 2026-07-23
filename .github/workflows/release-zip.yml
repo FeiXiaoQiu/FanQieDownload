@@ -1,0 +1,47 @@
+# 推送 tag 或手动触发时，打包两个 zip 并挂到 GitHub Release
+# 例：git tag v2.2.0 && git push origin v2.2.0
+
+name: Release ZIP
+
+on:
+  push:
+    tags: ["v*"]
+  workflow_dispatch:
+
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Build packages
+        run: |
+          mkdir -p dist
+
+          # 完整版（宝塔 / Node）
+          zip -r dist/fanqie-dl-v2.2.zip \
+            server.js browser-client.js app.js styles.css index.html charset.json \
+            package.json start.sh README.md DEPLOY.txt GITHUB_PAGES.md \
+            requirements.txt CNAME Speech \
+            -x "*.pyc" -x "*__pycache__*" -x "downloads/*" -x ".git/*"
+
+          # GitHub Pages 精简包
+          zip -r dist/fanqie-dl-github-pages.zip \
+            index.html styles.css app.js browser-client.js charset.json \
+            Speech CNAME GITHUB_PAGES.md README.md
+
+          ls -lh dist/
+
+      - name: Create Release
+        uses: softprops/action-gh-release@v2
+        with:
+          files: |
+            dist/fanqie-dl-v2.2.zip
+            dist/fanqie-dl-github-pages.zip
+          generate_release_notes: true
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

@@ -1,0 +1,52 @@
+# GitHub Pages 自动部署（静态模式：固定 5 节点）
+# 仓库 Settings → Pages → Source 选 GitHub Actions
+
+name: Deploy GitHub Pages
+
+on:
+  push:
+    branches: [main, master]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  pages: write
+  id-token: write
+
+concurrency:
+  group: pages
+  cancel-in-progress: true
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Prepare static site
+        run: |
+          mkdir -p _site
+          cp index.html styles.css app.js browser-client.js charset.json _site/
+          if [ -f CNAME ]; then cp CNAME _site/; fi
+          if [ -d Speech ]; then cp -r Speech _site/; fi
+          if [ -f GITHUB_PAGES.md ]; then cp GITHUB_PAGES.md _site/; fi
+          # 可选说明页，不参与运行
+          if [ -f README.md ]; then cp README.md _site/; fi
+          ls -la _site
+
+      - name: Upload artifact
+        uses: actions/upload-pages-artifact@v3
+        with:
+          path: _site
+
+  deploy:
+    needs: build
+    runs-on: ubuntu-latest
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - name: Deploy to GitHub Pages
+        id: deployment
+        uses: actions/deploy-pages@v4

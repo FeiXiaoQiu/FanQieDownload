@@ -1,0 +1,11 @@
+node_modules/
+downloads/
+__pycache__/
+*.pyc
+.DS_Store
+.env
+*.log
+.monkeycode-tmp-files/
+nodes.alive.json
+dist/
+.monkeycode/
