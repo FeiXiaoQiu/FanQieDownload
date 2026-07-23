@@ -417,7 +417,14 @@
         async function detectBackend() {
             if (USE_BACKEND !== null) return USE_BACKEND;
             try {
-                const resp = await fetch(apiUrl('/api/health'), { method: 'GET', cache: 'no-store' });
+                const ctrl = new AbortController();
+                const timer = setTimeout(function () { ctrl.abort(); }, 2500);
+                const resp = await fetch(apiUrl('/api/health'), {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: ctrl.signal,
+                });
+                clearTimeout(timer);
                 if (!resp.ok) throw new Error('bad status');
                 const data = await resp.json();
                 USE_BACKEND = !!(data && data.ok);
@@ -647,18 +654,19 @@
                     const resp = await fetch(apiUrl('/api/nodes'));
                     const data = await resp.json();
                     if (data && data.code === 0) {
-                        el.textContent = `模式：Node 后端 · 节点 ${data.alive}/${data.total} 在线`;
+                        el.textContent = '模式：Node 后端 · 节点 ' + data.alive + '/' + data.total + ' 在线';
                         return;
                     }
                 }
                 if (window.FanqieBrowserClient) {
                     const snap = await window.FanqieBrowserClient.probeHosts();
-                    el.textContent = `模式：GitHub/静态 · 固定节点 ${snap.alive}/${snap.total} 在线（经 CORS 代理）`;
+                    const proxyHint = snap.proxy ? ' · 代理 ' + snap.proxy : '';
+                    el.textContent = '模式：静态 · 节点 ' + snap.alive + '/' + snap.total + ' 在线' + proxyHint + '（并行竞速）';
                     return;
                 }
-                el.textContent = '节点状态暂不可用';
-            } catch {
-                el.textContent = '静态模式就绪 · 将使用固定 5 节点';
+                el.textContent = '静态模式就绪 · 固定 5 节点 + CORS 竞速';
+            } catch (e) {
+                el.textContent = '节点状态暂不可用（公共 CORS 代理可能拥堵）';
             }
         }
 

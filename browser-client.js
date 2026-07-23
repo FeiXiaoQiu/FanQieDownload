@@ -26,40 +26,187 @@
   /** @type {{host:string,ok:boolean,latency:number}[]} */
   let hostState = FIXED_HOSTS.map((h) => ({ host: h, ok: true, latency: 9999 }));
   let cancelFlag = false;
+  /** 最近成功的代理 id，下次优先 */
+  let preferredProxy = "allorigins-get";
 
-  const CORS_PREFIXES = [
-    "https://api.allorigins.win/raw?url=",
-    "https://corsproxy.io/?",
+  /**
+   * 公共 CORS 代理（纯静态站必需）。
+   * 节点本身无 ACAO，浏览器不能直连；优先 allorigins /get（目前最稳）。
+   */
+  const PROXY_DEFS = [
+    {
+      id: "allorigins-get",
+      build: function (url) {
+        return "https://api.allorigins.win/get?url=" + encodeURIComponent(url);
+      },
+      parse: function (text) {
+        const wrap = JSON.parse(text || "{}");
+        if (wrap && typeof wrap.contents === "string") {
+          return JSON.parse(wrap.contents || "{}");
+        }
+        if (wrap && wrap.contents && typeof wrap.contents === "object") {
+          return wrap.contents;
+        }
+        return wrap;
+      },
+    },
+    {
+      id: "allorigins-raw",
+      build: function (url) {
+        return "https://api.allorigins.win/raw?url=" + encodeURIComponent(url);
+      },
+      parse: function (text) {
+        return JSON.parse(text || "{}");
+      },
+    },
+    {
+      id: "corsproxy-io",
+      build: function (url) {
+        return "https://corsproxy.io/?" + encodeURIComponent(url);
+      },
+      parse: function (text) {
+        return JSON.parse(text || "{}");
+      },
+    },
   ];
 
-  function corsUrls(url) {
-    return CORS_PREFIXES.map(function (p) {
-      return p + encodeURIComponent(url);
+  function orderedProxies() {
+    return PROXY_DEFS.slice().sort(function (a, b) {
+      if (a.id === preferredProxy) return -1;
+      if (b.id === preferredProxy) return 1;
+      return 0;
     });
   }
 
-  async function fetchJson(url, timeout = 20000) {
-    let lastErr = null;
-    for (const proxied of corsUrls(url)) {
-      const ctrl = new AbortController();
-      const t = setTimeout(function () {
-        ctrl.abort();
-      }, timeout);
-      try {
-        const res = await fetch(proxied, {
-          signal: ctrl.signal,
-          headers: { Accept: "application/json" },
+  function fetchViaProxy(proxy, url, timeout, signal) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () {
+      ctrl.abort();
+    }, timeout);
+    if (signal) {
+      if (signal.aborted) ctrl.abort();
+      else
+        signal.addEventListener("abort", function () {
+          ctrl.abort();
         });
-        if (!res.ok) throw new Error("HTTP " + res.status);
-        const text = await res.text();
-        return JSON.parse(text || "{}");
-      } catch (e) {
-        lastErr = e;
-      } finally {
-        clearTimeout(t);
-      }
     }
-    throw lastErr || new Error("CORS proxy failed");
+    return fetch(proxy.build(url), {
+      signal: ctrl.signal,
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error(proxy.id + " HTTP " + res.status);
+        return res.text();
+      })
+      .then(function (text) {
+        if (!text || text.charAt(0) === "<") {
+          throw new Error(proxy.id + " 非 JSON");
+        }
+        const data = proxy.parse(text);
+        preferredProxy = proxy.id;
+        return data;
+      })
+      .finally(function () {
+        clearTimeout(timer);
+      });
+  }
+
+  /** 同一目标 URL：多代理竞速，先成功者胜 */
+  async function fetchJson(url, timeout) {
+    timeout = timeout || 14000;
+    const proxies = orderedProxies();
+    const ctrl = new AbortController();
+    let lastErr = null;
+    let settled = false;
+
+    return new Promise(function (resolve, reject) {
+      let pending = proxies.length;
+      if (!pending) {
+        reject(new Error("无可用 CORS 代理"));
+        return;
+      }
+      proxies.forEach(function (proxy) {
+        fetchViaProxy(proxy, url, timeout, ctrl.signal)
+          .then(function (data) {
+            if (settled) return;
+            settled = true;
+            ctrl.abort();
+            resolve(data);
+          })
+          .catch(function (e) {
+            lastErr = e;
+            pending--;
+            if (!settled && pending <= 0) {
+              reject(lastErr || new Error("CORS proxy failed"));
+            }
+          });
+      });
+    });
+  }
+
+  function raceWithProxies(pathBuilder, hosts, proxies, timeout, ok) {
+    const ctrl = new AbortController();
+    let lastErr = null;
+    let pending = 0;
+    let settled = false;
+
+    return new Promise(function (resolve, reject) {
+      hosts.forEach(function (host) {
+        proxies.forEach(function (proxy) {
+          pending++;
+          fetchViaProxy(proxy, pathBuilder(host), timeout, ctrl.signal)
+            .then(function (data) {
+              if (settled) return;
+              if (!ok(data, host)) {
+                lastErr = new Error("节点无有效数据: " + host);
+                return;
+              }
+              settled = true;
+              ctrl.abort();
+              markOk(host, 0);
+              resolve({ data: data, host: host, proxy: proxy.id });
+            })
+            .catch(function (e) {
+              lastErr = e;
+            })
+            .finally(function () {
+              pending--;
+              if (!settled && pending <= 0) {
+                reject(lastErr || new Error("全部节点失败"));
+              }
+            });
+        });
+      });
+      if (!pending) reject(new Error("无节点"));
+    });
+  }
+
+  /**
+   * 多节点竞速：先只走「最近成功」的代理（少打慢代理），失败再全代理兜底
+   */
+  async function raceHosts(pathBuilder, opts) {
+    opts = opts || {};
+    const timeout = opts.timeout || 14000;
+    const hosts = opts.hosts || pickHosts();
+    const ok =
+      opts.ok ||
+      function () {
+        return true;
+      };
+    const ordered = orderedProxies();
+    try {
+      return await raceWithProxies(pathBuilder, hosts, [ordered[0]], timeout, ok);
+    } catch (e1) {
+      if (ordered.length <= 1) throw e1;
+      return raceWithProxies(
+        pathBuilder,
+        hosts,
+        ordered.slice(1),
+        timeout,
+        ok
+      );
+    }
   }
 
   async function loadCharset() {
@@ -154,27 +301,42 @@
 
   async function probeHosts() {
     await loadCharset();
+    // 首屏探活：只走首选代理 + 短超时，失败则默认全节点可用（避免卡死）
+    const proxy = orderedProxies()[0];
     await Promise.all(
-      hostState.map(async (n) => {
+      hostState.map(async function (n) {
         const t0 = Date.now();
         try {
-          const data = await fetchJson(
+          const data = await fetchViaProxy(
+            proxy,
             n.host + "/content?item_id=" + PROBE_ITEM,
-            12000
+            7000,
+            null
           );
           const content =
             (data.data && (data.data.content || data.data.text)) || "";
-          if ((data.code === 0 || data.code === "0") && String(content).length > 30) {
+          if (
+            (data.code === 0 || data.code === "0" || data.code == null) &&
+            String(content).length > 30
+          ) {
             n.ok = true;
             n.latency = Date.now() - t0;
           } else {
             n.ok = false;
+            n.latency = 9999;
           }
         } catch {
           n.ok = false;
+          n.latency = 9999;
         }
       })
     );
+    if (!hostState.some(function (h) { return h.ok; })) {
+      hostState.forEach(function (h) {
+        h.ok = true;
+        h.latency = 5000;
+      });
+    }
     return {
       total: hostState.length,
       alive: hostState.filter((h) => h.ok).length,
@@ -183,6 +345,7 @@
         ok: h.ok,
         latency: h.latency,
       })),
+      proxy: preferredProxy,
     };
   }
 
@@ -237,34 +400,68 @@
   }
 
   async function search(query) {
-    let lastErr = null;
-    for (const host of pickHosts()) {
-      try {
-        const data = await fetchJson(
-          host + "/search?query=" + encodeURIComponent(query) + "&page=0",
-          18000
-        );
-        if (data.code !== 0 && data.code !== "0") {
-          lastErr = data.message || data.msg;
-          continue;
+    try {
+      const raced = await raceHosts(
+        function (host) {
+          return (
+            host +
+            "/search?query=" +
+            encodeURIComponent(query) +
+            "&page=0"
+          );
+        },
+        {
+          timeout: 16000,
+          hosts: FIXED_HOSTS.slice(),
+          ok: function (data) {
+            if (data.code !== 0 && data.code !== "0") return false;
+            return parseSearch(data).length > 0;
+          },
         }
-        const books = parseSearch(data);
-        if (books.length) {
-          markOk(host, 0);
-          return { code: 0, books, source: host };
-        }
-      } catch (e) {
-        lastErr = e.message || String(e);
-        markFail(host);
-      }
+      );
+      const books = parseSearch(raced.data);
+      return {
+        code: 0,
+        books: books,
+        source: raced.host,
+        proxy: raced.proxy,
+      };
+    } catch (e) {
+      return {
+        code: -1,
+        message: "搜索失败: " + (e.message || String(e)),
+        books: [],
+      };
     }
-    return { code: -1, message: "搜索失败: " + (lastErr || "无节点"), books: [] };
   }
 
   async function getInfo(bookId) {
+    try {
+      const raced = await raceHosts(
+        function (host) {
+          return host + "/info?book_id=" + bookId;
+        },
+        {
+          timeout: 12000,
+          ok: function (data) {
+            const d = data.data || data;
+            return !!(d && (d.book_name || d.title || d.book_id));
+          },
+        }
+      );
+      const d = raced.data.data || raced.data;
+      return {
+        book_id: bookId,
+        title: d.book_name || d.title || "小说" + bookId,
+        author: d.author || d.author_name || "未知",
+        abstract: d.book_abstract_v2 || d.book_abstract || d.abstract || "",
+      };
+    } catch {
+      /* fallthrough sequential */
+    }
     for (const host of pickHosts()) {
       try {
-        const data = await fetchJson(host + "/info?book_id=" + bookId, 15000);
+        const data = await fetchJson(host + "/info?book_id=" + bookId, 12000);
         const d = data.data || data;
         if (d && (d.book_name || d.title || d.book_id)) {
           markOk(host, 0);
@@ -282,72 +479,79 @@
     return { book_id: bookId, title: "小说" + bookId, author: "未知", abstract: "" };
   }
 
-  async function getCatalog(bookId) {
-    let lastErr = null;
-    for (const host of pickHosts()) {
-      try {
-        const data = await fetchJson(host + "/catalog?book_id=" + bookId, 25000);
-        if (data.code !== 0 && data.code !== "0" && !data.data) {
-          lastErr = data.message || data.msg;
-          continue;
-        }
-        const d = data.data || {};
-        const list = d.item_data_list || d.itemDataList || d.chapter_list || [];
-        if (Array.isArray(list) && list.length) {
-          markOk(host, 0);
-          return list.map((ch) => ({
-            item_id: String(ch.item_id || ch.itemId || ch.id || ""),
-            title: ch.title || "",
-          }));
-        }
-      } catch (e) {
-        lastErr = e.message || String(e);
-        markFail(host);
-      }
+  function extractCatalog(data) {
+    const d = data.data || data || {};
+    return d.item_data_list || d.itemDataList || d.chapter_list || [];
+  }
+
+  function extractContent(data, itemId) {
+    if (!(data.code === 0 || data.code === "0" || data.code == null)) {
+      return null;
     }
-    throw new Error("目录获取失败: " + (lastErr || "无节点"));
+    let payload = data.data || {};
+    if (payload && typeof payload === "object" && payload[itemId]) {
+      payload = payload[itemId];
+    }
+    let raw = "";
+    let title = "";
+    if (payload && typeof payload === "object") {
+      raw = payload.content || payload.text || "";
+      title = payload.title || payload.chapter_title || "";
+    } else if (typeof payload === "string") {
+      raw = payload;
+    }
+    if (!raw || raw.length < 30) return null;
+    return { raw: raw, title: title };
+  }
+
+  async function getCatalog(bookId) {
+    try {
+      const raced = await raceHosts(
+        function (host) {
+          return host + "/catalog?book_id=" + bookId;
+        },
+        {
+          timeout: 18000,
+          ok: function (data) {
+            const list = extractCatalog(data);
+            return Array.isArray(list) && list.length > 0;
+          },
+        }
+      );
+      const list = extractCatalog(raced.data);
+      return list.map(function (ch) {
+        return {
+          item_id: String(ch.item_id || ch.itemId || ch.id || ""),
+          title: ch.title || "",
+        };
+      });
+    } catch (e) {
+      throw new Error("目录获取失败: " + (e.message || String(e)));
+    }
   }
 
   async function getContent(itemId) {
-    let lastErr = null;
-    for (const host of pickHosts()) {
-      try {
-        const data = await fetchJson(host + "/content?item_id=" + itemId, 20000);
-        if (!(data.code === 0 || data.code === "0" || data.code == null)) {
-          lastErr = data.msg || data.message;
-          markFail(host);
-          continue;
+    try {
+      const raced = await raceHosts(
+        function (host) {
+          return host + "/content?item_id=" + itemId;
+        },
+        {
+          timeout: 14000,
+          hosts: (aliveHosts().length ? aliveHosts() : FIXED_HOSTS.slice()).slice(0, 4),
+          ok: function (data) {
+            return !!extractContent(data, itemId);
+          },
         }
-        let payload = data.data || {};
-        if (payload && typeof payload === "object" && payload[itemId]) {
-          payload = payload[itemId];
-        }
-        let raw = "";
-        let title = "";
-        if (payload && typeof payload === "object") {
-          raw = payload.content || payload.text || "";
-          title = payload.title || payload.chapter_title || "";
-        } else if (typeof payload === "string") {
-          raw = payload;
-        }
-        if (!raw || raw.length < 30) {
-          lastErr = "short content";
-          continue;
-        }
-        await loadCharset();
-        const text = decodeBody(raw);
-        if (text.length < 30) {
-          lastErr = "decode short";
-          continue;
-        }
-        markOk(host, 0);
-        return { title, text };
-      } catch (e) {
-        lastErr = e.message || String(e);
-        markFail(host);
-      }
+      );
+      const got = extractContent(raced.data, itemId);
+      await loadCharset();
+      const text = decodeBody(got.raw);
+      if (text.length < 30) throw new Error("decode short");
+      return { title: got.title, text: text };
+    } catch (e) {
+      throw new Error(e.message || "正文获取失败");
     }
-    throw new Error(lastErr || "正文获取失败");
   }
 
   function cacheKey(bookId, itemId) {
