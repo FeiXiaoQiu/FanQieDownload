@@ -884,11 +884,13 @@
         .search-results {
             display: none;
             margin-top: clamp(16px, 2vw, 22px);
-            max-height: 360px;
+            max-height: min(52vh, 420px);
             overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
             border-radius: clamp(10px, 1.2vw, 12px);
-            background: rgba(255, 255, 255, 0.72);
+            background: rgba(255, 255, 255, 0.92);
             border: 1px solid rgba(255, 71, 87, 0.12);
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
         }
 
         .search-item {
@@ -899,19 +901,21 @@
             cursor: pointer;
             transition: var(--transition);
             align-items: flex-start;
+            text-align: left;
         }
 
         .search-item:last-child {
             border-bottom: none;
         }
 
-        .search-item:hover {
+        .search-item:hover,
+        .search-item:active {
             background: rgba(255, 71, 87, 0.08);
         }
 
         .search-item img {
-            width: 52px;
-            height: 70px;
+            width: 48px;
+            height: 64px;
             object-fit: cover;
             border-radius: 6px;
             background: #eee;
@@ -926,25 +930,29 @@
         .search-item-title {
             font-weight: 600;
             color: var(--dark);
-            font-size: 1rem;
+            font-size: clamp(0.95rem, 1.2vw, 1.05rem);
             margin-bottom: 4px;
-            word-break: break-all;
+            line-height: 1.35;
+            word-break: break-word;
+            overflow-wrap: anywhere;
         }
 
         .search-item-meta {
-            font-size: 0.85rem;
+            font-size: clamp(0.8rem, 1vw, 0.88rem);
             color: var(--gray);
             margin-bottom: 4px;
+            line-height: 1.35;
         }
 
         .search-item-desc {
-            font-size: 0.82rem;
+            font-size: clamp(0.78rem, 0.95vw, 0.85rem);
             color: #666;
-            line-height: 1.4;
+            line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
             -webkit-box-orient: vertical;
             overflow: hidden;
+            word-break: break-word;
         }
 
         .search-empty {
@@ -952,6 +960,22 @@
             text-align: center;
             color: var(--gray);
             font-size: 0.95rem;
+        }
+
+        @media (max-width: 767px) {
+            .search-results {
+                max-height: min(48vh, 360px);
+            }
+
+            .search-item {
+                padding: 12px;
+                gap: 10px;
+            }
+
+            .search-item img {
+                width: 44px;
+                height: 58px;
+            }
         }
         
         .info-section {

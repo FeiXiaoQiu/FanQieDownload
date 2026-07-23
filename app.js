@@ -129,7 +129,7 @@
                 }
             } catch (error) {
                 // 文件加载失败，使用默认消息
-                console.log('使用内置一言消息');
+
             }
             
             // 返回默认消息
@@ -342,7 +342,7 @@
                     try {
                         popupElement.parentNode.removeChild(popupElement);
                     } catch (e) {
-                        console.log('弹窗移除失败，可能已被其他操作移除');
+
                     }
                 }
                 
@@ -698,18 +698,25 @@
                     books = data.books || [];
                 }
                 if (!books.length) {
-                    const tip = (!backend && window.FanqieBrowserClient && !window.FanqieBrowserClient.getCorsProxy())
-                        ? '未找到结果。若一直失败，公共 CORS 可能拥堵：部署仓库 cors-worker.js 后执行 localStorage.setItem("fq_cors_proxy","https://你的.workers.dev")'
-                        : '未找到相关书籍';
-                    box.innerHTML = '<div class="search-empty">' + escapeHtml(tip) + '</div>';
-                    showResult(tip, 'warning');
+                    box.innerHTML = '<div class="search-empty">未找到相关书籍</div>';
+                    showResult('未找到相关书籍', 'warning');
                     return;
                 }
                 box.innerHTML = books.map(function(b) {
-                    return '<div class="search-item" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(b.title || '') + '">' +
-                        '<div class="search-title">' + escapeHtml(b.title || '未知') + '</div>' +
-                        '<div class="search-meta">' + escapeHtml(b.author || '') + (b.category ? ' · ' + escapeHtml(b.category) : '') + '</div>' +
-                        '</div>';
+                    const title = b.title || '未知';
+                    const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
+                    const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
+                    const thumb = b.thumb_url || '';
+                    const img = thumb
+                        ? '<img src="' + escapeHtml(thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
+                        : '';
+                    return '<div class="search-item" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
+                        img +
+                        '<div class="search-item-body">' +
+                        '<div class="search-item-title">' + escapeHtml(title) + '</div>' +
+                        (meta ? '<div class="search-item-meta">' + escapeHtml(meta) + '</div>' : '') +
+                        (desc ? '<div class="search-item-desc">' + escapeHtml(desc.slice(0, 120)) + (desc.length > 120 ? '…' : '') + '</div>' : '') +
+                        '</div></div>';
                 }).join('');
                 Array.prototype.forEach.call(box.querySelectorAll('.search-item'), function(el) {
                     el.addEventListener('click', function() {
@@ -1397,7 +1404,6 @@
         
         // 页面加载完成后的初始化
         document.addEventListener('DOMContentLoaded', async function() {
-            console.log('页面加载完成，开始初始化...');
             
             // 显示主容器
             const container = document.getElementById('mainContainer');
@@ -1408,7 +1414,6 @@
             const isTablet = /iPad|Android(?!.*Mobile)/i.test(navigator.userAgent) || 
                            (window.innerWidth >= 768 && window.innerWidth <= 1024);
             
-            console.log(`设备检测: ${isMobile ? '手机' : isTablet ? '平板' : '电脑'}`);
             
             // 为输入框添加自动检测功能
             const bookIdInput = document.getElementById('bookId');
