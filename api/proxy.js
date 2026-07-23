@@ -96,11 +96,42 @@ module.exports = async function handler(req, res) {
   }
 
   try {
-    const up = await fetchBuffer(target, 18000);
+    // bytecdn 直连常 403，代理层先改写为 byteimg
+    let finalTarget = String(target);
+    if (
+      finalTarget.indexOf("bytecdn.cn") !== -1 &&
+      finalTarget.indexOf("novel-pic/") !== -1
+    ) {
+      const m = /novel-pic\/([^~?/]+)/.exec(finalTarget);
+      if (m) {
+        finalTarget =
+          "https://p3-novel.byteimg.com/img/novel-pic/" +
+          m[1] +
+          "~tplv-tt-cs0:440:440.image";
+      }
+    }
+    let up = await fetchBuffer(finalTarget, 18000);
+    // 仍失败且是图片：再试 origin 路径
+    if (
+      (up.status === 403 || up.status === 404) &&
+      finalTarget.indexOf("novel-pic/") !== -1
+    ) {
+      const m2 = /novel-pic\/([^~?/]+)/.exec(finalTarget);
+      if (m2) {
+        const alt =
+          "https://p3-novel.byteimg.com/img/novel-pic/" +
+          m2[1] +
+          "~tplv-tt-cs0:300:400.image";
+        if (alt !== finalTarget) {
+          up = await fetchBuffer(alt, 18000);
+        }
+      }
+    }
     res.statusCode = up.status || 200;
     res.setHeader("Content-Type", up.contentType);
-    res.setHeader("Cache-Control", "no-store");
+    res.setHeader("Cache-Control", "public, max-age=86400");
     res.setHeader("X-Proxy-Status", String(up.status));
+    res.setHeader("X-Proxy-Target", finalTarget.slice(0, 200));
     res.end(up.body);
   } catch (e) {
     res.statusCode = 502;

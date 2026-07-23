@@ -644,28 +644,30 @@
                 .replace(/"/g, '&quot;');
         }
 
-        /** 封面 CDN 常防盗链；优先经同源/远程 API 代理 */
+        /** 封面 CDN 常防盗链：bytecdn→byteimg，并优先经 /api/proxy */
         function resolveCoverUrl(raw) {
             let u = String(raw || '').trim();
             if (!u) return '';
-            // bytecdn 常 403，换成 byteimg 同源资源
             if (u.indexOf('bytecdn.cn') !== -1 && u.indexOf('novel-pic/') !== -1) {
                 const m = /novel-pic\/([^~?/]+)/.exec(u);
                 if (m) {
                     u = 'https://p3-novel.byteimg.com/img/novel-pic/' + m[1] + '~tplv-tt-cs0:440:440.image';
                 }
             }
+            // 已是代理 URL 则不再包一层
+            if (u.indexOf('/api/proxy?') !== -1) return u;
             const base = REMOTE_API_BASE || (
                 (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin : ''
             );
-            // 有可用 API 时走代理，避免浏览器直连被防盗链
-            if (base && (API_PROXY_READY || REMOTE_API_BASE || /vercel\.app$/.test(location.host))) {
-                return base + '/api/proxy?url=' + encodeURIComponent(u);
+            // 有页面源且探测到代理、或默认远程 Vercel：一律走代理
+            if (base) {
+                const proxyBase = REMOTE_API_BASE || base;
+                if (API_PROXY_READY || REMOTE_API_BASE || /vercel\.app$/.test(location.host) || API_PROXY_READY !== false) {
+                    return proxyBase + '/api/proxy?url=' + encodeURIComponent(u);
+                }
             }
-            if (base && API_PROXY_READY !== false) {
-                return base + '/api/proxy?url=' + encodeURIComponent(u);
-            }
-            return u;
+            // Pages 未探测到时，硬编码回退到 Vercel 代理拉封面
+            return 'https://fan-qie-download.vercel.app/api/proxy?url=' + encodeURIComponent(u);
         }
 
         async function searchByName(forceQuery) {

@@ -581,6 +581,21 @@
     };
   }
 
+  function normalizeCoverUrl(raw) {
+    let u = String(raw || "").trim();
+    if (!u) return "";
+    if (u.indexOf("bytecdn.cn") !== -1 && u.indexOf("novel-pic/") !== -1) {
+      const m = /novel-pic\/([^~?/]+)/.exec(u);
+      if (m) {
+        u =
+          "https://p3-novel.byteimg.com/img/novel-pic/" +
+          m[1] +
+          "~tplv-tt-cs0:440:440.image";
+      }
+    }
+    return u;
+  }
+
   function parseSearch(data) {
     const books = [];
     const seen = new Set();
@@ -608,12 +623,13 @@
         title: title,
         author: it.author || "",
         abstract: it.abstract || "",
-        thumb_url:
+        thumb_url: normalizeCoverUrl(
           it.thumb_uri ||
-          it.audio_thumb_uri ||
-          it.thumb_url ||
-          it.cover_url ||
-          "",
+            it.audio_thumb_uri ||
+            it.thumb_url ||
+            it.cover_url ||
+            ""
+        ),
         score: it.score || "",
         category: it.category || "",
       });

@@ -17,6 +17,22 @@ const HOSTS = [
 const UA =
   "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/120.0.0.0 Safari/537.36";
 
+/** bytecdn 防盗链 403；统一改写为可代理的 byteimg */
+function normalizeCoverUrl(raw) {
+  let u = String(raw || "").trim();
+  if (!u) return "";
+  if (u.indexOf("bytecdn.cn") !== -1 && u.indexOf("novel-pic/") !== -1) {
+    const m = /novel-pic\/([^~?/]+)/.exec(u);
+    if (m) {
+      u =
+        "https://p3-novel.byteimg.com/img/novel-pic/" +
+        m[1] +
+        "~tplv-tt-cs0:440:440.image";
+    }
+  }
+  return u;
+}
+
 function cors(res) {
   res.setHeader("Access-Control-Allow-Origin", "*");
   res.setHeader("Access-Control-Allow-Methods", "GET,OPTIONS");
@@ -86,14 +102,15 @@ function parseSearch(data) {
     const title = it.book_name || it.title || "";
     if (!title && !it.author) return;
     seen.add(book_id);
-    // thumb_url(bytecdn) 常 403；优先 thumb_uri / audio_thumb_uri
-    const thumb =
+    // thumb_url(bytecdn) 常 403；优先 thumb_uri，并强制改写为 byteimg
+    const rawThumb =
       it.thumb_uri ||
       it.audio_thumb_uri ||
       it.thumb_url ||
       it.cover_url ||
       it.cover ||
       "";
+    const thumb = normalizeCoverUrl(rawThumb);
     books.push({
       book_id: book_id,
       title: title,
