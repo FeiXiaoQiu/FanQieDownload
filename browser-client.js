@@ -1,9 +1,5 @@
 /**
- * GitHub Pages / 纯静态：固定节点 + CORS 代理
- *
- * 加速建议（强烈推荐）：部署仓库里的 cors-worker.js 到 Cloudflare Workers，然后：
- *   localStorage.setItem('fq_cors_proxy', 'https://xxx.workers.dev')
- * 或页面注入 window.FQ_CORS_PROXY
+ * 纯静态：固定节点 + 可选 CORS 代理（同源 /api/proxy 或 localStorage fq_cors_proxy）
  */
 (function (global) {
   "use strict";
@@ -716,11 +712,11 @@
         proxy: raced.proxy,
       };
     } catch (e) {
-      const hint = readCustomProxyBase()
-        ? e.message || String(e)
-        : (e.message || String(e)) +
-          "。公共 CORS 拥堵时请部署 cors-worker.js（Cloudflare 免费）并 localStorage.setItem('fq_cors_proxy', 'https://你的.workers.dev')";
-      return { code: -1, message: "搜索失败: " + hint, books: [] };
+      return {
+        code: -1,
+        message: "搜索失败: " + (e.message || String(e)),
+        books: [],
+      };
     }
   }
 

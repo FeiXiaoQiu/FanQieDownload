@@ -1,6 +1,3 @@
-server.py
-requirements.txt
-requirements.txt.optional
 __pycache__
 *.pyc
 downloads
@@ -14,7 +11,4 @@ nodes.alive.json
 .env
 一键启动.bat
 一键启动.command
-github-stream-extract.sh
 start.sh
-# public 由 build 生成，勿从 git 预置覆盖
-# （构建时在 CI 里 mkdir public）

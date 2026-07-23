@@ -1,4 +1,4 @@
-# 推送 tag 或手动触发时，打包两个 zip 并挂到 GitHub Release
+# 推送 tag 或手动触发时打包 zip 并挂到 GitHub Release
 # 例：git tag v2.2.0 && git push origin v2.2.0
 
 name: Release ZIP
@@ -22,17 +22,15 @@ jobs:
         run: |
           mkdir -p dist
 
-          # 静态站点包（Pages / 本地静态服务器）
           zip -r dist/fanqie-dl-static.zip \
             index.html styles.css app.js browser-client.js charset.json \
-            Speech CNAME GITHUB_PAGES.md README.md DEPLOY.txt
+            Speech CNAME README.md
 
-          # 含可选 Node 代理的完整源码包
           zip -r dist/fanqie-dl-full.zip \
             server.js browser-client.js app.js styles.css index.html charset.json \
-            package.json start.sh README.md DEPLOY.txt GITHUB_PAGES.md \
-            requirements.txt CNAME Speech \
-            -x "*.pyc" -x "*__pycache__*" -x "downloads/*" -x ".git/*"
+            package.json start.sh README.md CNAME Speech api vercel.json \
+            "一键启动.bat" "一键启动.command" \
+            -x "*.pyc" -x "*__pycache__*" -x "downloads/*" -x ".git/*" -x "public/*"
 
           ls -lh dist/
 

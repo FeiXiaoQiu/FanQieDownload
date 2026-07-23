@@ -30,9 +30,6 @@ jobs:
           cp index.html styles.css app.js browser-client.js charset.json _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
           if [ -d Speech ]; then cp -r Speech _site/; fi
-          if [ -f GITHUB_PAGES.md ]; then cp GITHUB_PAGES.md _site/; fi
-          # 可选说明页，不参与运行
-          if [ -f README.md ]; then cp README.md _site/; fi
           ls -la _site
 
       - name: Upload artifact
