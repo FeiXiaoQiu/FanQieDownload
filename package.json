@@ -2,11 +2,12 @@
   "name": "fanqie-download",
   "version": "2.2.0",
   "private": true,
-  "description": "番茄小说搜索与下载动态站点（Node 代理 + 自动节点探活）",
+  "description": "番茄小说搜索与下载（静态前端 + Vercel Serverless API）",
   "main": "server.js",
   "scripts": {
     "start": "node server.js",
-    "dev": "node server.js"
+    "dev": "node server.js",
+    "build": "echo skip"
   },
   "engines": {
     "node": ">=18"
