@@ -673,6 +673,63 @@
             return 'https://fan-qie-download.vercel.app/api/proxy?url=' + encodeURIComponent(u);
         }
 
+        let lastSearchBooks = [];
+        let lastSearchQuery = '';
+        let lastSearchNextOffset = 0;
+        let lastSearchHasMore = false;
+        let searchLoadingMore = false;
+        let batchDownloadQueue = [];
+        let batchDownloadRunning = false;
+        let previewBook = null;
+
+        async function fetchSearchPage(query, offset) {
+            const backend = await detectBackend();
+            await ensureSameOriginProxy();
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(function () { ctrl.abort(); }, 20000);
+                const url = apiUrl(
+                    '/api/search?q=' + encodeURIComponent(query) +
+                    '&offset=' + encodeURIComponent(String(offset || 0))
+                );
+                const resp = await fetch(url, { signal: ctrl.signal, cache: 'no-store' });
+                clearTimeout(t);
+                if (resp.ok) {
+                    const data = await resp.json();
+                    if (data && data.code === 0) {
+                        return {
+                            books: data.books || [],
+                            next_offset: data.next_offset != null
+                                ? data.next_offset
+                                : (offset || 0) + (data.books || []).length,
+                            has_more: Boolean(data.has_more),
+                            source: data.source || 'api',
+                        };
+                    }
+                    if (backend) {
+                        throw new Error((data && data.message) || '搜索失败');
+                    }
+                }
+            } catch (e) {
+                if (backend) throw e;
+            }
+            if (offset > 0) {
+                return { books: [], next_offset: offset, has_more: false, source: 'none' };
+            }
+            if (!window.FanqieBrowserClient) throw new Error('浏览器客户端未加载');
+            const data = await window.FanqieBrowserClient.search(query);
+            if (!data || data.code !== 0) {
+                throw new Error((data && data.message) || '搜索失败');
+            }
+            const books = data.books || [];
+            return {
+                books: books,
+                next_offset: books.length,
+                has_more: books.length >= 7,
+                source: data.source || 'static',
+            };
+        }
+
         async function searchByName(forceQuery) {
             const input = (forceQuery || document.getElementById('bookId').value || '').trim();
             const box = document.getElementById('searchResults');
@@ -686,66 +743,83 @@
                 return;
             }
             if (box) {
-                box.style.display = 'block';
+                box.style.display = 'flex';
                 box.innerHTML = '<div class="search-empty">搜索中...</div>';
             }
             try {
-                const backend = await detectBackend();
-                await ensureSameOriginProxy();
-                let books = [];
-                // 优先同源 /api/search（Vercel / Node 都快）
-                let searched = false;
-                try {
-                    const ctrl = new AbortController();
-                    const t = setTimeout(function () { ctrl.abort(); }, 20000);
-                    const resp = await fetch(apiUrl('/api/search?q=' + encodeURIComponent(input)), {
-                        signal: ctrl.signal,
-                        cache: 'no-store',
-                    });
-                    clearTimeout(t);
-                    if (resp.ok) {
-                        const data = await resp.json();
-                        if (data && data.code === 0 && (data.books || []).length) {
-                            books = data.books || [];
-                            searched = true;
-                        } else if (data && data.code === 0) {
-                            books = [];
-                            searched = true;
-                        } else if (backend) {
-                            throw new Error((data && data.message) || '搜索失败');
-                        }
-                    }
-                } catch (e) {
-                    if (backend) throw e;
-                }
-                if (!searched) {
-                    if (!window.FanqieBrowserClient) throw new Error('浏览器客户端未加载');
-                    const data = await window.FanqieBrowserClient.search(input);
-                    if (!data || data.code !== 0) {
-                        throw new Error((data && data.message) || '搜索失败');
-                    }
-                    books = data.books || [];
-                }
+                const page = await fetchSearchPage(input, 0);
+                const books = page.books || [];
                 if (!books.length) {
                     lastSearchBooks = [];
+                    lastSearchQuery = input;
+                    lastSearchNextOffset = 0;
+                    lastSearchHasMore = false;
                     box.innerHTML = '<div class="search-empty">未找到相关书籍</div>';
                     showResult('未找到相关书籍', 'warning');
                     return;
                 }
                 lastSearchBooks = books.slice();
-                renderSearchList(box, books);
-                showResult('找到 ' + books.length + ' 本，点卡片预览，勾选后可批量下载', 'info');
+                lastSearchQuery = input;
+                lastSearchNextOffset = page.next_offset || books.length;
+                lastSearchHasMore = Boolean(page.has_more);
+                renderSearchList(box, lastSearchBooks);
+                showResult(
+                    '已加载 ' + books.length + ' 本' +
+                    (lastSearchHasMore ? '，可继续加载更多' : '') +
+                    ' · 点卡片预览，勾选后可批量下载',
+                    'info'
+                );
             } catch (e) {
                 lastSearchBooks = [];
+                lastSearchHasMore = false;
                 box.innerHTML = '<div class="search-empty">搜索失败：' + escapeHtml(e.message || String(e)) + '</div>';
                 showResult('搜索失败：' + e.message, 'error');
             }
         }
 
-        let lastSearchBooks = [];
-        let batchDownloadQueue = [];
-        let batchDownloadRunning = false;
-        let previewBook = null;
+        async function loadMoreSearch() {
+            if (searchLoadingMore || !lastSearchHasMore || !lastSearchQuery) return;
+            const box = document.getElementById('searchResults');
+            const moreBtn = box && box.querySelector('#searchMoreBtn');
+            searchLoadingMore = true;
+            if (moreBtn) {
+                moreBtn.disabled = true;
+                moreBtn.textContent = '加载中…';
+            }
+            try {
+                const page = await fetchSearchPage(lastSearchQuery, lastSearchNextOffset);
+                const incoming = page.books || [];
+                const seen = new Set(lastSearchBooks.map(function (b) { return String(b.book_id); }));
+                let added = 0;
+                for (let i = 0; i < incoming.length; i++) {
+                    const b = incoming[i];
+                    const id = String(b.book_id || '');
+                    if (!id || seen.has(id)) continue;
+                    seen.add(id);
+                    lastSearchBooks.push(b);
+                    added += 1;
+                }
+                lastSearchNextOffset = page.next_offset != null
+                    ? page.next_offset
+                    : lastSearchNextOffset + incoming.length;
+                lastSearchHasMore = Boolean(page.has_more) && incoming.length > 0;
+                if (!added && !lastSearchHasMore) {
+                    showResult('没有更多结果了', 'info');
+                } else {
+                    showResult('已累计 ' + lastSearchBooks.length + ' 本' + (lastSearchHasMore ? '，还可继续加载' : ''), 'info');
+                }
+                const selectedIds = getSelectedSearchBooks().map(function (b) { return String(b.book_id); });
+                renderSearchList(box, lastSearchBooks, selectedIds);
+            } catch (e) {
+                showResult('加载更多失败：' + (e.message || e), 'error');
+                if (moreBtn) {
+                    moreBtn.disabled = false;
+                    moreBtn.textContent = '加载更多';
+                }
+            } finally {
+                searchLoadingMore = false;
+            }
+        }
 
         function findSearchBook(bookId) {
             const id = String(bookId || '');
@@ -785,7 +859,9 @@
                 }
             });
             const countEl = box.querySelector('#searchSelectCount');
-            if (countEl) countEl.textContent = '已选 ' + n + ' 本';
+            if (countEl) {
+                countEl.textContent = '已选 ' + n + ' 本 / 共 ' + (checks.length || lastSearchBooks.length) + ' 本';
+            }
             const all = box.querySelector('#searchCheckAll');
             if (all) {
                 all.checked = checks.length > 0 && n === checks.length;
@@ -800,18 +876,22 @@
             }
         }
 
-        function renderSearchList(box, books) {
+        function renderSearchList(box, books, keepSelectedIds) {
+            if (!box) return;
+            box.style.display = 'flex';
+            const selectedSet = new Set((keepSelectedIds || []).map(String));
             const rows = books.map(function (b) {
                 const title = b.title || '未知';
                 const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
                 const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
                 const coverSrc = resolveCoverUrl(b.thumb_url || b.thumb_uri || '');
+                const checked = selectedSet.has(String(b.book_id)) ? ' checked' : '';
                 const img = coverSrc
                     ? '<img class="search-cover" src="' + escapeHtml(coverSrc) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'\';this.classList.add(\'search-cover-fail\');this.alt=\'无封面\'">'
                     : '<div class="search-cover search-cover-ph" aria-hidden="true">🍅</div>';
                 return (
-                    '<div class="search-item" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
-                    '<input type="checkbox" class="search-item-check" aria-label="选择《' + escapeHtml(title) + '》">' +
+                    '<div class="search-item' + (checked ? ' is-selected' : '') + '" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
+                    '<input type="checkbox" class="search-item-check" aria-label="选择《' + escapeHtml(title) + '》"' + checked + '>' +
                     '<button type="button" class="search-item-main" data-action="preview">' +
                     img +
                     '<div class="search-item-body">' +
@@ -825,13 +905,20 @@
                 );
             }).join('');
 
+            const moreHtml = lastSearchHasMore
+                ? '<div class="search-more-wrap"><button type="button" class="search-more-btn" id="searchMoreBtn">加载更多</button></div>'
+                : (books.length
+                    ? '<div class="search-more-wrap"><button type="button" class="search-more-btn" disabled>已全部加载（' + books.length + ' 本）</button></div>'
+                    : '');
+
             box.innerHTML =
                 '<div class="search-toolbar">' +
                 '<label class="search-check-all"><input type="checkbox" id="searchCheckAll"> 全选</label>' +
-                '<span class="search-toolbar-count" id="searchSelectCount">已选 0 本</span>' +
+                '<span class="search-toolbar-count" id="searchSelectCount">已选 0 本 / 共 ' + books.length + ' 本</span>' +
                 '<button type="button" class="btn btn-secondary" id="batchDownloadBtn" disabled><i>⬇️</i><span>下载所选</span></button>' +
                 '</div>' +
-                '<div class="search-list">' + rows + '</div>';
+                '<div class="search-list">' + rows + '</div>' +
+                moreHtml;
 
             const all = box.querySelector('#searchCheckAll');
             if (all) {
@@ -874,6 +961,12 @@
             if (batchBtn) {
                 batchBtn.addEventListener('click', function () {
                     startBatchDownload(getSelectedSearchBooks());
+                });
+            }
+            const moreBtn = box.querySelector('#searchMoreBtn');
+            if (moreBtn) {
+                moreBtn.addEventListener('click', function () {
+                    loadMoreSearch();
                 });
             }
             updateSearchSelectionUi();

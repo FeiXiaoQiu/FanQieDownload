@@ -396,35 +396,7 @@ async function searchBooks(query, offset = 0) {
   const q = encodeURIComponent(query);
   let lastErr = null;
 
-  // prefer healthy third-party search (no Origin issues)
-  for (const host of pickContentHosts()) {
-    try {
-      const url = `${host}/search?query=${q}&page=${Math.floor(offset / 10)}`;
-      const res = await httpGet(url, { Accept: "application/json" }, 15000);
-      const data = JSON.parse(res.body.toString("utf8") || "{}");
-      if (data.code !== 0 && data.code !== "0") {
-        lastErr = data.message || data.msg || String(data.code);
-        continue;
-      }
-      const books = parseThirdPartySearch(data);
-      if (books.length) {
-        markHostOk(host, 0);
-        return {
-          code: 0,
-          query,
-          offset,
-          next_offset: offset + books.length,
-          has_more: books.length >= 10,
-          books,
-          source: host,
-        };
-      }
-    } catch (e) {
-      lastErr = String(e.message || e);
-      markHostFail(host, lastErr);
-    }
-  }
-
+  // 优先官方接口（支持 offset 分页，结果更多）
   for (const base of SEARCH_URLS) {
     const url = `${base}?aid=1967&offset=${offset}&q=${q}`;
     try {
@@ -458,6 +430,34 @@ async function searchBooks(query, offset = 0) {
       };
     } catch (e) {
       lastErr = String(e.message || e);
+    }
+  }
+
+  for (const host of pickContentHosts()) {
+    try {
+      const url = `${host}/search?query=${q}&page=${Math.floor(offset / 10)}`;
+      const res = await httpGet(url, { Accept: "application/json" }, 15000);
+      const data = JSON.parse(res.body.toString("utf8") || "{}");
+      if (data.code !== 0 && data.code !== "0") {
+        lastErr = data.message || data.msg || String(data.code);
+        continue;
+      }
+      const books = parseThirdPartySearch(data);
+      if (books.length) {
+        markHostOk(host, 0);
+        return {
+          code: 0,
+          query,
+          offset,
+          next_offset: offset + books.length,
+          has_more: books.length >= 7,
+          books,
+          source: host,
+        };
+      }
+    } catch (e) {
+      lastErr = String(e.message || e);
+      markHostFail(host, lastErr);
     }
   }
   return { code: -1, message: `搜索失败: ${lastErr}`, books: [] };
