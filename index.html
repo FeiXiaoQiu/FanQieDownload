@@ -57,6 +57,37 @@
                 </label>
             </div>
             <div class="node-status" id="nodeStatus">节点状态加载中...</div>
+            <div class="proxy-setup" id="proxySetup">
+                <button type="button" class="proxy-setup-toggle" id="proxySetupToggle" onclick="toggleProxySetup()">
+                    搜索太慢 / 没结果？点这里免费加速（约 3 分钟）
+                </button>
+                <div class="proxy-setup-body" id="proxySetupBody" hidden>
+                    <ol class="proxy-steps">
+                        <li>打开
+                            <a href="https://dash.cloudflare.com/?to=/:account/workers-and-pages" target="_blank" rel="noopener noreferrer">Cloudflare Workers</a>
+                            （免费注册，用邮箱即可）
+                        </li>
+                        <li>点 <b>Create</b> → <b>Create Worker</b> → 把下面代码全选粘贴进去 → 点 <b>Deploy</b></li>
+                        <li>部署后页面上会有地址，形如 <code>https://随机名.用户名.workers.dev</code>，复制整段</li>
+                        <li>粘贴到下方输入框，点「保存并测试」</li>
+                    </ol>
+                    <div class="proxy-code-wrap">
+                        <div class="proxy-code-bar">
+                            <span>Worker 代码（点复制）</span>
+                            <button type="button" class="proxy-mini-btn" onclick="copyWorkerCode()">复制代码</button>
+                        </div>
+                        <textarea id="workerCodeBox" class="proxy-code" readonly rows="6"></textarea>
+                    </div>
+                    <div class="proxy-save-row">
+                        <input type="url" id="proxyUrlInput" class="proxy-url-input"
+                               placeholder="粘贴：https://xxx.workers.dev"
+                               autocomplete="off" spellcheck="false">
+                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="saveProxyUrl()">保存并测试</button>
+                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="clearProxyUrl()">清除</button>
+                    </div>
+                    <div class="proxy-hint" id="proxyHint">未配置自建代理时，会走公共通道，经常很慢或失败。</div>
+                </div>
+            </div>
             <div class="search-results" id="searchResults"></div>
         </div>
         
