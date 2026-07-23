@@ -407,7 +407,8 @@
             return 'http://127.0.0.1:8787';
         })();
 
-        let USE_BACKEND = null; // null=探测中, true=Node, false=静态浏览器模式
+        let USE_BACKEND = null; // null=探测中, true=完整 Node 任务, false=静态
+        let API_PROXY_READY = null; // 同源 /api/proxy（Vercel 等）
         let staticJobActive = false;
 
         function apiUrl(path) {
@@ -427,11 +428,71 @@
                 clearTimeout(timer);
                 if (!resp.ok) throw new Error('bad status');
                 const data = await resp.json();
-                USE_BACKEND = !!(data && data.ok);
+                // 完整 Node 才走 job 下载；Vercel serverless 只当加速代理
+                const fullNode = !!(data && data.ok && data.runtime === 'node');
+                const vercelLike = !!(data && data.ok && (
+                    data.runtime === 'vercel-serverless' ||
+                    data.service === 'fanqie-proxy-vercel' ||
+                    data.mode === 'proxy'
+                ));
+                USE_BACKEND = fullNode;
+                if (vercelLike || fullNode) {
+                    API_PROXY_READY = true;
+                    autoBindSameOriginProxy();
+                }
             } catch {
                 USE_BACKEND = false;
             }
+            // 再探测同源 proxy（即使 health 404，也可能有 /api/proxy）
+            if (API_PROXY_READY === null) {
+                try {
+                    await ensureSameOriginProxy();
+                } catch (e) {
+                    API_PROXY_READY = false;
+                }
+            }
             return USE_BACKEND;
+        }
+
+        function autoBindSameOriginProxy() {
+            if (typeof location === 'undefined') return;
+            if (location.protocol !== 'http:' && location.protocol !== 'https:') return;
+            const base = location.origin;
+            try {
+                if (window.FanqieBrowserClient && window.FanqieBrowserClient.setCorsProxy) {
+                    // 已有用户自定义代理则不覆盖
+                    const cur = window.FanqieBrowserClient.getCorsProxy() || '';
+                    if (!cur || cur.indexOf(location.host) !== -1 || cur.indexOf('/api/proxy') !== -1) {
+                        window.FanqieBrowserClient.setCorsProxy(base + '/api/proxy');
+                    }
+                } else {
+                    localStorage.setItem('fq_cors_proxy', base + '/api/proxy');
+                }
+            } catch (e) { /* ignore */ }
+        }
+
+        async function ensureSameOriginProxy() {
+            if (API_PROXY_READY !== null) return API_PROXY_READY;
+            try {
+                const ctrl = new AbortController();
+                const t = setTimeout(function () { ctrl.abort(); }, 3000);
+                const resp = await fetch(apiUrl('/api/proxy'), {
+                    method: 'GET',
+                    cache: 'no-store',
+                    signal: ctrl.signal,
+                });
+                clearTimeout(t);
+                if (!resp.ok) throw new Error('no proxy');
+                const data = await resp.json();
+                if (data && (data.ok || data.usage)) {
+                    API_PROXY_READY = true;
+                    autoBindSameOriginProxy();
+                    return true;
+                }
+            } catch (e) {
+                API_PROXY_READY = false;
+            }
+            return false;
         }
 
         // 自动检测输入并触发下载
@@ -538,15 +599,34 @@
             }
             try {
                 const backend = await detectBackend();
+                await ensureSameOriginProxy();
                 let books = [];
-                if (backend) {
-                    const resp = await fetch(apiUrl('/api/search?q=' + encodeURIComponent(input)));
-                    const data = await resp.json();
-                    if (!data || data.code !== 0) {
-                        throw new Error((data && data.message) || '搜索失败');
+                // 优先同源 /api/search（Vercel / Node 都快）
+                let searched = false;
+                try {
+                    const ctrl = new AbortController();
+                    const t = setTimeout(function () { ctrl.abort(); }, 20000);
+                    const resp = await fetch(apiUrl('/api/search?q=' + encodeURIComponent(input)), {
+                        signal: ctrl.signal,
+                        cache: 'no-store',
+                    });
+                    clearTimeout(t);
+                    if (resp.ok) {
+                        const data = await resp.json();
+                        if (data && data.code === 0 && (data.books || []).length) {
+                            books = data.books || [];
+                            searched = true;
+                        } else if (data && data.code === 0) {
+                            books = [];
+                            searched = true;
+                        } else if (backend) {
+                            throw new Error((data && data.message) || '搜索失败');
+                        }
                     }
-                    books = data.books || [];
-                } else {
+                } catch (e) {
+                    if (backend) throw e;
+                }
+                if (!searched) {
                     if (!window.FanqieBrowserClient) throw new Error('浏览器客户端未加载');
                     const data = await window.FanqieBrowserClient.search(input);
                     if (!data || data.code !== 0) {
@@ -899,12 +979,19 @@
                         return;
                     }
                 }
+                await ensureSameOriginProxy();
+                if (API_PROXY_READY && window.FanqieBrowserClient) {
+                    const snap = await window.FanqieBrowserClient.probeHosts();
+                    el.textContent = '模式：在线加速（同源 API）· 节点 ' + snap.alive + '/' + snap.total + ' · 搜索应较快';
+                    updateProxyHint();
+                    return;
+                }
                 if (window.FanqieBrowserClient) {
                     const snap = await window.FanqieBrowserClient.probeHosts();
                     if (snap.customProxy) {
                         el.textContent = '模式：静态 · 自建代理 · 节点 ' + snap.alive + '/' + snap.total + ' 在线';
                     } else {
-                        el.textContent = '模式：静态 · 公共通道易拥堵 · 点下方查看解决办法';
+                        el.textContent = '模式：静态 · 公共通道易拥堵 · 建议用 Vercel 部署本仓库或本机启动';
                     }
                     updateProxyHint();
                     return;

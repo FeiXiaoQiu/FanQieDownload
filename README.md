@@ -12,16 +12,23 @@ GitHub Pages 部署后自动走固定 5 个正文节点 + CORS 代理。
 
 示例书名：`抽象职校生存手册`
 
-## 在线 / 部署（GitHub Pages）
+## 在线要快：用 GitHub + Vercel（推荐）
+
+GitHub Pages **只能**托管静态文件，搜索必须经代理；公共代理常挂。  
+**代码仍放 GitHub**，用 Vercel 免费托管（含 `/api`）：
+
+1. 打开 https://vercel.com/new → GitHub 登录  
+2. 导入本仓库 → Framework 选 **Other** → Deploy  
+3. 打开 `https://你的项目.vercel.app`（搜索约 1～3 秒）
+
+可选：Vercel → Domains 绑定 `fanqie-dl.feixiaoqiu.top`。
+
+## GitHub Pages（纯静态，搜索可能慢）
 
 详见 [GITHUB_PAGES.md](./GITHUB_PAGES.md)。
 
-1. 代码推到本仓库 `main`  
-2. Settings → Pages → Source 选 **GitHub Actions**  
-3. 等待 `Deploy GitHub Pages` 完成  
-4. 打开：`https://feixiaoqiu.github.io/FanQieDownload/`（以你的仓库为准）
-
-自定义域名：根目录 `CNAME` 文件。
+1. 推到 `main`，Pages Source 选 **GitHub Actions**  
+2. 适合看页面；搜索依赖公共 CORS，不稳定
 
 ## 本地预览
 

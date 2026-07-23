@@ -41,6 +41,9 @@
     (typeof localStorage !== "undefined" && localStorage.getItem(LS_PREF_HOST)) ||
     FIXED_HOSTS[0];
 
+  let sameOriginProxyTried = false;
+  let sameOriginProxyOk = false;
+
   function readCustomProxyBase() {
     try {
       if (global.FQ_CORS_PROXY) return String(global.FQ_CORS_PROXY).trim();
@@ -52,10 +55,56 @@
         const m = /[?&]proxy=([^&]+)/.exec(location.search);
         if (m) return decodeURIComponent(m[1]).trim();
       }
+      // 同源 Vercel/Node 部署时自动用 /api/proxy
+      if (
+        sameOriginProxyOk &&
+        typeof location !== "undefined" &&
+        (location.protocol === "http:" || location.protocol === "https:")
+      ) {
+        return String(location.origin).replace(/\/$/, "") + "/api/proxy";
+      }
     } catch (e) {
       /* ignore */
     }
     return "";
+  }
+
+  async function detectSameOriginProxy() {
+    if (sameOriginProxyTried) return sameOriginProxyOk;
+    sameOriginProxyTried = true;
+    try {
+      if (typeof location === "undefined") return false;
+      if (location.protocol !== "http:" && location.protocol !== "https:") return false;
+      // 用户已配置其它代理则不抢
+      try {
+        const existing = localStorage.getItem(LS_PROXY);
+        if (existing && existing.indexOf(location.host) === -1) {
+          return false;
+        }
+      } catch (e) { /* ignore */ }
+      const ctrl = new AbortController();
+      const t = setTimeout(function () {
+        ctrl.abort();
+      }, 2500);
+      const res = await fetch(location.origin + "/api/proxy", {
+        signal: ctrl.signal,
+        cache: "no-store",
+      });
+      clearTimeout(t);
+      if (!res.ok) return false;
+      const data = await res.json();
+      if (data && (data.ok || data.usage)) {
+        sameOriginProxyOk = true;
+        preferredProxy = "custom";
+        try {
+          localStorage.setItem(LS_PROXY, location.origin + "/api/proxy");
+        } catch (e) { /* ignore */ }
+        return true;
+      }
+    } catch (e) {
+      sameOriginProxyOk = false;
+    }
+    return false;
   }
 
   function buildProxyDefs() {
@@ -473,6 +522,7 @@
 
   async function probeHosts() {
     await loadCharset();
+    await detectSameOriginProxy();
     const proxy = orderedProxies()[0];
     const hasCustom = !!readCustomProxyBase();
     // 只探 2 个节点，缩短首屏等待
@@ -616,6 +666,7 @@
     if (cached && cached.length) {
       return { code: 0, books: cached, source: "cache", proxy: preferredProxy };
     }
+    await detectSameOriginProxy();
     try {
       const raced = await raceHosts(
         function (host) {
@@ -957,6 +1008,7 @@
 
   global.FanqieBrowserClient = {
     FIXED_HOSTS: FIXED_HOSTS,
+    detectSameOriginProxy: detectSameOriginProxy,
     probeHosts: probeHosts,
     search: search,
     getInfo: getInfo,

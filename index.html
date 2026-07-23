@@ -63,7 +63,20 @@
                 </button>
                 <div class="proxy-setup-body" id="proxySetupBody" hidden>
                     <div class="proxy-plan">
-                        <h4>办法 1（推荐）：电脑本机运行</h4>
+                        <h4>办法 1（推荐·仍用 GitHub 仓库）：Vercel 一键部署</h4>
+                        <ol class="proxy-steps">
+                            <li>打开
+                                <a href="https://vercel.com/new" target="_blank" rel="noopener noreferrer">vercel.com/new</a>
+                                ，用 <b>GitHub 登录</b>
+                            </li>
+                            <li>导入仓库 <b>FeiXiaoQiu/FanQieDownload</b> → Framework 选 Other → Deploy</li>
+                            <li>打开生成的 <code>https://xxx.vercel.app</code>，搜索走同源 API，通常 1～3 秒</li>
+                            <li>可选：在 Vercel 绑自定义域名（比纯 Pages 更稳）</li>
+                        </ol>
+                        <p class="proxy-sub">代码仍在 GitHub；Pages 只适合纯静态，搜索必须有服务端代理才能快。</p>
+                    </div>
+                    <div class="proxy-plan">
+                        <h4>办法 2：电脑本机运行</h4>
                         <ol class="proxy-steps">
                             <li>打开
                                 <a href="https://github.com/FeiXiaoQiu/FanQieDownload" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
@@ -71,14 +84,13 @@
                             </li>
                             <li>先装
                                 <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js LTS</a>
-                                （下一步下一步安装即可）
                             </li>
                             <li>双击 <b>一键启动.bat</b>（Windows）或 <b>一键启动.command</b>（Mac）</li>
-                            <li>浏览器打开 <code>http://127.0.0.1:8787</code>，搜索会很快</li>
+                            <li>浏览器打开 <code>http://127.0.0.1:8787</code></li>
                         </ol>
                     </div>
                     <div class="proxy-plan">
-                        <h4>办法 2：装浏览器扩展（手机浏览器一般不行）</h4>
+                        <h4>办法 3：装浏览器扩展（手机浏览器一般不行）</h4>
                         <ol class="proxy-steps">
                             <li>Chrome / Edge 扩展商店搜 <b>Allow CORS</b> 或 <b>CORS Unblock</b> 并启用</li>
                             <li>回到本页，点下面「测试直连」；成功后直接搜索即可</li>
@@ -86,7 +98,7 @@
                         <button type="button" class="btn btn-secondary proxy-save-btn" onclick="testDirectAccess()">测试直连</button>
                     </div>
                     <div class="proxy-plan proxy-plan-optional">
-                        <h4>办法 3（可选）：已有可用代理地址时再填</h4>
+                        <h4>办法 4（可选）：已有可用代理地址时再填</h4>
                         <p class="proxy-sub">Cloudflare 进不去就跳过本项。若朋友/自己有代理 URL，粘贴后保存。</p>
                         <div class="proxy-save-row">
                             <input type="url" id="proxyUrlInput" class="proxy-url-input"
