@@ -16,3 +16,5 @@ nodes.alive.json
 一键启动.command
 github-stream-extract.sh
 start.sh
+# public 由 build 生成，勿从 git 预置覆盖
+# （构建时在 CI 里 mkdir public）

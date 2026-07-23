@@ -9,3 +9,5 @@ __pycache__/
 nodes.alive.json
 dist/
 .monkeycode/
+# Vercel 构建产物（由 buildCommand 生成）
+public/

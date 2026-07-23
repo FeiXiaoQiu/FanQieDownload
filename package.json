@@ -7,7 +7,7 @@
   "scripts": {
     "start": "node server.js",
     "dev": "node server.js",
-    "build": "echo \"static site - no build\""
+    "build": "mkdir -p public && cp -f index.html styles.css app.js browser-client.js charset.json public/ && cp -r Speech public/ 2>/dev/null || true"
   },
   "engines": {
     "node": ">=18"
