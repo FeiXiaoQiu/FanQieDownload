@@ -1096,10 +1096,8 @@
             const cancelBtn = document.getElementById('cancelBtn');
             const loadingSection = document.getElementById('loadingSection');
             const resultSection = document.getElementById('resultSection');
-            const searchResults = document.getElementById('searchResults');
-            
             resetUI();
-            if (searchResults) searchResults.style.display = 'none';
+            // 保留搜索列表，方便预览后继续勾选 / 批量
             
             downloadBtn.disabled = true;
             downloadBtn.innerHTML = '<i>⏳</i><span>处理中...</span>';
