@@ -590,7 +590,7 @@
         u =
           "https://p3-novel.byteimg.com/img/novel-pic/" +
           m[1] +
-          "~tplv-tt-cs0:440:440.image";
+          "~tplv-tt-cs0:120:160.image";
       }
     }
     return u;

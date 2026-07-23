@@ -24,10 +24,10 @@ function normalizeCoverUrl(raw) {
   if (u.indexOf("bytecdn.cn") !== -1 && u.indexOf("novel-pic/") !== -1) {
     const m = /novel-pic\/([^~?/]+)/.exec(u);
     if (m) {
-      u =
-        "https://p3-novel.byteimg.com/img/novel-pic/" +
-        m[1] +
-        "~tplv-tt-cs0:440:440.image";
+        u =
+          "https://p3-novel.byteimg.com/img/novel-pic/" +
+          m[1] +
+          "~tplv-tt-cs0:120:160.image";
     }
   }
   return u;

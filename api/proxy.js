@@ -107,7 +107,7 @@ module.exports = async function handler(req, res) {
         finalTarget =
           "https://p3-novel.byteimg.com/img/novel-pic/" +
           m[1] +
-          "~tplv-tt-cs0:440:440.image";
+          "~tplv-tt-cs0:120:160.image";
       }
     }
     let up = await fetchBuffer(finalTarget, 18000);

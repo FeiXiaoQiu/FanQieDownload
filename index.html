@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>🍅 番茄小说下载器 🍅</title>
-    <link rel="stylesheet" href="styles.css?v=20260723d">
+    <link rel="stylesheet" href="styles.css?v=20260723e">
 </head>
 <body>
     <!-- 一言弹窗容器 -->
@@ -57,68 +57,6 @@
                 </label>
             </div>
             <div class="node-status" id="nodeStatus">节点状态加载中...</div>
-            <div class="proxy-setup" id="proxySetup">
-                <button type="button" class="proxy-setup-toggle" id="proxySetupToggle" onclick="toggleProxySetup()">
-                    搜索太慢 / 没结果？点这里看解决办法（不用 Cloudflare）
-                </button>
-                <div class="proxy-setup-body" id="proxySetupBody" hidden>
-                    <div class="proxy-plan">
-                        <h4>办法 1（推荐）：域名绑到 Vercel，继续用 fanqie-dl.feixiaoqiu.top</h4>
-                        <ol class="proxy-steps">
-                            <li>手机打不开 <code>*.vercel.app</code> 很常见，改绑自己的域名即可</li>
-                            <li>Vercel 打开项目 <b>fan-qie-download</b> → <b>Settings</b> → <b>Domains</b></li>
-                            <li>添加域名：<code>fanqie-dl.feixiaoqiu.top</code>，按提示复制 CNAME 记录</li>
-                            <li>在你的域名 DNS 里，把 <code>fanqie-dl</code> 的 CNAME 指到 Vercel 给的目标（一般是 <code>cname.vercel-dns.com</code>）</li>
-                            <li>等几分钟生效后，仍打开 <a href="https://fanqie-dl.feixiaoqiu.top/" target="_blank" rel="noopener noreferrer">fanqie-dl.feixiaoqiu.top</a>，搜索会变快</li>
-                        </ol>
-                        <p class="proxy-sub">绑域名后，GitHub Pages 可关掉；代码仍在 GitHub，推送会自动部署到 Vercel。</p>
-                    </div>
-                    <div class="proxy-plan">
-                        <h4>办法 2：电脑本机运行</h4>
-                        <ol class="proxy-steps">
-                            <li>打开
-                                <a href="https://github.com/FeiXiaoQiu/FanQieDownload" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
-                                → 绿色 <b>Code</b> → <b>Download ZIP</b>，解压
-                            </li>
-                            <li>先装
-                                <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js LTS</a>
-                            </li>
-                            <li>双击 <b>一键启动.bat</b>（Windows）或 <b>一键启动.command</b>（Mac）</li>
-                            <li>浏览器打开 <code>http://127.0.0.1:8787</code></li>
-                        </ol>
-                    </div>
-                    <div class="proxy-plan">
-                        <h4>办法 3：装浏览器扩展（手机浏览器一般不行）</h4>
-                        <ol class="proxy-steps">
-                            <li>Chrome / Edge 扩展商店搜 <b>Allow CORS</b> 或 <b>CORS Unblock</b> 并启用</li>
-                            <li>回到本页，点下面「测试直连」；成功后直接搜索即可</li>
-                        </ol>
-                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="testDirectAccess()">测试直连</button>
-                    </div>
-                    <div class="proxy-plan proxy-plan-optional">
-                        <h4>办法 4（可选）：已有可用代理地址时再填</h4>
-                        <p class="proxy-sub">Cloudflare 进不去就跳过本项。若朋友/自己有代理 URL，粘贴后保存。</p>
-                        <div class="proxy-save-row">
-                            <input type="url" id="proxyUrlInput" class="proxy-url-input"
-                                   placeholder="可选：https://xxx.workers.dev 或其它代理"
-                                   autocomplete="off" spellcheck="false">
-                            <button type="button" class="btn btn-secondary proxy-save-btn" onclick="saveProxyUrl()">保存并测试</button>
-                            <button type="button" class="btn btn-secondary proxy-save-btn" onclick="clearProxyUrl()">清除</button>
-                        </div>
-                        <details class="proxy-details">
-                            <summary>展开：复制 Cloudflare Worker 代码（能打开时才用）</summary>
-                            <div class="proxy-code-wrap">
-                                <div class="proxy-code-bar">
-                                    <span>Worker 代码</span>
-                                    <button type="button" class="proxy-mini-btn" onclick="copyWorkerCode()">复制代码</button>
-                                </div>
-                                <textarea id="workerCodeBox" class="proxy-code" readonly rows="5"></textarea>
-                            </div>
-                        </details>
-                    </div>
-                    <div class="proxy-hint" id="proxyHint">纯网页模式依赖公共通道，目前经常失败；本机运行最稳。</div>
-                </div>
-            </div>
             <div class="search-results" id="searchResults"></div>
         </div>
         
@@ -210,7 +148,7 @@
                 </li>
                 <li>
                     <i>⚡</i>
-                    <span>搜索慢时：本机双击「一键启动」打开 127.0.0.1:8787，或装 CORS 扩展</span>
+                    <span>本机完整下载可双击「一键启动」打开 127.0.0.1:8787</span>
                 </li>
             </ul>
         </div>
@@ -239,7 +177,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260723d"></script>
-    <script src="app.js?v=20260723d"></script>
+    <script src="browser-client.js?v=20260723e"></script>
+    <script src="app.js?v=20260723e"></script>
 </body>
 </html>

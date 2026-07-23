@@ -651,8 +651,11 @@
             if (u.indexOf('bytecdn.cn') !== -1 && u.indexOf('novel-pic/') !== -1) {
                 const m = /novel-pic\/([^~?/]+)/.exec(u);
                 if (m) {
-                    u = 'https://p3-novel.byteimg.com/img/novel-pic/' + m[1] + '~tplv-tt-cs0:440:440.image';
+                    // 列表缩略图用小图，加快加载
+                    u = 'https://p3-novel.byteimg.com/img/novel-pic/' + m[1] + '~tplv-tt-cs0:120:160.image';
                 }
+            } else if (u.indexOf('byteimg.com') !== -1 && u.indexOf('~tplv-') !== -1) {
+                u = u.replace(/~tplv-[^.]+\.image/, '~tplv-tt-cs0:120:160.image');
             }
             // 已是代理 URL 则不再包一层
             if (u.indexOf('/api/proxy?') !== -1) return u;
@@ -824,242 +827,6 @@
             }
         }
 
-        // 内嵌精简版 Worker，复制即可粘贴到 Cloudflare
-        const WORKER_SOURCE = [
-            'export default {',
-            '  async fetch(request) {',
-            '    const cors = {',
-            '      "Access-Control-Allow-Origin": "*",',
-            '      "Access-Control-Allow-Methods": "GET,HEAD,OPTIONS",',
-            '      "Access-Control-Allow-Headers": "*",',
-            '      "Access-Control-Max-Age": "86400",',
-            '    };',
-            '    if (request.method === "OPTIONS") {',
-            '      return new Response(null, { status: 204, headers: cors });',
-            '    }',
-            '    const reqUrl = new URL(request.url);',
-            '    let target = reqUrl.searchParams.get("url") || reqUrl.searchParams.get("u");',
-            '    if (!target) {',
-            '      return new Response(JSON.stringify({ ok: true, usage: "GET /?url=" }), {',
-            '        status: 200,',
-            '        headers: Object.assign({ "Content-Type": "application/json" }, cors),',
-            '      });',
-            '    }',
-            '    let dest;',
-            '    try { dest = new URL(target); } catch (e) {',
-            '      return new Response(JSON.stringify({ error: "invalid url" }), {',
-            '        status: 400, headers: Object.assign({ "Content-Type": "application/json" }, cors)',
-            '      });',
-            '    }',
-            '    if (dest.protocol !== "http:" && dest.protocol !== "https:") {',
-            '      return new Response(JSON.stringify({ error: "protocol not allowed" }), {',
-            '        status: 400, headers: Object.assign({ "Content-Type": "application/json" }, cors)',
-            '      });',
-            '    }',
-            '    try {',
-            '      const upstream = await fetch(dest.toString(), {',
-            '        method: "GET",',
-            '        headers: { Accept: "application/json,text/plain,*/*" },',
-            '        redirect: "follow",',
-            '      });',
-            '      const body = await upstream.arrayBuffer();',
-            '      const headers = new Headers(cors);',
-            '      headers.set("Content-Type", upstream.headers.get("Content-Type") || "application/json; charset=utf-8");',
-            '      headers.set("Cache-Control", "no-store");',
-            '      return new Response(body, { status: upstream.status, headers: headers });',
-            '    } catch (e) {',
-            '      return new Response(JSON.stringify({ error: "upstream failed", message: String(e) }), {',
-            '        status: 502, headers: Object.assign({ "Content-Type": "application/json" }, cors)',
-            '      });',
-            '    }',
-            '  },',
-            '};',
-        ].join('\n');
-
-        function toggleProxySetup() {
-            const body = document.getElementById('proxySetupBody');
-            const btn = document.getElementById('proxySetupToggle');
-            if (!body) return;
-            const open = body.hasAttribute('hidden');
-            if (open) {
-                body.removeAttribute('hidden');
-                if (btn) btn.textContent = '收起加速设置';
-                initProxyPanel();
-            } else {
-                body.setAttribute('hidden', '');
-                if (btn) btn.textContent = '搜索太慢 / 没结果？点这里看解决办法（不用 Cloudflare）';
-            }
-        }
-
-        function initProxyPanel() {
-            const box = document.getElementById('workerCodeBox');
-            if (box && !box.value) box.value = WORKER_SOURCE;
-            const input = document.getElementById('proxyUrlInput');
-            if (input && window.FanqieBrowserClient) {
-                const cur = window.FanqieBrowserClient.getCorsProxy() || '';
-                if (!input.value) input.value = cur;
-            }
-            updateProxyHint();
-        }
-
-        async function testDirectAccess() {
-            const hint = document.getElementById('proxyHint');
-            if (hint) {
-                hint.textContent = '正在测试直连节点…';
-                hint.style.color = '#3742fa';
-            }
-            const hosts = (window.FanqieBrowserClient && window.FanqieBrowserClient.FIXED_HOSTS) || [
-                'http://110.42.57.146:4018',
-            ];
-            let okHost = '';
-            for (let i = 0; i < hosts.length; i++) {
-                const host = hosts[i];
-                try {
-                    const ctrl = new AbortController();
-                    const t = setTimeout(function () { ctrl.abort(); }, 6000);
-                    const resp = await fetch(host + '/content?item_id=7580458932431225368', {
-                        signal: ctrl.signal,
-                        cache: 'no-store',
-                        mode: 'cors',
-                        headers: { Accept: 'application/json' },
-                    });
-                    clearTimeout(t);
-                    const text = await resp.text();
-                    if (!resp.ok || !text || text.charAt(0) === '<') continue;
-                    JSON.parse(text);
-                    okHost = host;
-                    break;
-                } catch (e) {
-                    /* try next */
-                }
-            }
-            if (okHost) {
-                try { localStorage.setItem('fq_pref_proxy', 'direct'); } catch (e) {}
-                showResult('直连成功（' + okHost + '）。扩展已生效，可直接搜索', 'success');
-                if (hint) {
-                    hint.textContent = '直连可用：' + okHost + '（扩展模式）';
-                    hint.style.color = '#2ed573';
-                }
-                await refreshNodeStatus();
-            } else {
-                showResult('直连失败。请确认已启用 Allow CORS / CORS Unblock，或改用本机「一键启动」', 'warning');
-                if (hint) {
-                    hint.textContent = '直连失败。推荐下载 ZIP 后双击「一键启动.bat」在本机打开 127.0.0.1:8787';
-                    hint.style.color = '#ffa502';
-                }
-            }
-        }
-
-        function updateProxyHint() {
-            const hint = document.getElementById('proxyHint');
-            if (!hint) return;
-            const cur = (window.FanqieBrowserClient && window.FanqieBrowserClient.getCorsProxy()) || '';
-            if (cur) {
-                hint.textContent = '已配置代理：' + cur;
-                hint.style.color = '#2ed573';
-            } else {
-                let pref = '';
-                try { pref = localStorage.getItem('fq_pref_proxy') || ''; } catch (e) {}
-                if (pref === 'direct') {
-                    hint.textContent = '当前优先直连（扩展模式）。失败时再试公共通道。';
-                    hint.style.color = '#2ed573';
-                } else {
-                    hint.textContent = '纯网页模式依赖公共通道，经常失败；推荐本机「一键启动」或装 CORS 扩展。';
-                    hint.style.color = '#666';
-                }
-            }
-        }
-
-        async function copyWorkerCode() {
-            initProxyPanel();
-            const box = document.getElementById('workerCodeBox');
-            const text = (box && box.value) || WORKER_SOURCE;
-            try {
-                if (navigator.clipboard && navigator.clipboard.writeText) {
-                    await navigator.clipboard.writeText(text);
-                } else if (box) {
-                    box.focus();
-                    box.select();
-                    document.execCommand('copy');
-                }
-                showResult('Worker 代码已复制，去 Cloudflare 粘贴并 Deploy', 'success');
-            } catch (e) {
-                if (box) {
-                    box.focus();
-                    box.select();
-                }
-                showResult('请长按/全选代码框手动复制', 'warning');
-            }
-        }
-
-        async function saveProxyUrl() {
-            const input = document.getElementById('proxyUrlInput');
-            let url = ((input && input.value) || '').trim().replace(/\/$/, '');
-            if (!url) {
-                showResult('请先粘贴 workers.dev 地址', 'warning');
-                return;
-            }
-            if (!/^https?:\/\//i.test(url)) url = 'https://' + url;
-            try {
-                const u = new URL(url);
-                url = u.origin;
-            } catch (e) {
-                showResult('地址格式不对，应类似 https://xxx.workers.dev', 'error');
-                return;
-            }
-            if (window.FanqieBrowserClient) {
-                window.FanqieBrowserClient.setCorsProxy(url);
-            } else {
-                try { localStorage.setItem('fq_cors_proxy', url); } catch (e) {}
-            }
-            if (input) input.value = url;
-            const hint = document.getElementById('proxyHint');
-            if (hint) {
-                hint.textContent = '正在测试代理…';
-                hint.style.color = '#3742fa';
-            }
-            try {
-                const testTarget = encodeURIComponent('http://110.42.57.146:4018/content?item_id=7580458932431225368');
-                const ctrl = new AbortController();
-                const t = setTimeout(function () { ctrl.abort(); }, 15000);
-                const resp = await fetch(url + '/?url=' + testTarget, {
-                    signal: ctrl.signal,
-                    cache: 'no-store',
-                    headers: { Accept: 'application/json' },
-                });
-                clearTimeout(t);
-                const text = await resp.text();
-                if (!resp.ok) throw new Error('HTTP ' + resp.status);
-                if (!text || text.charAt(0) === '<') throw new Error('返回不是 JSON');
-                JSON.parse(text);
-                showResult('代理可用，已保存。现在可以搜索了', 'success');
-                if (hint) {
-                    hint.textContent = '代理测试通过：' + url;
-                    hint.style.color = '#2ed573';
-                }
-                await refreshNodeStatus();
-            } catch (e) {
-                showResult('已保存，但测试失败：' + (e.message || e) + '。请确认 Worker 已 Deploy 且地址正确', 'warning');
-                if (hint) {
-                    hint.textContent = '已保存 ' + url + '，测试未通过，可稍后重试搜索';
-                    hint.style.color = '#ffa502';
-                }
-            }
-        }
-
-        function clearProxyUrl() {
-            if (window.FanqieBrowserClient) {
-                window.FanqieBrowserClient.setCorsProxy('');
-            } else {
-                try { localStorage.removeItem('fq_cors_proxy'); } catch (e) {}
-            }
-            const input = document.getElementById('proxyUrlInput');
-            if (input) input.value = '';
-            updateProxyHint();
-            showResult('已清除自建代理，将改用公共通道', 'info');
-            refreshNodeStatus();
-        }
-
         async function refreshNodeStatus() {
             const el = document.getElementById('nodeStatus');
             if (!el) return;
@@ -1070,35 +837,25 @@
                     const data = await resp.json();
                     if (data && data.code === 0) {
                         el.textContent = '模式：Node 后端 · 节点 ' + data.alive + '/' + data.total + ' 在线';
-                        const setup = document.getElementById('proxySetup');
-                        if (setup) setup.style.display = 'none';
                         return;
                     }
                 }
                 await ensureSameOriginProxy();
-                if (API_PROXY_READY && window.FanqieBrowserClient) {
-                    const snap = await window.FanqieBrowserClient.probeHosts();
+                if (API_PROXY_READY) {
                     if (REMOTE_API_BASE) {
-                        el.textContent = '模式：远程加速 API · 搜索应较快（页面可继续用本域名）';
+                        el.textContent = '模式：远程 API 加速 · 搜索可用';
                     } else {
-                        el.textContent = '模式：在线加速（同源 API）· 节点 ' + snap.alive + '/' + snap.total + ' · 搜索应较快';
+                        el.textContent = '模式：在线加速（同源 API）· 搜索可用';
                     }
-                    updateProxyHint();
                     return;
                 }
                 if (window.FanqieBrowserClient) {
-                    const snap = await window.FanqieBrowserClient.probeHosts();
-                    if (snap.customProxy) {
-                        el.textContent = '模式：静态 · 自建代理 · 节点 ' + snap.alive + '/' + snap.total + ' 在线';
-                    } else {
-                        el.textContent = '模式：静态 · 公共通道易拥堵 · 建议用 Vercel 部署本仓库或本机启动';
-                    }
-                    updateProxyHint();
+                    el.textContent = '模式：静态 · 可用本机一键启动获得完整下载';
                     return;
                 }
                 el.textContent = '静态模式就绪';
             } catch (e) {
-                el.textContent = '公共通道拥堵，请点下方查看解决办法（本机运行最稳）';
+                el.textContent = '服务探测中…';
             }
         }
 
