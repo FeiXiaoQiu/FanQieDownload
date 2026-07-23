@@ -30,6 +30,9 @@ function fetchBuffer(target, timeoutMs) {
       return;
     }
     const lib = u.protocol === "https:" ? https : http;
+    const isImg =
+      /byteimg|bytecdn|novel-pic|tos-cn|p\d+-/.test(u.hostname) ||
+      /\.(png|jpe?g|webp|gif|image)(\?|$)/i.test(u.pathname + u.search);
     const req = lib.request(
       {
         protocol: u.protocol,
@@ -39,9 +42,12 @@ function fetchBuffer(target, timeoutMs) {
         method: "GET",
         headers: {
           "User-Agent": UA,
-          Accept: "application/json,text/plain,*/*",
+          Accept: isImg
+            ? "image/avif,image/webp,image/apng,image/*,*/*;q=0.8"
+            : "application/json,text/plain,*/*",
           "Accept-Encoding": "identity",
           Referer: "https://fanqienovel.com/",
+          Origin: "https://fanqienovel.com",
         },
         timeout: timeoutMs,
       },

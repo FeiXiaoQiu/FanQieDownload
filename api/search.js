@@ -86,12 +86,20 @@ function parseSearch(data) {
     const title = it.book_name || it.title || "";
     if (!title && !it.author) return;
     seen.add(book_id);
+    // thumb_url(bytecdn) 常 403；优先 thumb_uri / audio_thumb_uri
+    const thumb =
+      it.thumb_uri ||
+      it.audio_thumb_uri ||
+      it.thumb_url ||
+      it.cover_url ||
+      it.cover ||
+      "";
     books.push({
       book_id: book_id,
       title: title,
       author: it.author || "",
       abstract: it.abstract || "",
-      thumb_url: it.thumb_url || it.thumb_uri || "",
+      thumb_url: thumb,
       score: it.score || "",
       category: it.category || "",
     });

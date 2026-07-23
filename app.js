@@ -644,6 +644,30 @@
                 .replace(/"/g, '&quot;');
         }
 
+        /** 封面 CDN 常防盗链；优先经同源/远程 API 代理 */
+        function resolveCoverUrl(raw) {
+            let u = String(raw || '').trim();
+            if (!u) return '';
+            // bytecdn 常 403，换成 byteimg 同源资源
+            if (u.indexOf('bytecdn.cn') !== -1 && u.indexOf('novel-pic/') !== -1) {
+                const m = /novel-pic\/([^~?/]+)/.exec(u);
+                if (m) {
+                    u = 'https://p3-novel.byteimg.com/img/novel-pic/' + m[1] + '~tplv-tt-cs0:440:440.image';
+                }
+            }
+            const base = REMOTE_API_BASE || (
+                (location.protocol === 'http:' || location.protocol === 'https:') ? location.origin : ''
+            );
+            // 有可用 API 时走代理，避免浏览器直连被防盗链
+            if (base && (API_PROXY_READY || REMOTE_API_BASE || /vercel\.app$/.test(location.host))) {
+                return base + '/api/proxy?url=' + encodeURIComponent(u);
+            }
+            if (base && API_PROXY_READY !== false) {
+                return base + '/api/proxy?url=' + encodeURIComponent(u);
+            }
+            return u;
+        }
+
         async function searchByName(forceQuery) {
             const input = (forceQuery || document.getElementById('bookId').value || '').trim();
             const box = document.getElementById('searchResults');
@@ -706,10 +730,10 @@
                     const title = b.title || '未知';
                     const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
                     const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
-                    const thumb = b.thumb_url || '';
-                    const img = thumb
-                        ? '<img src="' + escapeHtml(thumb) + '" alt="" loading="lazy" referrerpolicy="no-referrer" onerror="this.style.display=\'none\'">'
-                        : '';
+                    const coverSrc = resolveCoverUrl(b.thumb_url || b.thumb_uri || '');
+                    const img = coverSrc
+                        ? '<img class="search-cover" src="' + escapeHtml(coverSrc) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'\';this.classList.add(\'search-cover-fail\');this.alt=\'无封面\'">'
+                        : '<div class="search-cover search-cover-ph" aria-hidden="true">🍅</div>';
                     return '<div class="search-item" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
                         img +
                         '<div class="search-item-body">' +

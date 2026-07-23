@@ -608,7 +608,12 @@
         title: title,
         author: it.author || "",
         abstract: it.abstract || "",
-        thumb_url: it.thumb_url || it.thumb_uri || "",
+        thumb_url:
+          it.thumb_uri ||
+          it.audio_thumb_uri ||
+          it.thumb_url ||
+          it.cover_url ||
+          "",
         score: it.score || "",
         category: it.category || "",
       });
