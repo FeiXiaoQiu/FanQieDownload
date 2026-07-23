@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>🍅 番茄小说下载器 🍅</title>
-    <link rel="stylesheet" href="styles.css?v=20260723h">
+    <link rel="stylesheet" href="styles.css?v=20260723i">
 </head>
 <body>
     <!-- 一言弹窗容器 -->
@@ -63,7 +63,10 @@
         <!-- 书籍预览 -->
         <div class="book-preview-mask" id="bookPreviewMask" hidden>
             <div class="book-preview" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
-                <button type="button" class="book-preview-close" id="previewCloseBtn" aria-label="关闭">×</button>
+                <div class="book-preview-head">
+                    <p class="book-preview-head-title">书籍预览</p>
+                    <button type="button" class="book-preview-close" id="previewCloseBtn" aria-label="关闭">×</button>
+                </div>
                 <div class="book-preview-main">
                     <img class="book-preview-cover" id="previewCover" alt="" hidden>
                     <div class="book-preview-cover-ph" id="previewCoverPh" aria-hidden="true">🍅</div>
@@ -72,8 +75,8 @@
                         <p class="book-preview-meta" id="previewMeta"></p>
                         <p class="book-preview-id" id="previewId"></p>
                     </div>
+                    <p class="book-preview-desc" id="previewDesc"></p>
                 </div>
-                <p class="book-preview-desc" id="previewDesc"></p>
                 <div class="book-preview-actions">
                     <button type="button" class="btn btn-primary" id="previewDownloadBtn">
                         <i>⬇️</i><span>下载本书</span>
@@ -200,7 +203,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260723h"></script>
-    <script src="app.js?v=20260723h"></script>
+    <script src="browser-client.js?v=20260723i"></script>
+    <script src="app.js?v=20260723i"></script>
 </body>
 </html>
