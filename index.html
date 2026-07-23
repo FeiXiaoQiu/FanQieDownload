@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>🍅 番茄小说下载器 🍅</title>
-    <link rel="stylesheet" href="styles.css?v=20260723f">
+    <link rel="stylesheet" href="styles.css?v=20260723g">
 </head>
 <body>
     <!-- 一言弹窗容器 -->
@@ -58,6 +58,29 @@
             </div>
             <div class="node-status" id="nodeStatus">节点状态加载中...</div>
             <div class="search-results" id="searchResults"></div>
+        </div>
+
+        <!-- 书籍预览 -->
+        <div class="book-preview-mask" id="bookPreviewMask" hidden>
+            <div class="book-preview" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
+                <button type="button" class="book-preview-close" id="previewCloseBtn" aria-label="关闭">×</button>
+                <div class="book-preview-main">
+                    <img class="book-preview-cover" id="previewCover" alt="" hidden>
+                    <div class="book-preview-cover-ph" id="previewCoverPh" aria-hidden="true">🍅</div>
+                    <div class="book-preview-info">
+                        <h3 class="book-preview-title" id="previewTitle">—</h3>
+                        <p class="book-preview-meta" id="previewMeta"></p>
+                        <p class="book-preview-id" id="previewId"></p>
+                    </div>
+                </div>
+                <p class="book-preview-desc" id="previewDesc"></p>
+                <div class="book-preview-actions">
+                    <button type="button" class="btn btn-primary" id="previewDownloadBtn">
+                        <i>⬇️</i><span>下载本书</span>
+                    </button>
+                    <button type="button" class="btn btn-secondary" id="previewCloseBtn2">关闭</button>
+                </div>
+            </div>
         </div>
         
         <!-- 按钮组 -->
@@ -128,15 +151,15 @@
             <ul class="info-list">
                 <li>
                     <i>1️⃣</i>
-                    <span>输入书名搜索，或粘贴小说 ID / 分享链接后下载</span>
+                    <span>输入书名搜索；点卡片预览，勾选后可批量下载</span>
                 </li>
                 <li>
                     <i>2️⃣</i>
-                    <span>可填起始/结束章；默认断点续传，中断后再下会跳过已缓存章</span>
+                    <span>也可粘贴小说 ID / 分享链接后点「开始下载」</span>
                 </li>
                 <li>
                     <i>3️⃣</i>
-                    <span>下载中可取消；完成后保存为 TXT</span>
+                    <span>可填起始/结束章；默认断点续传；下载中可取消</span>
                 </li>
                 <li>
                     <i>⚠️</i>
@@ -177,7 +200,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260723f"></script>
-    <script src="app.js?v=20260723f"></script>
+    <script src="browser-client.js?v=20260723g"></script>
+    <script src="app.js?v=20260723g"></script>
 </body>
 </html>
