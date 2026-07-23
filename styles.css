@@ -914,15 +914,17 @@
         .book-preview {
             position: relative;
             width: 100%;
-            max-width: 480px;
-            max-height: min(92vh, 680px);
+            max-width: 440px;
+            max-height: min(90vh, 640px);
             overflow-x: hidden;
             overflow-y: auto;
             background: #fff;
-            border-radius: 16px 16px 0 0;
-            padding: 16px 16px 20px;
+            border-radius: 18px 18px 0 0;
+            padding: 14px 16px 18px;
             box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.22);
             box-sizing: border-box;
+            display: flex;
+            flex-direction: column;
         }
 
         @media (min-width: 560px) {
@@ -935,10 +937,11 @@
 
         .book-preview-head {
             display: flex;
-            align-items: flex-start;
+            align-items: center;
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 14px;
+            flex-shrink: 0;
         }
 
         .book-preview-head-title {
@@ -946,17 +949,17 @@
             font-size: 0.85rem;
             color: var(--gray);
             font-weight: 500;
-            line-height: 34px;
+            line-height: 1.2;
         }
 
         .book-preview-close {
             flex-shrink: 0;
-            width: 36px;
-            height: 36px;
+            width: 34px;
+            height: 34px;
             border: 0;
             border-radius: 50%;
             background: rgba(0, 0, 0, 0.06);
-            font-size: 1.35rem;
+            font-size: 1.3rem;
             line-height: 1;
             cursor: pointer;
             color: #444;
@@ -966,21 +969,43 @@
             padding: 0;
         }
 
+        .book-preview-close:hover {
+            background: rgba(0, 0, 0, 0.1);
+        }
+
         .book-preview-main {
             display: grid;
-            grid-template-columns: 88px minmax(0, 1fr);
+            grid-template-columns: 96px minmax(0, 1fr);
             gap: 12px 14px;
             align-items: start;
         }
 
+        .book-preview-cover-wrap {
+            grid-column: 1;
+            grid-row: 1;
+            width: 96px;
+            height: 128px;
+            border-radius: 10px;
+            overflow: hidden;
+            flex-shrink: 0;
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.1);
+            background: linear-gradient(145deg, #f1f2f6, #dfe4ea);
+            position: relative;
+        }
+
         .book-preview-cover,
         .book-preview-cover-ph {
-            width: 88px;
-            height: 118px;
+            width: 100%;
+            height: 100%;
             border-radius: 10px;
             object-fit: cover;
             background: linear-gradient(145deg, #f1f2f6, #dfe4ea);
-            grid-row: 1 / span 1;
+        }
+
+        /* display:flex 会覆盖 [hidden] 默认 display:none，必须强制隐藏 */
+        .book-preview-cover[hidden],
+        .book-preview-cover-ph[hidden] {
+            display: none !important;
         }
 
         .book-preview-cover-ph {
@@ -991,14 +1016,17 @@
         }
 
         .book-preview-info {
+            grid-column: 2;
+            grid-row: 1;
             min-width: 0;
-            overflow: hidden;
+            align-self: center;
         }
 
         .book-preview-title {
             margin: 0 0 8px;
-            font-size: 1.05rem;
-            line-height: 1.4;
+            font-size: 1.12rem;
+            font-weight: 700;
+            line-height: 1.35;
             color: var(--dark);
             overflow-wrap: anywhere;
             word-break: break-word;
@@ -1014,8 +1042,8 @@
 
         .book-preview-id {
             margin: 0;
-            font-size: 0.78rem;
-            color: #888;
+            font-size: 0.75rem;
+            color: #999;
             line-height: 1.4;
             font-family: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
             overflow-wrap: anywhere;
@@ -1024,21 +1052,26 @@
 
         .book-preview-desc {
             grid-column: 1 / -1;
-            margin: 4px 0 0;
+            grid-row: 2;
+            margin: 2px 0 0;
+            padding: 12px 12px;
             font-size: 0.9rem;
             color: #555;
-            line-height: 1.55;
+            line-height: 1.6;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
             word-break: break-word;
-            max-height: min(28vh, 200px);
+            max-height: min(32vh, 220px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
+            background: #f8f9fb;
+            border-radius: 10px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
         .book-preview-actions {
             display: grid;
-            grid-template-columns: 1fr 1fr;
+            grid-template-columns: 1.4fr 1fr;
             gap: 10px;
             margin-top: 16px;
         }
@@ -1150,22 +1183,21 @@
             }
 
             .book-preview-main {
-                grid-template-columns: 72px minmax(0, 1fr);
+                grid-template-columns: 76px minmax(0, 1fr);
                 gap: 10px 12px;
             }
 
-            .book-preview-cover,
-            .book-preview-cover-ph {
-                width: 72px;
-                height: 96px;
+            .book-preview-cover-wrap {
+                width: 76px;
+                height: 102px;
             }
 
             .book-preview-title {
-                font-size: 1rem;
+                font-size: 1.02rem;
             }
 
             .book-preview-actions {
-                grid-template-columns: 1fr;
+                grid-template-columns: 1fr 1fr;
             }
         }
         
