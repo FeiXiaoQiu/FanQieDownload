@@ -780,7 +780,10 @@
         async function loadMoreSearch() {
             if (searchLoadingMore || !lastSearchHasMore || !lastSearchQuery) return;
             const box = document.getElementById('searchResults');
-            const moreBtn = box && box.querySelector('#searchMoreBtn');
+            if (!box) return;
+            const listEl = box.querySelector('.search-list');
+            const moreBtn = box.querySelector('#searchMoreBtn');
+            const scrollTop = listEl ? listEl.scrollTop : 0;
             searchLoadingMore = true;
             if (moreBtn) {
                 moreBtn.disabled = true;
@@ -790,26 +793,48 @@
                 const page = await fetchSearchPage(lastSearchQuery, lastSearchNextOffset);
                 const incoming = page.books || [];
                 const seen = new Set(lastSearchBooks.map(function (b) { return String(b.book_id); }));
-                let added = 0;
+                const appended = [];
                 for (let i = 0; i < incoming.length; i++) {
                     const b = incoming[i];
                     const id = String(b.book_id || '');
                     if (!id || seen.has(id)) continue;
                     seen.add(id);
                     lastSearchBooks.push(b);
-                    added += 1;
+                    appended.push(b);
                 }
                 lastSearchNextOffset = page.next_offset != null
                     ? page.next_offset
                     : lastSearchNextOffset + incoming.length;
                 lastSearchHasMore = Boolean(page.has_more) && incoming.length > 0;
-                if (!added && !lastSearchHasMore) {
+
+                // 只追加新条目，避免整表重绘把滚动条弹回顶部
+                if (listEl && appended.length) {
+                    const frag = document.createDocumentFragment();
+                    const tmp = document.createElement('div');
+                    tmp.innerHTML = appended.map(function (b) {
+                        return buildSearchItemHtml(b, false);
+                    }).join('');
+                    while (tmp.firstChild) {
+                        const node = tmp.firstChild;
+                        frag.appendChild(node);
+                        if (node.nodeType === 1) bindSearchItemEl(node);
+                    }
+                    listEl.appendChild(frag);
+                }
+
+                updateSearchMoreFooter(box);
+                updateSearchSelectionUi();
+                if (listEl) listEl.scrollTop = scrollTop;
+
+                if (!appended.length && !lastSearchHasMore) {
                     showResult('没有更多结果了', 'info');
                 } else {
-                    showResult('已累计 ' + lastSearchBooks.length + ' 本' + (lastSearchHasMore ? '，还可继续加载' : ''), 'info');
+                    showResult(
+                        '已累计 ' + lastSearchBooks.length + ' 本' +
+                        (lastSearchHasMore ? '，还可继续加载' : ''),
+                        'info'
+                    );
                 }
-                const selectedIds = getSelectedSearchBooks().map(function (b) { return String(b.book_id); });
-                renderSearchList(box, lastSearchBooks, selectedIds);
             } catch (e) {
                 showResult('加载更多失败：' + (e.message || e), 'error');
                 if (moreBtn) {
@@ -876,40 +901,93 @@
             }
         }
 
+        function buildSearchItemHtml(b, checked) {
+            const title = b.title || '未知';
+            const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
+            const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
+            const coverSrc = resolveCoverUrl(b.thumb_url || b.thumb_uri || '');
+            const isChecked = !!checked;
+            const img = coverSrc
+                ? '<img class="search-cover" src="' + escapeHtml(coverSrc) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'\';this.classList.add(\'search-cover-fail\');this.alt=\'无封面\'">'
+                : '<div class="search-cover search-cover-ph" aria-hidden="true">🍅</div>';
+            return (
+                '<div class="search-item' + (isChecked ? ' is-selected' : '') + '" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
+                '<input type="checkbox" class="search-item-check" aria-label="选择《' + escapeHtml(title) + '》"' + (isChecked ? ' checked' : '') + '>' +
+                '<button type="button" class="search-item-main" data-action="preview">' +
+                img +
+                '<div class="search-item-body">' +
+                '<div class="search-item-title">' + escapeHtml(title) + '</div>' +
+                (meta ? '<div class="search-item-meta">' + escapeHtml(meta) + '</div>' : '') +
+                (desc ? '<div class="search-item-desc">' + escapeHtml(desc.slice(0, 120)) + (desc.length > 120 ? '…' : '') + '</div>' : '') +
+                '</div></button>' +
+                '<div class="search-item-actions">' +
+                '<button type="button" class="search-item-dl" data-action="download">下载</button>' +
+                '</div></div>'
+            );
+        }
+
+        function bindSearchItemEl(el) {
+            if (!el || el.nodeType !== 1) return;
+            const id = el.getAttribute('data-id');
+            const title = el.getAttribute('data-title') || id;
+            const book = findSearchBook(id) || { book_id: id, title: title };
+            const cb = el.querySelector('.search-item-check');
+            if (cb) {
+                cb.addEventListener('click', function (e) { e.stopPropagation(); });
+                cb.addEventListener('change', updateSearchSelectionUi);
+            }
+            const main = el.querySelector('[data-action="preview"]');
+            if (main) {
+                main.addEventListener('click', function () {
+                    openBookPreview(book);
+                });
+            }
+            const dl = el.querySelector('[data-action="download"]');
+            if (dl) {
+                dl.addEventListener('click', function (e) {
+                    e.stopPropagation();
+                    document.getElementById('bookId').value = id;
+                    closeBookPreview();
+                    showResult('开始下载《' + title + '》…', 'info');
+                    executeDownload(id, title);
+                });
+            }
+        }
+
+        function updateSearchMoreFooter(box) {
+            if (!box) return;
+            let wrap = box.querySelector('.search-more-wrap');
+            if (!wrap) {
+                wrap = document.createElement('div');
+                wrap.className = 'search-more-wrap';
+                box.appendChild(wrap);
+            }
+            if (lastSearchHasMore) {
+                let moreBtn = wrap.querySelector('#searchMoreBtn');
+                // 尽量复用已有按钮，避免 DOM 替换导致失焦/页面跳顶
+                if (!moreBtn) {
+                    wrap.innerHTML = '<button type="button" class="search-more-btn" id="searchMoreBtn">加载更多</button>';
+                    moreBtn = wrap.querySelector('#searchMoreBtn');
+                    if (moreBtn) moreBtn.addEventListener('click', loadMoreSearch);
+                } else {
+                    moreBtn.disabled = false;
+                    moreBtn.textContent = '加载更多';
+                }
+            } else if (lastSearchBooks.length) {
+                wrap.innerHTML = '<button type="button" class="search-more-btn" disabled>已全部加载（' +
+                    lastSearchBooks.length + ' 本）</button>';
+            } else {
+                wrap.innerHTML = '';
+            }
+        }
+
         function renderSearchList(box, books, keepSelectedIds) {
             if (!box) return;
             box.style.display = 'flex';
             const selectedSet = new Set((keepSelectedIds || []).map(String));
             const rows = books.map(function (b) {
-                const title = b.title || '未知';
-                const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
-                const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
-                const coverSrc = resolveCoverUrl(b.thumb_url || b.thumb_uri || '');
-                const checked = selectedSet.has(String(b.book_id)) ? ' checked' : '';
-                const img = coverSrc
-                    ? '<img class="search-cover" src="' + escapeHtml(coverSrc) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'\';this.classList.add(\'search-cover-fail\');this.alt=\'无封面\'">'
-                    : '<div class="search-cover search-cover-ph" aria-hidden="true">🍅</div>';
-                return (
-                    '<div class="search-item' + (checked ? ' is-selected' : '') + '" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
-                    '<input type="checkbox" class="search-item-check" aria-label="选择《' + escapeHtml(title) + '》"' + checked + '>' +
-                    '<button type="button" class="search-item-main" data-action="preview">' +
-                    img +
-                    '<div class="search-item-body">' +
-                    '<div class="search-item-title">' + escapeHtml(title) + '</div>' +
-                    (meta ? '<div class="search-item-meta">' + escapeHtml(meta) + '</div>' : '') +
-                    (desc ? '<div class="search-item-desc">' + escapeHtml(desc.slice(0, 120)) + (desc.length > 120 ? '…' : '') + '</div>' : '') +
-                    '</div></button>' +
-                    '<div class="search-item-actions">' +
-                    '<button type="button" class="search-item-dl" data-action="download">下载</button>' +
-                    '</div></div>'
-                );
+                return buildSearchItemHtml(b, selectedSet.has(String(b.book_id)));
             }).join('');
-
-            const moreHtml = lastSearchHasMore
-                ? '<div class="search-more-wrap"><button type="button" class="search-more-btn" id="searchMoreBtn">加载更多</button></div>'
-                : (books.length
-                    ? '<div class="search-more-wrap"><button type="button" class="search-more-btn" disabled>已全部加载（' + books.length + ' 本）</button></div>'
-                    : '');
 
             box.innerHTML =
                 '<div class="search-toolbar">' +
@@ -918,7 +996,9 @@
                 '<button type="button" class="btn btn-secondary" id="batchDownloadBtn" disabled><i>⬇️</i><span>下载所选</span></button>' +
                 '</div>' +
                 '<div class="search-list">' + rows + '</div>' +
-                moreHtml;
+                '<div class="search-more-wrap"></div>';
+
+            updateSearchMoreFooter(box);
 
             const all = box.querySelector('#searchCheckAll');
             if (all) {
@@ -929,44 +1009,11 @@
                     updateSearchSelectionUi();
                 });
             }
-            Array.prototype.forEach.call(box.querySelectorAll('.search-item-check'), function (cb) {
-                cb.addEventListener('click', function (e) { e.stopPropagation(); });
-                cb.addEventListener('change', updateSearchSelectionUi);
-            });
-            Array.prototype.forEach.call(box.querySelectorAll('.search-item'), function (el) {
-                const id = el.getAttribute('data-id');
-                const title = el.getAttribute('data-title') || id;
-                const book = findSearchBook(id) || {
-                    book_id: id,
-                    title: title,
-                };
-                const main = el.querySelector('[data-action="preview"]');
-                if (main) {
-                    main.addEventListener('click', function () {
-                        openBookPreview(book);
-                    });
-                }
-                const dl = el.querySelector('[data-action="download"]');
-                if (dl) {
-                    dl.addEventListener('click', function (e) {
-                        e.stopPropagation();
-                        document.getElementById('bookId').value = id;
-                        closeBookPreview();
-                        showResult('开始下载《' + title + '》…', 'info');
-                        executeDownload(id, title);
-                    });
-                }
-            });
+            Array.prototype.forEach.call(box.querySelectorAll('.search-item'), bindSearchItemEl);
             const batchBtn = box.querySelector('#batchDownloadBtn');
             if (batchBtn) {
                 batchBtn.addEventListener('click', function () {
                     startBatchDownload(getSelectedSearchBooks());
-                });
-            }
-            const moreBtn = box.querySelector('#searchMoreBtn');
-            if (moreBtn) {
-                moreBtn.addEventListener('click', function () {
-                    loadMoreSearch();
                 });
             }
             updateSearchSelectionUi();
