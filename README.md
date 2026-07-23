@@ -67,17 +67,13 @@ Speech/             # 一言
 
 可选：`server.js` 为本机 Node 代理（非静态部署必需）。
 
-## 搜索很慢 / 没结果？
+## 搜索要快（代码仍在 GitHub）
 
-静态网页必须过 CORS。公共代理经常挂，**最稳是本机跑**：
-
-1. 安装 [Node.js LTS](https://nodejs.org/)
-2. 下载本仓库 ZIP 解压
-3. Windows 双击 `一键启动.bat`，Mac 双击 `一键启动.command`
-4. 打开 http://127.0.0.1:8787
-
-或在电脑浏览器装 **Allow CORS / CORS Unblock** 扩展后刷新在线页。  
-Cloudflare 进不去可跳过；挂 CDN 加速不了搜索。
+| 方式 | 速度 | 说明 |
+|------|------|------|
+| **Vercel 导入本仓库** | 快 | 推荐在线方案，见上方 |
+| 本机 `一键启动.bat` | 快 | 需装 Node，打开 127.0.0.1:8787 |
+| 纯 GitHub Pages | 慢/不稳 | 只能走公共 CORS |
 
 ## 说明
 
