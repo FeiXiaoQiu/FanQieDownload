@@ -486,6 +486,7 @@
             gap: 12px;
             margin-top: 12px;
             align-items: center;
+            width: 100%;
         }
 
         .range-item {
@@ -847,13 +848,62 @@
             border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
         
-        /* 版权信息 */
-        .copyright {
+        /* 页脚 */
+        .site-footer {
             text-align: center;
-            padding: clamp(15px, 2vw, 20px) 0;
+            padding: clamp(16px, 2vw, 22px) 0 clamp(8px, 1vw, 12px);
             color: #666;
             font-size: clamp(12px, 1vw, 14px);
-            font-family: 'Segoe UI', 'PingFang SC', 'Microsoft YaHei', sans-serif;
+        }
+
+        .footer-meta {
+            display: flex;
+            flex-wrap: wrap;
+            justify-content: center;
+            align-items: center;
+            gap: 6px 8px;
+            margin-bottom: 12px;
+            line-height: 1.5;
+        }
+
+        .footer-dot {
+            opacity: 0.45;
+        }
+
+        .github-link {
+            display: inline-flex;
+            align-items: center;
+            justify-content: center;
+            gap: 8px;
+            padding: 10px 16px;
+            border-radius: 999px;
+            text-decoration: none;
+            color: #24292f;
+            background: rgba(36, 41, 47, 0.06);
+            border: 1px solid rgba(36, 41, 47, 0.12);
+            font-weight: 600;
+            font-size: clamp(0.9rem, 1.1vw, 1rem);
+            transition: var(--transition);
+        }
+
+        .github-link:hover {
+            color: #fff;
+            background: #24292f;
+            border-color: #24292f;
+            transform: translateY(-2px);
+            box-shadow: 0 8px 20px rgba(36, 41, 47, 0.2);
+        }
+
+        .github-icon {
+            flex-shrink: 0;
+            display: block;
+        }
+
+        .footer-note {
+            margin-top: 12px;
+            font-size: clamp(11px, 0.95vw, 12px);
+            color: #888;
+            line-height: 1.5;
         }
         
         /* ========== 设备特定优化 ========== */
@@ -896,6 +946,34 @@
             .info-list li {
                 flex-wrap: wrap;
                 line-height: 1.4;
+                align-items: flex-start;
+            }
+
+            .range-row {
+                flex-direction: column;
+                align-items: stretch;
+            }
+
+            .range-item {
+                width: 100%;
+                justify-content: space-between;
+            }
+
+            .range-input {
+                width: 120px;
+            }
+
+            .footer-meta {
+                flex-direction: column;
+                gap: 4px;
+            }
+
+            .footer-dot {
+                display: none;
+            }
+
+            .github-link {
+                width: min(100%, 260px);
             }
             
             .title::after {
