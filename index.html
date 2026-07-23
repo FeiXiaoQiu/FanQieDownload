@@ -59,33 +59,54 @@
             <div class="node-status" id="nodeStatus">节点状态加载中...</div>
             <div class="proxy-setup" id="proxySetup">
                 <button type="button" class="proxy-setup-toggle" id="proxySetupToggle" onclick="toggleProxySetup()">
-                    搜索太慢 / 没结果？点这里免费加速（约 3 分钟）
+                    搜索太慢 / 没结果？点这里看解决办法（不用 Cloudflare）
                 </button>
                 <div class="proxy-setup-body" id="proxySetupBody" hidden>
-                    <ol class="proxy-steps">
-                        <li>打开
-                            <a href="https://dash.cloudflare.com/?to=/:account/workers-and-pages" target="_blank" rel="noopener noreferrer">Cloudflare Workers</a>
-                            （免费注册，用邮箱即可）
-                        </li>
-                        <li>点 <b>Create</b> → <b>Create Worker</b> → 把下面代码全选粘贴进去 → 点 <b>Deploy</b></li>
-                        <li>部署后页面上会有地址，形如 <code>https://随机名.用户名.workers.dev</code>，复制整段</li>
-                        <li>粘贴到下方输入框，点「保存并测试」</li>
-                    </ol>
-                    <div class="proxy-code-wrap">
-                        <div class="proxy-code-bar">
-                            <span>Worker 代码（点复制）</span>
-                            <button type="button" class="proxy-mini-btn" onclick="copyWorkerCode()">复制代码</button>
+                    <div class="proxy-plan">
+                        <h4>办法 1（推荐）：电脑本机运行</h4>
+                        <ol class="proxy-steps">
+                            <li>打开
+                                <a href="https://github.com/FeiXiaoQiu/FanQieDownload" target="_blank" rel="noopener noreferrer">GitHub 仓库</a>
+                                → 绿色 <b>Code</b> → <b>Download ZIP</b>，解压
+                            </li>
+                            <li>先装
+                                <a href="https://nodejs.org/" target="_blank" rel="noopener noreferrer">Node.js LTS</a>
+                                （下一步下一步安装即可）
+                            </li>
+                            <li>双击 <b>一键启动.bat</b>（Windows）或 <b>一键启动.command</b>（Mac）</li>
+                            <li>浏览器打开 <code>http://127.0.0.1:8787</code>，搜索会很快</li>
+                        </ol>
+                    </div>
+                    <div class="proxy-plan">
+                        <h4>办法 2：装浏览器扩展（手机浏览器一般不行）</h4>
+                        <ol class="proxy-steps">
+                            <li>Chrome / Edge 扩展商店搜 <b>Allow CORS</b> 或 <b>CORS Unblock</b> 并启用</li>
+                            <li>回到本页，点下面「测试直连」；成功后直接搜索即可</li>
+                        </ol>
+                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="testDirectAccess()">测试直连</button>
+                    </div>
+                    <div class="proxy-plan proxy-plan-optional">
+                        <h4>办法 3（可选）：已有可用代理地址时再填</h4>
+                        <p class="proxy-sub">Cloudflare 进不去就跳过本项。若朋友/自己有代理 URL，粘贴后保存。</p>
+                        <div class="proxy-save-row">
+                            <input type="url" id="proxyUrlInput" class="proxy-url-input"
+                                   placeholder="可选：https://xxx.workers.dev 或其它代理"
+                                   autocomplete="off" spellcheck="false">
+                            <button type="button" class="btn btn-secondary proxy-save-btn" onclick="saveProxyUrl()">保存并测试</button>
+                            <button type="button" class="btn btn-secondary proxy-save-btn" onclick="clearProxyUrl()">清除</button>
                         </div>
-                        <textarea id="workerCodeBox" class="proxy-code" readonly rows="6"></textarea>
+                        <details class="proxy-details">
+                            <summary>展开：复制 Cloudflare Worker 代码（能打开时才用）</summary>
+                            <div class="proxy-code-wrap">
+                                <div class="proxy-code-bar">
+                                    <span>Worker 代码</span>
+                                    <button type="button" class="proxy-mini-btn" onclick="copyWorkerCode()">复制代码</button>
+                                </div>
+                                <textarea id="workerCodeBox" class="proxy-code" readonly rows="5"></textarea>
+                            </div>
+                        </details>
                     </div>
-                    <div class="proxy-save-row">
-                        <input type="url" id="proxyUrlInput" class="proxy-url-input"
-                               placeholder="粘贴：https://xxx.workers.dev"
-                               autocomplete="off" spellcheck="false">
-                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="saveProxyUrl()">保存并测试</button>
-                        <button type="button" class="btn btn-secondary proxy-save-btn" onclick="clearProxyUrl()">清除</button>
-                    </div>
-                    <div class="proxy-hint" id="proxyHint">未配置自建代理时，会走公共通道，经常很慢或失败。</div>
+                    <div class="proxy-hint" id="proxyHint">纯网页模式依赖公共通道，目前经常失败；本机运行最稳。</div>
                 </div>
             </div>
             <div class="search-results" id="searchResults"></div>
@@ -179,7 +200,7 @@
                 </li>
                 <li>
                     <i>⚡</i>
-                    <span>搜索慢/失败时：部署仓库 cors-worker.js 到 Cloudflare，再设 fq_cors_proxy</span>
+                    <span>搜索慢时：本机双击「一键启动」打开 127.0.0.1:8787，或装 CORS 扩展</span>
                 </li>
             </ul>
         </div>

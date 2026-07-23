@@ -62,14 +62,15 @@ Speech/             # 一言
 
 ## 搜索很慢 / 没结果？
 
-静态站必须过 CORS 代理。公共代理常挂，**推荐免费部署 `cors-worker.js` 到 Cloudflare Workers**，再在控制台：
+静态网页必须过 CORS。公共代理经常挂，**最稳是本机跑**：
 
-```js
-localStorage.setItem('fq_cors_proxy', 'https://你的.workers.dev')
-location.reload()
-```
+1. 安装 [Node.js LTS](https://nodejs.org/)
+2. 下载本仓库 ZIP 解压
+3. Windows 双击 `一键启动.bat`，Mac 双击 `一键启动.command`
+4. 打开 http://127.0.0.1:8787
 
-详见 [GITHUB_PAGES.md](./GITHUB_PAGES.md)。挂 CDN 加速不了搜索。
+或在电脑浏览器装 **Allow CORS / CORS Unblock** 扩展后刷新在线页。  
+Cloudflare 进不去可跳过；挂 CDN 加速不了搜索。
 
 ## 说明
 

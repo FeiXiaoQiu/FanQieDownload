@@ -548,6 +548,43 @@
             border: 1px solid rgba(0, 0, 0, 0.06);
         }
 
+        .proxy-plan {
+            margin-bottom: 14px;
+            padding-bottom: 12px;
+            border-bottom: 1px dashed rgba(0, 0, 0, 0.08);
+        }
+
+        .proxy-plan:last-of-type {
+            border-bottom: none;
+            margin-bottom: 8px;
+            padding-bottom: 0;
+        }
+
+        .proxy-plan h4 {
+            margin: 0 0 8px;
+            font-size: clamp(0.95rem, 1.15vw, 1.05rem);
+            color: var(--dark);
+        }
+
+        .proxy-sub {
+            margin: 0 0 8px;
+            font-size: 0.85rem;
+            color: #666;
+            line-height: 1.45;
+        }
+
+        .proxy-details {
+            margin-top: 10px;
+            font-size: 0.85rem;
+            color: #555;
+        }
+
+        .proxy-details summary {
+            cursor: pointer;
+            user-select: none;
+            margin-bottom: 8px;
+        }
+
         .proxy-steps {
             margin: 0 0 12px 18px;
             padding: 0;

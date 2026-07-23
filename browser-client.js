@@ -173,7 +173,41 @@
       });
   }
 
-  /** 串行：代理 × 节点，避免并发打爆免费代理 */
+  /** 直连节点（装 CORS 扩展 / 本机 server 时可用） */
+  function fetchDirect(url, timeout, signal) {
+    const ctrl = new AbortController();
+    const timer = setTimeout(function () {
+      ctrl.abort();
+    }, timeout);
+    if (signal) {
+      if (signal.aborted) ctrl.abort();
+      else
+        signal.addEventListener("abort", function () {
+          ctrl.abort();
+        });
+    }
+    return fetch(url, {
+      signal: ctrl.signal,
+      headers: { Accept: "application/json" },
+      cache: "no-store",
+      mode: "cors",
+    })
+      .then(function (res) {
+        if (!res.ok) throw new Error("direct HTTP " + res.status);
+        return res.text();
+      })
+      .then(function (text) {
+        if (!text || text.charAt(0) === "<") throw new Error("direct 非 JSON");
+        const data = JSON.parse(text || "{}");
+        rememberProxy("direct");
+        return data;
+      })
+      .finally(function () {
+        clearTimeout(timer);
+      });
+  }
+
+  /** 先直连节点，再走代理（扩展/本机场景最快） */
   async function fetchJsonSerial(pathBuilder, opts) {
     opts = opts || {};
     const timeout = opts.timeout || 18000;
@@ -185,6 +219,25 @@
         return true;
       };
     let lastErr = null;
+    const preferDirect = preferredProxy === "direct" || !readCustomProxyBase();
+
+    if (preferDirect) {
+      for (let hi = 0; hi < hosts.length; hi++) {
+        const host = hosts[hi];
+        try {
+          const data = await fetchDirect(pathBuilder(host), Math.min(timeout, 8000), null);
+          if (!ok(data, host)) {
+            lastErr = new Error("节点无有效数据: " + host);
+            continue;
+          }
+          markOk(host, 0);
+          rememberHost(host);
+          return { data: data, host: host, proxy: "direct" };
+        } catch (e) {
+          lastErr = e;
+        }
+      }
+    }
 
     for (let pi = 0; pi < proxies.length; pi++) {
       const proxy = proxies[pi];
@@ -206,18 +259,14 @@
           return { data: data, host: host, proxy: proxy.id };
         } catch (e) {
           lastErr = e;
-          if (hi === hosts.length - 1) {
-            /* 该代理对全部节点失败，换下一个代理 */
-          } else {
-            markFailSoft(host);
-          }
+          if (hi < hosts.length - 1) markFailSoft(host);
         }
       }
     }
     throw lastErr || new Error("全部节点/代理失败");
   }
 
-  /** 轻量竞速：仅首选代理 × 前 2 个节点 */
+  /** 轻量竞速：直连 + 首选代理 × 前 2 节点 */
   async function fetchJsonRace2(pathBuilder, opts) {
     opts = opts || {};
     const timeout = opts.timeout || 16000;
@@ -228,36 +277,56 @@
       function () {
         return true;
       };
-    if (!proxy || !hosts.length) throw new Error("无代理/节点");
+    if (!hosts.length) throw new Error("无节点");
 
     return new Promise(function (resolve, reject) {
       const ctrl = new AbortController();
-      let pending = hosts.length;
+      let pending = 0;
       let lastErr = null;
       let settled = false;
+
+      function finishOk(data, host, proxyId) {
+        if (settled) return;
+        if (!ok(data, host)) {
+          lastErr = new Error("节点无有效数据: " + host);
+          return;
+        }
+        settled = true;
+        ctrl.abort();
+        markOk(host, 0);
+        rememberHost(host);
+        resolve({ data: data, host: host, proxy: proxyId });
+      }
+
+      function oneDone() {
+        pending--;
+        if (!settled && pending <= 0) {
+          reject(lastErr || new Error("竞速失败"));
+        }
+      }
+
       hosts.forEach(function (host) {
-        fetchViaProxy(proxy, pathBuilder(host), timeout, ctrl.signal)
+        pending++;
+        fetchDirect(pathBuilder(host), Math.min(timeout, 7000), ctrl.signal)
           .then(function (data) {
-            if (settled) return;
-            if (!ok(data, host)) {
-              lastErr = new Error("节点无有效数据: " + host);
-              return;
-            }
-            settled = true;
-            ctrl.abort();
-            markOk(host, 0);
-            rememberHost(host);
-            resolve({ data: data, host: host, proxy: proxy.id });
+            finishOk(data, host, "direct");
           })
           .catch(function (e) {
             lastErr = e;
           })
-          .finally(function () {
-            pending--;
-            if (!settled && pending <= 0) {
-              reject(lastErr || new Error("竞速失败"));
-            }
-          });
+          .finally(oneDone);
+
+        if (proxy) {
+          pending++;
+          fetchViaProxy(proxy, pathBuilder(host), timeout, ctrl.signal)
+            .then(function (data) {
+              finishOk(data, host, proxy.id);
+            })
+            .catch(function (e) {
+              lastErr = e;
+            })
+            .finally(oneDone);
+        }
       });
     });
   }

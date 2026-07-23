@@ -711,7 +711,7 @@
                 initProxyPanel();
             } else {
                 body.setAttribute('hidden', '');
-                if (btn) btn.textContent = '搜索太慢 / 没结果？点这里免费加速（约 3 分钟）';
+                if (btn) btn.textContent = '搜索太慢 / 没结果？点这里看解决办法（不用 Cloudflare）';
             }
         }
 
@@ -726,16 +726,71 @@
             updateProxyHint();
         }
 
+        async function testDirectAccess() {
+            const hint = document.getElementById('proxyHint');
+            if (hint) {
+                hint.textContent = '正在测试直连节点…';
+                hint.style.color = '#3742fa';
+            }
+            const hosts = (window.FanqieBrowserClient && window.FanqieBrowserClient.FIXED_HOSTS) || [
+                'http://110.42.57.146:4018',
+            ];
+            let okHost = '';
+            for (let i = 0; i < hosts.length; i++) {
+                const host = hosts[i];
+                try {
+                    const ctrl = new AbortController();
+                    const t = setTimeout(function () { ctrl.abort(); }, 6000);
+                    const resp = await fetch(host + '/content?item_id=7580458932431225368', {
+                        signal: ctrl.signal,
+                        cache: 'no-store',
+                        mode: 'cors',
+                        headers: { Accept: 'application/json' },
+                    });
+                    clearTimeout(t);
+                    const text = await resp.text();
+                    if (!resp.ok || !text || text.charAt(0) === '<') continue;
+                    JSON.parse(text);
+                    okHost = host;
+                    break;
+                } catch (e) {
+                    /* try next */
+                }
+            }
+            if (okHost) {
+                try { localStorage.setItem('fq_pref_proxy', 'direct'); } catch (e) {}
+                showResult('直连成功（' + okHost + '）。扩展已生效，可直接搜索', 'success');
+                if (hint) {
+                    hint.textContent = '直连可用：' + okHost + '（扩展模式）';
+                    hint.style.color = '#2ed573';
+                }
+                await refreshNodeStatus();
+            } else {
+                showResult('直连失败。请确认已启用 Allow CORS / CORS Unblock，或改用本机「一键启动」', 'warning');
+                if (hint) {
+                    hint.textContent = '直连失败。推荐下载 ZIP 后双击「一键启动.bat」在本机打开 127.0.0.1:8787';
+                    hint.style.color = '#ffa502';
+                }
+            }
+        }
+
         function updateProxyHint() {
             const hint = document.getElementById('proxyHint');
             if (!hint) return;
             const cur = (window.FanqieBrowserClient && window.FanqieBrowserClient.getCorsProxy()) || '';
             if (cur) {
-                hint.textContent = '已配置自建代理：' + cur;
+                hint.textContent = '已配置代理：' + cur;
                 hint.style.color = '#2ed573';
             } else {
-                hint.textContent = '未配置自建代理时，会走公共通道，经常很慢或失败。';
-                hint.style.color = '#666';
+                let pref = '';
+                try { pref = localStorage.getItem('fq_pref_proxy') || ''; } catch (e) {}
+                if (pref === 'direct') {
+                    hint.textContent = '当前优先直连（扩展模式）。失败时再试公共通道。';
+                    hint.style.color = '#2ed573';
+                } else {
+                    hint.textContent = '纯网页模式依赖公共通道，经常失败；推荐本机「一键启动」或装 CORS 扩展。';
+                    hint.style.color = '#666';
+                }
             }
         }
 
@@ -849,14 +904,14 @@
                     if (snap.customProxy) {
                         el.textContent = '模式：静态 · 自建代理 · 节点 ' + snap.alive + '/' + snap.total + ' 在线';
                     } else {
-                        el.textContent = '模式：静态 · 公共通道易拥堵 · 点下方「免费加速」';
+                        el.textContent = '模式：静态 · 公共通道易拥堵 · 点下方查看解决办法';
                     }
                     updateProxyHint();
                     return;
                 }
                 el.textContent = '静态模式就绪';
             } catch (e) {
-                el.textContent = '公共通道拥堵，请点下方「免费加速」';
+                el.textContent = '公共通道拥堵，请点下方查看解决办法（本机运行最稳）';
             }
         }
 
