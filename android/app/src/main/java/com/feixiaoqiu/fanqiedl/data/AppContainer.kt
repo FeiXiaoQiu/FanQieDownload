@@ -1,6 +1,9 @@
 package com.feixiaoqiu.fanqiedl.data
 
 import android.content.Context
+import android.content.pm.PackageManager
+import android.os.Build
+import com.feixiaoqiu.fanqiedl.BuildConfig
 import kotlinx.coroutines.flow.first
 
 class AppContainer(context: Context) {
@@ -8,6 +11,43 @@ class AppContainer(context: Context) {
     val settings = AppSettings(appContext)
     val decoder = CharsetDecoder(appContext)
     val hitokoto = HitokotoClient()
+    val updateChecker = UpdateChecker()
+
+    val appVersionName: String = run {
+        val fromPm = try {
+            val pm = appContext.packageManager
+            val pkg = appContext.packageName
+            if (Build.VERSION.SDK_INT >= 33) {
+                pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0)).versionName
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkg, 0).versionName
+            }
+        } catch (_: Exception) {
+            null
+        }
+        (fromPm ?: BuildConfig.VERSION_NAME).orEmpty()
+    }
+
+    val appVersionCode: Int = run {
+        try {
+            val pm = appContext.packageManager
+            val pkg = appContext.packageName
+            if (Build.VERSION.SDK_INT >= 28) {
+                if (Build.VERSION.SDK_INT >= 33) {
+                    pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0)).longVersionCode.toInt()
+                } else {
+                    @Suppress("DEPRECATION")
+                    pm.getPackageInfo(pkg, 0).longVersionCode.toInt()
+                }
+            } else {
+                @Suppress("DEPRECATION")
+                pm.getPackageInfo(pkg, 0).versionCode
+            }
+        } catch (_: Exception) {
+            BuildConfig.VERSION_CODE
+        }
+    }
 
     val client = FanqieNodeClient(
         settings = settings,

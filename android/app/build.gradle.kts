@@ -20,8 +20,13 @@ android {
         applicationId = "com.feixiaoqiu.fanqiedl"
         minSdk = 26
         targetSdk = 34
-        versionCode = 3
-        versionName = "1.0.2"
+        // 以 1.0.0 重新起号；固定签名密钥勿动
+        versionCode = 1
+        versionName = "1.0.0"
+        ndk {
+            // 常见手机架构
+            abiFilters += listOf("armeabi-v7a", "arm64-v8a")
+        }
     }
 
     signingConfigs {
@@ -49,9 +54,18 @@ android {
             )
         }
         debug {
-            applicationIdSuffix = ".debug"
-            versionNameSuffix = "-debug"
+            // 本地调试用固定 debug 密钥；对外发布仅 release 产物
             signingConfig = signingConfigs.getByName("fanqieDebug")
+        }
+    }
+
+    // 按架构拆包 + 全架构 universal
+    splits {
+        abi {
+            isEnable = true
+            reset()
+            include("armeabi-v7a", "arm64-v8a")
+            isUniversalApk = true
         }
     }
 
@@ -64,6 +78,7 @@ android {
     }
     buildFeatures {
         compose = true
+        buildConfig = true
     }
     composeOptions {
         kotlinCompilerExtensionVersion = "1.5.14"

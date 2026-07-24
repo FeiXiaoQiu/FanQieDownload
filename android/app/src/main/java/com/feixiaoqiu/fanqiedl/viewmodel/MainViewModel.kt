@@ -64,15 +64,28 @@ data class MainUiState(
     val readerLoading: Boolean = false,
     val readerError: String? = null,
     val showCatalog: Boolean = false,
+    val appVersionName: String = "",
+    val appVersionCode: Int = 0,
+    val updateChecking: Boolean = false,
+    val updateMessage: String? = null,
+    val latestReleaseUrl: String? = null,
+    val latestVersionTag: String? = null,
+    val updateAvailable: Boolean = false,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
-    private val _ui = MutableStateFlow(MainUiState())
+    private val _ui = MutableStateFlow(
+        MainUiState(
+            appVersionName = container.appVersionName,
+            appVersionCode = container.appVersionCode,
+        ),
+    )
     val ui: StateFlow<MainUiState> = _ui.asStateFlow()
 
     private var downloadJob: Job? = null
     private var hitokotoJob: Job? = null
     private var readerJob: Job? = null
+    private var updateJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -102,6 +115,8 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         startHitokotoLoop()
+        // 进入设置可手动检查；冷启动静默检查一次
+        checkForUpdate(silent = true)
     }
 
     private fun resolveBackgroundUrl(
@@ -603,6 +618,69 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
             _ui.update { it.copy(probeMessage = msg, snackbar = msg) }
         }
+    }
+
+    fun checkForUpdate(silent: Boolean = false) {
+        if (updateJob?.isActive == true) return
+        updateJob = viewModelScope.launch {
+            if (!silent) {
+                _ui.update { it.copy(updateChecking = true, updateMessage = "正在检查更新…") }
+            }
+            val result = withContext(Dispatchers.IO) {
+                container.updateChecker.checkLatest()
+            }
+            result.fold(
+                onSuccess = { info ->
+                    val current = normalizeVersion(_ui.value.appVersionName)
+                    val latest = normalizeVersion(info.tagName)
+                    val newer = compareVersion(latest, current) > 0
+                    val msg = if (newer) {
+                        "发现新版本 ${info.tagName}"
+                    } else {
+                        "已是最新版本（${_ui.value.appVersionName}）"
+                    }
+                    _ui.update {
+                        it.copy(
+                            updateChecking = false,
+                            updateAvailable = newer,
+                            latestVersionTag = info.tagName,
+                            latestReleaseUrl = info.htmlUrl,
+                            updateMessage = msg,
+                            snackbar = if (silent && !newer) null else msg,
+                        )
+                    }
+                },
+                onFailure = { e ->
+                    val msg = "检查更新失败：${e.message ?: "网络错误"}"
+                    _ui.update {
+                        it.copy(
+                            updateChecking = false,
+                            updateMessage = if (silent) it.updateMessage else msg,
+                            snackbar = if (silent) null else msg,
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    private fun normalizeVersion(raw: String): String {
+        return raw.trim().removePrefix("v").removePrefix("V")
+            .substringBefore("-")
+            .substringBefore("+")
+    }
+
+    /** a > b => 1; equal => 0; a < b => -1 */
+    private fun compareVersion(a: String, b: String): Int {
+        val pa = a.split('.').map { it.toIntOrNull() ?: 0 }
+        val pb = b.split('.').map { it.toIntOrNull() ?: 0 }
+        val n = maxOf(pa.size, pb.size)
+        for (i in 0 until n) {
+            val x = pa.getOrElse(i) { 0 }
+            val y = pb.getOrElse(i) { 0 }
+            if (x != y) return x.compareTo(y)
+        }
+        return 0
     }
 
     class Factory(private val container: AppContainer) : ViewModelProvider.Factory {

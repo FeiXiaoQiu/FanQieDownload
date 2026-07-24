@@ -46,7 +46,6 @@ import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
-import com.feixiaoqiu.fanqiedl.ui.theme.CardWhite
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
@@ -69,6 +68,9 @@ fun SettingsScreen(
     onBgImageChange: (String) -> Unit,
     onSaveBackground: () -> Unit,
     onRefreshBackground: () -> Unit,
+    onCheckUpdate: () -> Unit = {},
+    onOpenRepo: () -> Unit = {},
+    onOpenLatestRelease: () -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
 
@@ -157,6 +159,13 @@ fun SettingsScreen(
             }
 
             SectionCard(title = "下载节点") {
+                Text(
+                    "尽量填写番茄小说相关 API 节点；其他小说软件的接口不保证可用。",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                    lineHeight = 17.sp,
+                )
+                Spacer(modifier = Modifier.height(8.dp))
                 state.nodes.forEach { node ->
                     NodeRow(
                         node = node,
@@ -185,6 +194,39 @@ fun SettingsScreen(
                         colors = primaryBtn(),
                     ) { Text("添加") }
                     TextButton(onClick = onRestore) { Text("恢复默认", color = Primary) }
+                }
+            }
+
+            SectionCard(title = "关于") {
+                Text("作者：非小酋", color = TextPrimary, fontSize = 14.sp)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(
+                    "当前版本：${state.appVersionName.ifBlank { "—" }}",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                )
+                if (state.updateMessage != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(state.updateMessage, color = TextSecondary, fontSize = 12.sp)
+                }
+                Spacer(modifier = Modifier.height(10.dp))
+                Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                    Button(
+                        onClick = onCheckUpdate,
+                        enabled = !state.updateChecking,
+                        colors = primaryBtn(),
+                    ) {
+                        Text(if (state.updateChecking) "检查中…" else "检查更新")
+                    }
+                    TextButton(onClick = onOpenRepo) {
+                        Text("打开仓库", color = Primary)
+                    }
+                }
+                if (state.updateAvailable && state.latestReleaseUrl != null) {
+                    Spacer(modifier = Modifier.height(4.dp))
+                    TextButton(onClick = onOpenLatestRelease) {
+                        Text("前往最新 Release", color = Primary)
+                    }
                 }
             }
         }
@@ -259,11 +301,10 @@ private fun SectionCard(
     title: String,
     content: @Composable ColumnScope.() -> Unit,
 ) {
-    Card(
-        shape = RoundedCornerShape(16.dp),
-        colors = CardDefaults.cardColors(containerColor = CardWhite),
-        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+    GlassPanel(
         modifier = Modifier.fillMaxWidth(),
+        corner = 16.dp,
+        fill = GlassFill,
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)

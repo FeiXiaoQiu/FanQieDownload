@@ -1,7 +1,9 @@
 <?xml version="1.0" encoding="utf-8"?>
 <resources>
-    <string name="app_name">飞小秋阅</string>
-    <string name="app_tagline">搜书 · 简介 · 在线读 · 下载</string>
+    <string name="app_name">观隅</string>
+    <string name="app_tagline">于文字一隅，阅世间万象</string>
     <string name="disclaimer">仅供个人学习研究，请遵守版权与平台条款</string>
     <string name="example_query">抽象职校生存手册</string>
+    <string name="app_author">非小酋</string>
+    <string name="app_repo_url">https://github.com/FeiXiaoQiu/FanQieDownload</string>
 </resources>

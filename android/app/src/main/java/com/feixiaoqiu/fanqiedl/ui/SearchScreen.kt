@@ -25,8 +25,6 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
-import androidx.compose.material3.Card
-import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
@@ -50,7 +48,6 @@ import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
-import com.feixiaoqiu.fanqiedl.ui.theme.CardWhite
 import com.feixiaoqiu.fanqiedl.ui.theme.InputBg
 import com.feixiaoqiu.fanqiedl.ui.theme.InputBorder
 import com.feixiaoqiu.fanqiedl.ui.theme.Placeholder
@@ -115,14 +112,13 @@ fun SearchScreen(
                         .padding(horizontal = 16.dp),
                 )
                 Spacer(modifier = Modifier.height(12.dp))
-                Card(
+                GlassPanel(
                     modifier = Modifier
                         .fillMaxWidth()
                         .weight(1f)
                         .padding(horizontal = 16.dp),
-                    shape = RoundedCornerShape(20.dp),
-                    colors = CardDefaults.cardColors(containerColor = CardWhite),
-                    elevation = CardDefaults.cardElevation(defaultElevation = 6.dp),
+                    corner = 20.dp,
+                    fill = GlassFillSoft,
                 ) {
                     when {
                         state.searching && state.books.isEmpty() -> {
@@ -343,13 +339,12 @@ private fun HitokotoBar(
     onClick: () -> Unit,
     modifier: Modifier = Modifier,
 ) {
-    Card(
+    GlassPanel(
         modifier = modifier
             .heightIn(min = 56.dp)
             .clickable(onClick = onClick),
-        shape = RoundedCornerShape(12.dp),
-        colors = CardDefaults.cardColors(containerColor = Color.White),
-        elevation = CardDefaults.cardElevation(defaultElevation = 4.dp),
+        corner = 14.dp,
+        fill = GlassFill,
     ) {
         Column(
             modifier = Modifier
@@ -358,7 +353,7 @@ private fun HitokotoBar(
         ) {
             Text(
                 text = "一言",
-                color = Color(0xFF888888),
+                color = Color(0xFF666666),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
             )
@@ -381,7 +376,8 @@ private fun BookRow(book: BookSummary, onClick: () -> Unit) {
         modifier = Modifier
             .fillMaxWidth()
             .clip(RoundedCornerShape(12.dp))
-            .background(Color(0xFFF0F0F0))
+            .background(Color.White.copy(alpha = 0.55f))
+            .border(1.dp, Color.White.copy(alpha = 0.4f), RoundedCornerShape(12.dp))
             .clickable(onClick = onClick)
             .padding(10.dp),
         verticalAlignment = Alignment.Top,
@@ -391,7 +387,7 @@ private fun BookRow(book: BookSummary, onClick: () -> Unit) {
                 .width(48.dp)
                 .height(64.dp)
                 .clip(RoundedCornerShape(6.dp))
-                .background(Color(0xFFE0E0E0)),
+                .background(Color(0x33FFFFFF)),
         ) {
             if (book.coverUrl.isNotBlank()) {
                 AsyncImage(

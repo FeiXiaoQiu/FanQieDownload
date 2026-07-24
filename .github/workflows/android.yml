@@ -1,5 +1,6 @@
 # Android APK：Actions 手动构建 / 打 v* tag 挂 Release
-# APK 文件名必须带版本号，例如 fanqie-android-1.0.1-release.apk
+# 产物命名：观隅-{version}-{abi}.apk（arm64-v8a / armeabi-v7a / universal）
+# 不标注 debug/release、不写 android
 
 name: Android APK
 
@@ -51,40 +52,42 @@ jobs:
       - name: Grant execute permission for gradlew
         run: chmod +x gradlew
 
-      - name: Build debug APK
-        run: ./gradlew :app:assembleDebug --stacktrace
-
-      - name: Build release APK
+      - name: Build release APKs (per-ABI + universal)
         run: ./gradlew :app:assembleRelease --stacktrace
 
-      - name: Name APKs with version
+      - name: Name APKs as 观隅-{version}-{abi}
         run: |
           VER="${{ steps.ver.outputs.version }}"
           mkdir -p dist-apk
-          cp app/build/outputs/apk/debug/*.apk "dist-apk/fanqie-android-${VER}-debug.apk"
-          cp app/build/outputs/apk/release/*.apk "dist-apk/fanqie-android-${VER}-release.apk"
+          OUT="app/build/outputs/apk/release"
+          # Gradle ABI splits 产物：app-<abi>-release.apk / app-universal-release.apk
+          shopt -s nullglob
+          for f in "$OUT"/*.apk; do
+            base="$(basename "$f")"
+            # app-arm64-v8a-release.apk -> arm64-v8a
+            abi="$(echo "$base" | sed -E 's/^app-//; s/-release\.apk$//; s/\.apk$//')"
+            if [[ -z "$abi" || "$abi" == "app" ]]; then
+              abi="universal"
+            fi
+            dest="dist-apk/观隅-${VER}-${abi}.apk"
+            cp -f "$f" "$dest"
+            echo "packed: $dest"
+          done
           ls -lh dist-apk/
+          test -n "$(ls -A dist-apk)" || { echo "no apk produced"; exit 1; }
 
-      - name: Upload debug APK
+      - name: Upload APK artifacts
         uses: actions/upload-artifact@v4
         with:
-          name: fanqie-android-${{ steps.ver.outputs.version }}-debug
-          path: android/dist-apk/fanqie-android-${{ steps.ver.outputs.version }}-debug.apk
+          name: guanyu-${{ steps.ver.outputs.version }}-apks
+          path: android/dist-apk/*.apk
           if-no-files-found: error
 
-      - name: Upload release APK
-        uses: actions/upload-artifact@v4
-        with:
-          name: fanqie-android-${{ steps.ver.outputs.version }}-release
-          path: android/dist-apk/fanqie-android-${{ steps.ver.outputs.version }}-release.apk
-          if-no-files-found: error
-
-      - name: Attach APK to GitHub Release
+      - name: Attach APKs to GitHub Release
         if: startsWith(github.ref, 'refs/tags/v')
         uses: softprops/action-gh-release@v2
         with:
-          files: |
-            android/dist-apk/fanqie-android-${{ steps.ver.outputs.version }}-debug.apk
-            android/dist-apk/fanqie-android-${{ steps.ver.outputs.version }}-release.apk
+          files: android/dist-apk/*.apk
+          fail_on_unmatched_files: true
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

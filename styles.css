@@ -34,11 +34,14 @@
 
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
-            background: #1a1b22;
+            background-color: #12131a;
             background-image:
-                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.2), transparent 55%),
-                radial-gradient(ellipse 70% 45% at 90% 10%, rgba(55, 66, 250, 0.12), transparent 50%),
-                linear-gradient(180deg, #1a1b22 0%, #12131a 100%);
+                linear-gradient(180deg, rgba(18, 19, 26, 0.62) 0%, rgba(18, 19, 26, 0.78) 100%),
+                url('https://t.alcy.cc/ycy');
+            background-size: cover;
+            background-position: center center;
+            background-repeat: no-repeat;
+            background-attachment: fixed;
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
@@ -212,7 +215,9 @@
         }
         
         .container {
-            background: #fff;
+            background: rgba(255, 255, 255, 0.88);
+            backdrop-filter: blur(18px) saturate(1.2);
+            -webkit-backdrop-filter: blur(18px) saturate(1.2);
             border-radius: 14px;
             padding: var(--container-padding);
             width: 100%;
@@ -223,11 +228,38 @@
             margin-left: auto;
             margin-right: auto;
             flex: 0 0 auto;
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.45);
             box-sizing: border-box;
+        }
+
+        .app-download-link {
+            display: inline-flex;
+            align-items: center;
+            gap: 6px;
+            margin-top: 10px;
+            padding: 8px 12px;
+            border-radius: 999px;
+            font-size: 0.86rem;
+            font-weight: 600;
+            color: #fff;
+            text-decoration: none;
+            background: linear-gradient(135deg, rgba(255, 71, 87, 0.92), rgba(255, 99, 72, 0.88));
+            border: 1px solid rgba(255, 255, 255, 0.35);
+            box-shadow: 0 6px 18px rgba(255, 71, 87, 0.28);
+            transition: transform 0.15s ease, box-shadow 0.15s ease;
+        }
+
+        .app-download-link:hover {
+            transform: translateY(-1px);
+            box-shadow: 0 8px 22px rgba(255, 71, 87, 0.36);
+            color: #fff;
+        }
+
+        .app-download-link:active {
+            transform: translateY(0);
         }
         
         .container.loaded {
@@ -695,10 +727,12 @@
             margin: 0 0 10px;
             max-height: min(48vh, 420px);
             overflow: hidden;
-            border-radius: 10px;
-            background: #fff;
-            border: 1px solid rgba(0, 0, 0, 0.08);
-            box-shadow: none;
+            border-radius: 14px;
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(16px) saturate(1.35);
+            -webkit-backdrop-filter: blur(16px) saturate(1.35);
+            border: 1px solid rgba(255, 255, 255, 0.42);
+            box-shadow: 0 10px 28px rgba(0, 0, 0, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.35);
         }
 
         /* 有结果时：卡片高度受控，列表内滚，减少整页上下晃 */
@@ -729,17 +763,17 @@
             align-items: center;
             gap: 8px 10px;
             padding: 10px 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.08);
-            background: #fff;
+            border-bottom: 1px solid rgba(255, 255, 255, 0.28);
+            background: rgba(255, 255, 255, 0.18);
             flex-shrink: 0;
             z-index: 3;
             position: relative;
-            box-shadow: 0 1px 0 rgba(0, 0, 0, 0.04);
+            box-shadow: none;
         }
 
         .search-toolbar-count {
             font-size: 0.85rem;
-            color: var(--gray);
+            color: rgba(30, 30, 36, 0.72);
             margin-right: auto;
             white-space: nowrap;
         }
@@ -755,7 +789,7 @@
             align-items: center;
             gap: 6px;
             font-size: 0.88rem;
-            color: var(--dark);
+            color: rgba(20, 20, 28, 0.88);
             cursor: pointer;
             user-select: none;
             white-space: nowrap;
@@ -766,7 +800,7 @@
             min-height: 0;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            background: #fff;
+            background: transparent;
         }
 
         .search-item {
@@ -774,11 +808,11 @@
             grid-template-columns: 28px minmax(0, 1fr) auto;
             gap: 10px;
             padding: 12px 12px;
-            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            border-bottom: 1px solid rgba(255, 255, 255, 0.22);
             transition: background 0.15s ease;
             align-items: center;
             text-align: left;
-            background: #fff;
+            background: rgba(255, 255, 255, 0.08);
         }
 
         .search-item:last-child {
@@ -786,11 +820,11 @@
         }
 
         .search-item:hover {
-            background: rgba(255, 71, 87, 0.05);
+            background: rgba(255, 255, 255, 0.22);
         }
 
         .search-item.is-selected {
-            background: rgba(55, 66, 250, 0.06);
+            background: rgba(255, 71, 87, 0.14);
         }
 
         .search-item-check {
@@ -831,9 +865,9 @@
         }
 
         .search-item-dl {
-            border: 1px solid rgba(255, 71, 87, 0.35);
-            background: rgba(255, 71, 87, 0.08);
-            color: var(--dark);
+            border: 1px solid rgba(255, 255, 255, 0.45);
+            background: rgba(255, 71, 87, 0.72);
+            color: #fff;
             border-radius: 8px;
             padding: 8px 12px;
             font-size: 0.82rem;
@@ -841,34 +875,38 @@
             font-family: inherit;
             white-space: nowrap;
             line-height: 1.2;
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .search-item-dl:hover {
-            background: rgba(255, 71, 87, 0.16);
+            background: rgba(255, 71, 87, 0.88);
         }
 
         .search-more-wrap {
             padding: 10px 12px 12px;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
-            background: #fafafa;
+            border-top: 1px solid rgba(255, 255, 255, 0.25);
+            background: rgba(255, 255, 255, 0.14);
             flex-shrink: 0;
             text-align: center;
         }
 
         .search-more-btn {
             width: 100%;
-            border: 1px dashed rgba(255, 71, 87, 0.35);
-            background: #fff;
+            border: 1px dashed rgba(255, 255, 255, 0.5);
+            background: rgba(255, 255, 255, 0.22);
             border-radius: 10px;
             padding: 10px 12px;
             font-size: 0.92rem;
             cursor: pointer;
             font-family: inherit;
-            color: var(--dark);
+            color: rgba(20, 20, 28, 0.9);
+            backdrop-filter: blur(8px);
+            -webkit-backdrop-filter: blur(8px);
         }
 
         .search-more-btn:hover:not(:disabled) {
-            background: rgba(255, 71, 87, 0.06);
+            background: rgba(255, 255, 255, 0.34);
         }
 
         .search-more-btn:disabled {
@@ -1151,24 +1189,25 @@
 
         .search-item-title {
             font-weight: 600;
-            color: var(--dark);
+            color: rgba(16, 16, 22, 0.95);
             font-size: clamp(0.95rem, 1.2vw, 1.05rem);
             margin-bottom: 4px;
             line-height: 1.35;
             word-break: break-word;
             overflow-wrap: anywhere;
+            text-shadow: 0 1px 0 rgba(255, 255, 255, 0.25);
         }
 
         .search-item-meta {
             font-size: clamp(0.8rem, 1vw, 0.88rem);
-            color: var(--gray);
+            color: rgba(40, 40, 50, 0.72);
             margin-bottom: 4px;
             line-height: 1.35;
         }
 
         .search-item-desc {
             font-size: clamp(0.78rem, 0.95vw, 0.85rem);
-            color: #666;
+            color: rgba(40, 40, 50, 0.68);
             line-height: 1.45;
             display: -webkit-box;
             -webkit-line-clamp: 2;
@@ -1180,7 +1219,7 @@
         .search-empty {
             padding: 18px;
             text-align: center;
-            color: var(--gray);
+            color: rgba(30, 30, 40, 0.7);
             font-size: 0.95rem;
         }
 
