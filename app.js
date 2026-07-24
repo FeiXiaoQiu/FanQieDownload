@@ -35,8 +35,8 @@
         
         // 存储活动的弹窗
         let activePopups = [];
-        // 最大弹窗数量限制
-        const MAX_POPUPS = 8;
+        // 同时最多保留几条一言
+        const MAX_POPUPS = 2;
         // 弹窗计数器（用于生成唯一ID）
         let popupCounter = 0;
         // 防止重复初始化的标志
@@ -111,6 +111,14 @@
             }
         }
         
+        function escapeDailyHtml(s) {
+            return String(s || "")
+                .replace(/&/g, "&amp;")
+                .replace(/</g, "&lt;")
+                .replace(/>/g, "&gt;")
+                .replace(/"/g, "&quot;");
+        }
+
         // 加载一言
         async function loadDailyMessage() {
             try {
@@ -161,23 +169,15 @@
             popup.dataset.popupId = popupId;
             popup.innerHTML = `
                 <div class="popup-header">
-                    <div class="popup-title">
-                        <i>💬</i>
-                        一言
-                    </div>
-                    <button class="popup-close" data-popup-id="${popupId}">×</button>
+                    <div class="popup-title">一言</div>
+                    <button type="button" class="popup-close" data-popup-id="${popupId}" aria-label="关闭">×</button>
                 </div>
-                <div class="popup-content">
-                    ${popupMessage}
-                </div>
+                <div class="popup-content">${escapeDailyHtml(popupMessage)}</div>
                 <div class="popup-timer-container">
                     <div class="popup-timer">
                         <div class="timer-bar" id="timer-bar-${popupId}" style="width: 100%"></div>
                     </div>
-                    <div class="timer-text">
-                        <i>⏱️</i>
-                        <span class="time-number" id="time-number-${popupId}">5</span>秒后关闭
-                    </div>
+                    <span class="time-number" id="time-number-${popupId}" hidden>5</span>
                 </div>
             `;
             
@@ -351,10 +351,10 @@
                 if (finalIndex !== -1) {
                     activePopups.splice(finalIndex, 1);
                 }
-            }, 400);
+            }, 200);
         }
         
-        // 增强关闭按钮的事件处理
+        // 关闭按钮
         document.addEventListener('click', function(e) {
             const closeButton = e.target.closest('.popup-close');
             if (closeButton) {

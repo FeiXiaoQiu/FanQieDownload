@@ -51,114 +51,103 @@
             -moz-osx-font-smoothing: grayscale;
         }
         
-        /* 固定侧边按钮 */
+        /* 固定侧边：一言入口 */
         .daily-button {
             position: fixed;
             right: clamp(14px, 2vw, 22px);
             bottom: clamp(18px, 3vw, 28px);
-            width: 44px;
-            height: 44px;
+            width: 42px;
+            height: 42px;
             background: #fff;
-            border-radius: 12px;
+            border-radius: 10px;
             display: flex;
             align-items: center;
             justify-content: center;
-            color: var(--primary);
-            font-size: 0.95rem;
-            font-weight: 700;
+            color: #555;
+            font-size: 0.88rem;
+            font-weight: 600;
             cursor: pointer;
-            box-shadow: 0 6px 18px rgba(0, 0, 0, 0.18);
+            box-shadow: 0 4px 14px rgba(0, 0, 0, 0.14);
             z-index: 999;
-            transition: background 0.2s, transform 0.15s;
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            transition: background 0.15s, color 0.15s, border-color 0.15s;
+            border: 1px solid rgba(0, 0, 0, 0.1);
             user-select: none;
         }
         
         .daily-button:hover {
-            background: #fff5f5;
-            transform: translateY(-1px);
+            background: #fafbfc;
+            color: var(--primary);
+            border-color: rgba(255, 71, 87, 0.25);
         }
         
         .daily-button:active {
-            transform: scale(0.97);
+            background: #f1f2f6;
         }
         
-        /* 一言弹窗容器 - 修复点：空容器不拦截点击 */
+        /* 一言容器：空时不拦截点击 */
         .popup-container {
             position: fixed;
-            top: clamp(20px, 3vw, 30px);
-            right: clamp(20px, 3vw, 30px);
-            bottom: clamp(85px, 12vw, 100px);
+            top: auto;
+            right: clamp(12px, 2vw, 20px);
+            bottom: clamp(72px, 10vw, 88px);
             z-index: 9998;
             display: flex;
-            flex-direction: column;
-            gap: clamp(10px, 1.5vw, 15px);
+            flex-direction: column-reverse;
+            gap: 8px;
             overflow-y: auto;
-            padding-right: 5px;
-            width: clamp(280px, 35vw, 350px);
-            max-width: 95vw;
-            pointer-events: none; /* 新增：空容器不拦截点击 */
+            width: min(300px, calc(100vw - 24px));
+            max-height: min(42vh, 320px);
+            pointer-events: none;
         }
         
-        /* 滚动条美化 */
         .popup-container::-webkit-scrollbar {
-            width: 6px;
-        }
-        
-        .popup-container::-webkit-scrollbar-track {
-            background: rgba(255, 255, 255, 0.1);
-            border-radius: 3px;
+            width: 4px;
         }
         
         .popup-container::-webkit-scrollbar-thumb {
-            background: rgba(255, 71, 87, 0.3);
-            border-radius: 3px;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 2px;
         }
         
-        .popup-container::-webkit-scrollbar-thumb:hover {
-            background: rgba(255, 71, 87, 0.5);
-        }
-        
-        /* 单个弹窗样式 - 修复点：弹窗本身可点击 */
+        /* 一言卡片：与主卡片同系 */
         .daily-popup {
             width: 100%;
-            background: rgba(255, 255, 255, 0.98);
-            backdrop-filter: blur(20px);
-            border-radius: var(--radius);
-            padding: clamp(15px, 2vw, 20px);
-            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.25);
-            border: 3px solid var(--primary);
+            background: #fff;
+            border-radius: 12px;
+            padding: 12px 14px 10px;
+            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.14);
+            border: 1px solid rgba(0, 0, 0, 0.08);
             opacity: 0;
-            transform: translateX(50px);
-            animation: popupSlideIn 0.5s cubic-bezier(0.175, 0.885, 0.32, 1.275) forwards;
+            transform: translateY(8px);
+            animation: popupSlideIn 0.22s ease forwards;
             position: relative;
-            will-change: transform, opacity;
-            pointer-events: auto; /* 新增：弹窗本身可点击 */
+            pointer-events: auto;
+            box-sizing: border-box;
         }
         
         @keyframes popupSlideIn {
-            0% {
+            from {
                 opacity: 0;
-                transform: translateX(50px);
+                transform: translateY(8px);
             }
-            100% {
+            to {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateY(0);
             }
         }
         
         .daily-popup.closing {
-            animation: popupSlideOut 0.4s cubic-bezier(0.4, 0, 0.2, 1) forwards;
+            animation: popupSlideOut 0.18s ease forwards;
         }
         
         @keyframes popupSlideOut {
-            0% {
+            from {
                 opacity: 1;
-                transform: translateX(0);
+                transform: translateY(0);
             }
-            100% {
+            to {
                 opacity: 0;
-                transform: translateX(50px);
+                transform: translateY(6px);
             }
         }
         
@@ -166,106 +155,90 @@
             display: flex;
             justify-content: space-between;
             align-items: center;
-            margin-bottom: clamp(10px, 1.5vw, 15px);
-            padding-bottom: clamp(8px, 1vw, 12px);
-            border-bottom: 2px solid rgba(255, 71, 87, 0.2);
+            margin-bottom: 8px;
+            padding-bottom: 0;
+            border-bottom: 0;
         }
         
         .popup-title {
-            font-size: clamp(1.1rem, 1.5vw, 1.3rem);
-            font-weight: 700;
-            color: var(--primary);
-            display: flex;
-            align-items: center;
-            gap: clamp(6px, 1vw, 10px);
+            font-size: 0.8rem;
+            font-weight: 600;
+            color: #888;
+            letter-spacing: 0.02em;
         }
         
         .popup-close {
-            background: none;
+            background: rgba(0, 0, 0, 0.05);
             border: none;
-            font-size: clamp(1.4rem, 1.8vw, 1.6rem);
-            color: var(--gray);
+            font-size: 1.1rem;
+            line-height: 1;
+            color: #666;
             cursor: pointer;
-            transition: var(--transition);
-            width: clamp(28px, 3vw, 32px);
-            height: clamp(28px, 3vw, 32px);
+            width: 28px;
+            height: 28px;
             border-radius: 50%;
             display: flex;
             align-items: center;
             justify-content: center;
-            will-change: transform;
             flex-shrink: 0;
+            padding: 0;
+            transition: background 0.15s, color 0.15s;
         }
         
         .popup-close:hover {
-            background: rgba(255, 71, 87, 0.15);
-            color: var(--primary);
-            transform: scale(1.2) rotate(90deg);
+            background: rgba(0, 0, 0, 0.09);
+            color: #333;
         }
         
         .popup-content {
-            font-size: clamp(1rem, 1.3vw, 1.15rem);
-            line-height: 1.6;
-            color: var(--dark);
-            text-align: center;
-            padding: clamp(12px, 1.5vw, 15px) clamp(10px, 1.2vw, 12px);
-            margin-bottom: clamp(12px, 1.5vw, 15px);
-            background: linear-gradient(135deg, rgba(255, 255, 255, 0.7), rgba(255, 255, 255, 0.9));
-            border-radius: 10px;
-            border: 2px solid rgba(255, 71, 87, 0.15);
-            min-height: clamp(45px, 6vw, 50px);
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            box-shadow: inset 0 2px 8px rgba(0, 0, 0, 0.05);
-            font-weight: 500;
+            font-size: 0.92rem;
+            line-height: 1.65;
+            color: #333;
+            text-align: left;
+            padding: 0;
+            margin: 0 0 10px;
+            background: transparent;
+            border: 0;
+            border-radius: 0;
+            min-height: 0;
+            display: block;
+            box-shadow: none;
+            font-weight: 400;
             word-break: break-word;
         }
         
         .popup-timer-container {
-            background: rgba(255, 255, 255, 0.3);
-            border-radius: 8px;
-            padding: clamp(6px, 1vw, 8px);
-            margin-top: clamp(8px, 1vw, 10px);
+            background: transparent;
+            border-radius: 0;
+            padding: 0;
+            margin: 0;
         }
         
         .popup-timer {
             width: 100%;
-            height: clamp(6px, 0.8vw, 8px);
-            background: rgba(255, 255, 255, 0.5);
-            border-radius: 4px;
+            height: 2px;
+            background: rgba(0, 0, 0, 0.06);
+            border-radius: 1px;
             overflow: hidden;
             position: relative;
-            margin-bottom: clamp(6px, 0.8vw, 8px);
+            margin: 0;
         }
         
         .timer-bar {
             height: 100%;
             width: 100%;
-            background: linear-gradient(90deg, var(--primary), var(--accent));
-            border-radius: 4px;
-            will-change: width;
-            box-shadow: 0 2px 8px rgba(255, 71, 87, 0.3);
+            background: #ff4757;
+            border-radius: 1px;
             transition: width 0.1s linear;
+            box-shadow: none;
         }
         
         .timer-text {
-            text-align: center;
-            font-size: clamp(0.85rem, 1vw, 0.95rem);
-            color: var(--primary);
-            font-weight: 600;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            gap: clamp(4px, 0.8vw, 6px);
+            display: none;
         }
         
         .time-number {
-            font-size: clamp(1rem, 1.2vw, 1.1rem);
-            font-weight: 700;
-            color: var(--primary-dark);
-            min-width: clamp(18px, 2vw, 20px);
-            text-align: center;
+            display: none;
         }
         
         .container {
@@ -1400,16 +1373,10 @@
             
             .popup-container {
                 right: 10px;
-                top: 15px;
-                bottom: 75px;
-                width: calc(100% - 20px);
-                max-width: 300px;
-                pointer-events: none; /* 确保移动端也生效 */
-            }
-            
-            .daily-popup {
-                width: 100%;
-                pointer-events: auto; /* 确保移动端也生效 */
+                left: auto;
+                bottom: 68px;
+                width: min(280px, calc(100vw - 20px));
+                max-height: min(36vh, 260px);
             }
             
             .info-list li {
@@ -1462,13 +1429,8 @@
             }
             
             .popup-container {
-                width: clamp(280px, 40vw, 320px);
-                right: clamp(15px, 2vw, 20px);
-                pointer-events: none; /* 确保平板端也生效 */
-            }
-            
-            .daily-popup {
-                pointer-events: auto; /* 确保平板端也生效 */
+                width: min(300px, 40vw);
+                right: clamp(14px, 2vw, 20px);
             }
             
             .button-group {
@@ -1602,13 +1564,8 @@
             }
             
             .popup-container {
-                bottom: 80px;
-                max-height: 70vh;
-                pointer-events: none; /* 确保横屏模式也生效 */
-            }
-            
-            .daily-popup {
-                pointer-events: auto; /* 确保横屏模式也生效 */
+                bottom: 68px;
+                max-height: min(40vh, 240px);
             }
             
             .button-group {
@@ -1636,12 +1593,28 @@
             }
             
             .daily-popup {
-                background: rgba(45, 52, 54, 0.98);
-                color: var(--dark);
+                background: #2d3436;
+                border-color: rgba(255, 255, 255, 0.1);
+                color: #f0f0f0;
+            }
+            
+            .popup-title {
+                color: #999;
             }
             
             .popup-content {
-                background: linear-gradient(135deg, rgba(45, 52, 54, 0.7), rgba(45, 52, 54, 0.9));
+                color: #e8e8e8;
+                background: transparent;
+                border: 0;
+            }
+            
+            .popup-close {
+                background: rgba(255, 255, 255, 0.08);
+                color: #ccc;
+            }
+            
+            .popup-timer {
+                background: rgba(255, 255, 255, 0.1);
             }
             
             .input-field {
