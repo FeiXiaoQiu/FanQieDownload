@@ -1,0 +1,178 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
+    <title>阅读 · 番茄小说下载器</title>
+    <link rel="stylesheet" href="styles.css?v=20260724b">
+    <style>
+        body.reader-page {
+            min-height: 100vh;
+            margin: 0;
+            background: #f4f1ea;
+            color: #2c2c2c;
+        }
+        .reader-shell {
+            max-width: 720px;
+            margin: 0 auto;
+            padding: 12px 14px 48px;
+            box-sizing: border-box;
+        }
+        .reader-top {
+            position: sticky;
+            top: 0;
+            z-index: 10;
+            background: rgba(244, 241, 234, 0.96);
+            backdrop-filter: blur(8px);
+            border-bottom: 1px solid rgba(0, 0, 0, 0.06);
+            padding: 10px 0 12px;
+            margin: 0 -2px 14px;
+        }
+        .reader-nav {
+            display: flex;
+            flex-wrap: wrap;
+            gap: 8px;
+            align-items: center;
+            margin-bottom: 8px;
+        }
+        .reader-nav a,
+        .reader-nav button {
+            appearance: none;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+            background: #fff;
+            border-radius: 10px;
+            padding: 8px 12px;
+            font-size: 0.9rem;
+            font-family: inherit;
+            cursor: pointer;
+            color: #333;
+            text-decoration: none;
+        }
+        .reader-nav button:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+        .reader-nav .grow { flex: 1; min-width: 8px; }
+        .reader-book-title {
+            margin: 0;
+            font-size: 1.05rem;
+            font-weight: 700;
+            line-height: 1.35;
+            word-break: break-word;
+        }
+        .reader-book-meta {
+            margin: 4px 0 0;
+            font-size: 0.85rem;
+            color: #777;
+        }
+        .reader-chapter-title {
+            margin: 8px 0 0;
+            font-size: 1.2rem;
+            font-weight: 700;
+            line-height: 1.4;
+        }
+        .reader-status {
+            margin: 12px 0;
+            padding: 12px;
+            border-radius: 10px;
+            background: #fff;
+            border: 1px solid rgba(0, 0, 0, 0.06);
+            font-size: 0.92rem;
+            color: #555;
+            line-height: 1.5;
+        }
+        .reader-content {
+            background: #fffef9;
+            border-radius: 12px;
+            padding: 18px 16px 28px;
+            border: 1px solid rgba(0, 0, 0, 0.05);
+            box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
+            font-size: 1.05rem;
+            line-height: 1.85;
+            white-space: pre-wrap;
+            word-break: break-word;
+            overflow-wrap: anywhere;
+            min-height: 40vh;
+        }
+        .reader-catalog {
+            display: none;
+            margin: 10px 0 16px;
+            max-height: 40vh;
+            overflow-y: auto;
+            background: #fff;
+            border-radius: 12px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+        }
+        .reader-catalog.open { display: block; }
+        .reader-catalog button {
+            display: block;
+            width: 100%;
+            text-align: left;
+            border: 0;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.05);
+            background: transparent;
+            padding: 12px 14px;
+            font-size: 0.92rem;
+            font-family: inherit;
+            cursor: pointer;
+            color: #333;
+        }
+        .reader-catalog button:last-child { border-bottom: 0; }
+        .reader-catalog button.active {
+            background: rgba(255, 71, 87, 0.08);
+            color: #c0392b;
+            font-weight: 600;
+        }
+        .reader-bottom-nav {
+            display: flex;
+            gap: 10px;
+            margin-top: 18px;
+        }
+        .reader-bottom-nav button {
+            flex: 1;
+            border: 0;
+            border-radius: 12px;
+            padding: 14px 12px;
+            font-size: 0.95rem;
+            font-family: inherit;
+            cursor: pointer;
+            background: #ff4757;
+            color: #fff;
+        }
+        .reader-bottom-nav button.secondary {
+            background: #fff;
+            color: #333;
+            border: 1px solid rgba(0, 0, 0, 0.1);
+        }
+        .reader-bottom-nav button:disabled {
+            opacity: 0.45;
+            cursor: default;
+        }
+    </style>
+</head>
+<body class="reader-page">
+    <div class="reader-shell">
+        <div class="reader-top">
+            <div class="reader-nav">
+                <a href="index.html">← 返回下载器</a>
+                <button type="button" id="catalogBtn">目录</button>
+                <span class="grow"></span>
+                <button type="button" id="prevBtn" disabled>上一章</button>
+                <button type="button" id="nextBtn" disabled>下一章</button>
+            </div>
+            <h1 class="reader-book-title" id="bookTitle">加载中…</h1>
+            <p class="reader-book-meta" id="bookMeta"></p>
+            <h2 class="reader-chapter-title" id="chapterTitle"></h2>
+        </div>
+        <div class="reader-catalog" id="catalog"></div>
+        <div class="reader-status" id="status">正在准备目录…</div>
+        <article class="reader-content" id="content" hidden></article>
+        <div class="reader-bottom-nav">
+            <button type="button" class="secondary" id="prevBtn2" disabled>上一章</button>
+            <button type="button" id="nextBtn2" disabled>下一章</button>
+        </div>
+    </div>
+    <script src="browser-client.js?v=20260724b"></script>
+    <script src="reader.js?v=20260724b"></script>
+</body>
+</html>

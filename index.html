@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>🍅 番茄小说下载器 🍅</title>
-    <link rel="stylesheet" href="styles.css?v=20260724a">
+    <link rel="stylesheet" href="styles.css?v=20260724b">
 </head>
 <body>
     <!-- 一言弹窗容器 -->
@@ -28,10 +28,15 @@
                     <p class="book-preview-id" id="previewId"></p>
                 </div>
                 <p class="book-preview-desc" id="previewDesc"></p>
+                <div class="book-preview-body-label">正文试读</div>
+                <div class="book-preview-body" id="previewBody">点击书籍后自动加载前两章…</div>
             </div>
             <div class="book-preview-actions">
                 <button type="button" class="btn btn-primary" id="previewDownloadBtn">
                     <i>⬇️</i><span>下载本书</span>
+                </button>
+                <button type="button" class="btn btn-secondary" id="previewReaderBtn">
+                    <i>📖</i><span>新开页阅读</span>
                 </button>
                 <button type="button" class="btn btn-secondary" id="previewCloseBtn2">关闭</button>
             </div>
@@ -205,7 +210,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724a"></script>
-    <script src="app.js?v=20260724a"></script>
+    <script src="browser-client.js?v=20260724b"></script>
+    <script src="app.js?v=20260724b"></script>
 </body>
 </html>

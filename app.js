@@ -904,7 +904,7 @@
         function buildSearchItemHtml(b, checked) {
             const title = b.title || '未知';
             const meta = [b.author || '', b.category || ''].filter(Boolean).join(' · ');
-            const desc = String(b.abstract || '').replace(/\s+/g, ' ').trim();
+            const desc = formatAbstract(b.abstract, 120);
             const coverSrc = resolveCoverUrl(b.thumb_url || b.thumb_uri || '');
             const isChecked = !!checked;
             const img = coverSrc
@@ -1019,6 +1019,22 @@
             updateSearchSelectionUi();
         }
 
+        function formatAbstract(raw, maxLen) {
+            let s = String(raw || '')
+                .replace(/\r\n/g, '\n')
+                .replace(/\r/g, '\n')
+                .replace(/[ \t]+\n/g, '\n')
+                .replace(/\n{3,}/g, '\n\n')
+                .trim();
+            if (!s) return '';
+            if (maxLen && s.length > maxLen) {
+                s = s.slice(0, maxLen).replace(/\s+$/, '') + '…';
+            }
+            return s;
+        }
+
+        let previewContentSeq = 0;
+
         function openBookPreview(book) {
             previewBook = book || null;
             const mask = document.getElementById('bookPreviewMask');
@@ -1026,12 +1042,16 @@
             const title = book.title || '未知';
             const meta = [book.author || '', book.category || '', book.score ? ('评分 ' + book.score) : '']
                 .filter(Boolean).join(' · ');
-            const desc = String(book.abstract || '').replace(/\s+/g, ' ').trim() || '暂无简介';
+            const desc = formatAbstract(book.abstract) || '暂无简介';
             const coverSrc = resolveCoverUrl(book.thumb_url || book.thumb_uri || '');
             document.getElementById('previewTitle').textContent = title;
             document.getElementById('previewMeta').textContent = meta || '—';
             document.getElementById('previewId').textContent = 'ID：' + (book.book_id || '—');
             document.getElementById('previewDesc').textContent = desc;
+            const bodyEl = document.getElementById('previewBody');
+            if (bodyEl) {
+                bodyEl.textContent = '正在加载正文试读…';
+            }
             const cover = document.getElementById('previewCover');
             const ph = document.getElementById('previewCoverPh');
             if (cover && ph) {
@@ -1054,6 +1074,73 @@
             document.body.style.overflow = 'hidden';
             const previewEl = mask.querySelector('.book-preview');
             if (previewEl) previewEl.scrollTop = 0;
+            loadPreviewChapterText(book);
+        }
+
+        async function loadPreviewChapterText(book) {
+            const bodyEl = document.getElementById('previewBody');
+            if (!bodyEl || !book || !book.book_id) return;
+            const seq = ++previewContentSeq;
+            const client = window.FanqieBrowserClient;
+            if (!client || typeof client.getCatalog !== 'function' || typeof client.getContent !== 'function') {
+                bodyEl.textContent = '当前环境无法加载正文，可点「新开页阅读」或直接下载。';
+                return;
+            }
+            try {
+                if (typeof client.detectSameOriginProxy === 'function') {
+                    await client.detectSameOriginProxy();
+                }
+                const chapters = await client.getCatalog(String(book.book_id));
+                if (seq !== previewContentSeq) return;
+                if (!chapters || !chapters.length) {
+                    bodyEl.textContent = '暂无章节目录，无法试读正文。';
+                    return;
+                }
+                // 试读前 2 章（有的第一章是简介/推荐）
+                const take = chapters.slice(0, 2);
+                const parts = [];
+                for (let i = 0; i < take.length; i++) {
+                    const ch = take[i];
+                    if (!ch.item_id) continue;
+                    try {
+                        const got = await client.getContent(ch.item_id);
+                        if (seq !== previewContentSeq) return;
+                        const chapTitle = (got && got.title) || ch.title || ('第 ' + (i + 1) + ' 章');
+                        const text = (got && got.text) || '';
+                        if (text) {
+                            parts.push('【' + chapTitle + '】\n\n' + text.trim());
+                        }
+                    } catch (e) {
+                        parts.push('【' + (ch.title || ('第 ' + (i + 1) + ' 章')) + '】\n\n（本章加载失败：' + (e.message || e) + '）');
+                    }
+                }
+                if (seq !== previewContentSeq) return;
+                if (!parts.length) {
+                    bodyEl.textContent = '正文加载失败，可点「新开页阅读」重试，或直接下载全书。';
+                    return;
+                }
+                const more = chapters.length > take.length
+                    ? '\n\n—— 共 ' + chapters.length + ' 章，点「新开页阅读」继续看 ——'
+                    : '';
+                bodyEl.textContent = parts.join('\n\n────────\n\n') + more;
+            } catch (e) {
+                if (seq !== previewContentSeq) return;
+                bodyEl.textContent = '正文试读失败：' + (e.message || e);
+            }
+        }
+
+        function openReaderPage(book) {
+            const b = book || previewBook;
+            if (!b || !b.book_id) {
+                showResult('没有可阅读的书籍', 'warning');
+                return;
+            }
+            const q = new URLSearchParams();
+            q.set('book_id', String(b.book_id));
+            if (b.title) q.set('title', String(b.title));
+            if (b.author) q.set('author', String(b.author));
+            const url = 'reader.html?' + q.toString();
+            window.open(url, '_blank', 'noopener,noreferrer');
         }
 
         function closeBookPreview() {
@@ -1576,9 +1663,15 @@
 
             const previewMask = document.getElementById('bookPreviewMask');
             const previewDl = document.getElementById('previewDownloadBtn');
+            const previewReader = document.getElementById('previewReaderBtn');
             const previewClose = document.getElementById('previewCloseBtn');
             const previewClose2 = document.getElementById('previewCloseBtn2');
             if (previewDl) previewDl.addEventListener('click', downloadFromPreview);
+            if (previewReader) {
+                previewReader.addEventListener('click', function () {
+                    openReaderPage(previewBook);
+                });
+            }
             if (previewClose) previewClose.addEventListener('click', closeBookPreview);
             if (previewClose2) previewClose2.addEventListener('click', closeBookPreview);
             if (previewMask) {

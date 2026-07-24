@@ -1055,11 +1055,11 @@
             padding: 12px 12px;
             font-size: 0.9rem;
             color: #555;
-            line-height: 1.6;
+            line-height: 1.65;
             white-space: pre-wrap;
             overflow-wrap: anywhere;
             word-break: break-word;
-            max-height: min(32vh, 220px);
+            max-height: min(18vh, 140px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             background: #f8f9fb;
@@ -1067,10 +1067,36 @@
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
+        .book-preview-body-label {
+            grid-column: 1 / -1;
+            margin: 10px 0 0;
+            font-size: 0.82rem;
+            font-weight: 600;
+            color: var(--gray);
+        }
+
+        .book-preview-body {
+            grid-column: 1 / -1;
+            margin: 6px 0 0;
+            padding: 12px;
+            font-size: 0.92rem;
+            color: #333;
+            line-height: 1.7;
+            white-space: pre-wrap;
+            overflow-wrap: anywhere;
+            word-break: break-word;
+            max-height: min(36vh, 280px);
+            overflow-y: auto;
+            -webkit-overflow-scrolling: touch;
+            background: #fffdf8;
+            border-radius: 10px;
+            border: 1px solid rgba(255, 71, 87, 0.12);
+        }
+
         .book-preview-actions {
             display: grid;
-            grid-template-columns: 1.4fr 1fr;
-            gap: 10px;
+            grid-template-columns: 1fr 1fr 0.8fr;
+            gap: 8px;
             margin-top: 16px;
         }
 
@@ -1078,6 +1104,9 @@
             min-width: 0 !important;
             width: 100%;
             margin: 0;
+            padding-left: 8px !important;
+            padding-right: 8px !important;
+            font-size: 0.88rem !important;
         }
 
         .search-item img,
@@ -1196,6 +1225,14 @@
 
             .book-preview-actions {
                 grid-template-columns: 1fr 1fr;
+            }
+
+            .book-preview-actions .btn:last-child {
+                grid-column: 1 / -1;
+            }
+
+            .book-preview-body {
+                max-height: min(32vh, 240px);
             }
         }
         

@@ -1,7 +1,7 @@
 {
   "version": 2,
   "framework": null,
-  "buildCommand": "mkdir -p public && cp -f index.html styles.css app.js browser-client.js charset.json public/ && if [ -d Speech ]; then cp -r Speech public/; fi && if [ -f CNAME ]; then cp -f CNAME public/; fi",
+  "buildCommand": "mkdir -p public && cp -f index.html reader.html reader.js styles.css app.js browser-client.js charset.json public/ && if [ -d Speech ]; then cp -r Speech public/; fi && if [ -f CNAME ]; then cp -f CNAME public/; fi",
   "outputDirectory": "public",
   "installCommand": "echo skip",
   "cleanUrls": true,

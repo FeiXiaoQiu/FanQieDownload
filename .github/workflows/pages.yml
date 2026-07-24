@@ -27,7 +27,7 @@ jobs:
       - name: Prepare static site
         run: |
           mkdir -p _site
-          cp index.html styles.css app.js browser-client.js charset.json _site/
+          cp index.html reader.html reader.js styles.css app.js browser-client.js charset.json _site/
           if [ -f CNAME ]; then cp CNAME _site/; fi
           if [ -d Speech ]; then cp -r Speech _site/; fi
           ls -la _site

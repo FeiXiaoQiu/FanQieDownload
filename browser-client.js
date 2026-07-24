@@ -1030,6 +1030,7 @@
     search: search,
     getInfo: getInfo,
     getCatalog: getCatalog,
+    getContent: getContent,
     downloadBook: downloadBook,
     requestCancel: requestCancel,
     resetCancel: resetCancel,
