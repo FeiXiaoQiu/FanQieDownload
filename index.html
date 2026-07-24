@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>番茄小说下载器</title>
-    <link rel="stylesheet" href="styles.css?v=20260724g">
+    <link rel="stylesheet" href="styles.css?v=20260724h">
 </head>
 <body>
     <div class="popup-container" id="popupContainer"></div>
@@ -59,36 +59,43 @@
                        placeholder="抽象职校生存手册"
                        autocomplete="off">
             </div>
-            <div class="input-hint">空着点搜索会搜示例书名；点卡片试读，勾选可批量下载</div>
-            <div class="range-row" id="rangeRow">
-                <label class="range-item">
-                    <span>起始章</span>
-                    <input type="number" id="startChapter" min="1" placeholder="1" class="range-input">
-                </label>
-                <label class="range-item">
-                    <span>结束章</span>
-                    <input type="number" id="endChapter" min="1" placeholder="全部" class="range-input">
-                </label>
-                <label class="range-item range-check">
-                    <input type="checkbox" id="resumeCache" checked>
-                    <span>断点续传</span>
-                </label>
-            </div>
-            <div class="node-status" id="nodeStatus">节点检测中…</div>
-            <div class="search-results" id="searchResults"></div>
+            <div class="input-hint">空着点搜索会搜示例书名；点卡片看简介，勾选可批量下载</div>
         </div>
-        
+
         <div class="button-group">
-            <button class="btn btn-primary" onclick="startDownload()" id="downloadBtn">
-                <span>开始下载</span>
-            </button>
-            <button class="btn btn-secondary" onclick="searchByName()" id="searchBtn">
+            <button class="btn btn-primary" onclick="searchByName()" id="searchBtn">
                 <span>搜索</span>
+            </button>
+            <button class="btn btn-secondary" onclick="startDownload()" id="downloadBtn">
+                <span>下载</span>
             </button>
             <button class="btn btn-danger" onclick="cancelCurrentJob()" id="cancelBtn" style="display:none;">
                 <span>取消</span>
             </button>
         </div>
+
+        <div class="search-results" id="searchResults"></div>
+
+        <details class="download-options" id="downloadOptions">
+            <summary class="download-options-summary">下载选项</summary>
+            <div class="download-options-body">
+                <div class="range-row" id="rangeRow">
+                    <label class="range-item">
+                        <span>起始章</span>
+                        <input type="number" id="startChapter" min="1" placeholder="1" class="range-input">
+                    </label>
+                    <label class="range-item">
+                        <span>结束章</span>
+                        <input type="number" id="endChapter" min="1" placeholder="全部" class="range-input">
+                    </label>
+                    <label class="range-item range-check">
+                        <input type="checkbox" id="resumeCache" checked>
+                        <span>断点续传</span>
+                    </label>
+                </div>
+                <div class="node-status" id="nodeStatus">节点检测中…</div>
+            </div>
+        </details>
         
         <!-- 加载动画 -->
         <div class="loading-section" id="loadingSection">
@@ -127,9 +134,9 @@
         <div class="info-section">
             <div class="info-title">说明</div>
             <ul class="info-list">
-                <li><span>搜索后点卡片试读正文；勾选可批量下载</span></li>
-                <li><span>也可直接贴 ID / 分享链接后下载</span></li>
-                <li><span>可选起始/结束章，默认断点续传</span></li>
+                <li><span>先搜索，点卡片看简介；勾选可批量下载</span></li>
+                <li><span>也可直接贴 ID / 分享链接后点「下载」</span></li>
+                <li><span>章节范围与断点续传在「下载选项」里</span></li>
                 <li><span>浏览器拦截下载时，点「手动下载」</span></li>
                 <li><span>本机完整服务：一键启动后打开 127.0.0.1:8787</span></li>
             </ul>
@@ -157,7 +164,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724g"></script>
-    <script src="app.js?v=20260724g"></script>
+    <script src="browser-client.js?v=20260724h"></script>
+    <script src="app.js?v=20260724h"></script>
 </body>
 </html>

@@ -333,7 +333,7 @@
         }
         
         .input-section {
-            margin-bottom: clamp(30px, 4vw, 45px);
+            margin-bottom: 12px;
         }
         
         .input-label {
@@ -387,7 +387,7 @@
         .button-group {
             display: flex;
             gap: var(--gap-size);
-            margin-bottom: clamp(25px, 3vw, 35px);
+            margin-bottom: 14px;
             flex-wrap: wrap;
         }
         
@@ -441,6 +441,54 @@
 
         .btn-danger:hover {
             background: #ffe4e4;
+        }
+
+        .download-options {
+            margin: 0 0 16px;
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            border-radius: 12px;
+            background: #fafbfc;
+            overflow: hidden;
+        }
+
+        .download-options-summary {
+            list-style: none;
+            cursor: pointer;
+            padding: 12px 14px;
+            font-size: 0.9rem;
+            font-weight: 600;
+            color: #444;
+            user-select: none;
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            gap: 8px;
+        }
+
+        .download-options-summary::-webkit-details-marker {
+            display: none;
+        }
+
+        .download-options-summary::after {
+            content: '';
+            width: 8px;
+            height: 8px;
+            border-right: 2px solid #888;
+            border-bottom: 2px solid #888;
+            transform: rotate(45deg);
+            transition: transform 0.15s ease;
+            flex-shrink: 0;
+            margin-top: -4px;
+        }
+
+        .download-options[open] .download-options-summary::after {
+            transform: rotate(-135deg);
+            margin-top: 2px;
+        }
+
+        .download-options-body {
+            padding: 0 14px 14px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
         }
 
         .range-row {
@@ -688,8 +736,8 @@
         .search-results {
             display: none;
             flex-direction: column;
-            margin-top: clamp(16px, 2vw, 22px);
-            max-height: min(62vh, 560px);
+            margin: 0 0 16px;
+            max-height: min(56vh, 520px);
             overflow: hidden;
             border-radius: clamp(10px, 1.2vw, 12px);
             background: #fff;
