@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>阅读 · 番茄小说下载器</title>
-    <link rel="stylesheet" href="styles.css?v=20260724c">
+    <link rel="stylesheet" href="styles.css?v=20260724f">
     <style>
         body.reader-page {
             min-height: 100vh;
@@ -89,10 +89,22 @@
             box-shadow: 0 6px 20px rgba(0, 0, 0, 0.04);
             font-size: 1.05rem;
             line-height: 1.85;
-            white-space: pre-wrap;
             word-break: break-word;
             overflow-wrap: anywhere;
             min-height: 40vh;
+        }
+        .reader-content .reader-p {
+            margin: 0 0 0.85em;
+            text-indent: 2em;
+            text-align: justify;
+        }
+        .reader-content .reader-p:last-child {
+            margin-bottom: 0;
+        }
+        .reader-content .reader-empty {
+            text-indent: 0;
+            color: #999;
+            text-align: left;
         }
         .reader-catalog {
             display: none;
@@ -172,7 +184,7 @@
             <button type="button" id="nextBtn2" disabled>下一章</button>
         </div>
     </div>
-    <script src="browser-client.js?v=20260724c"></script>
-    <script src="reader.js?v=20260724c"></script>
+    <script src="browser-client.js?v=20260724f"></script>
+    <script src="reader.js?v=20260724f"></script>
 </body>
 </html>

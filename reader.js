@@ -31,6 +31,39 @@
         el.status.style.color = isError ? "#c0392b" : "#555";
     }
 
+    function escapeHtml(s) {
+        return String(s || "")
+            .replace(/&/g, "&amp;")
+            .replace(/</g, "&lt;")
+            .replace(/>/g, "&gt;")
+            .replace(/"/g, "&quot;");
+    }
+
+    /** 按换行分段，每段首行缩进两字 */
+    function renderChapterBody(node, raw) {
+        if (!node) return;
+        let s = String(raw || "")
+            .replace(/\r\n/g, "\n")
+            .replace(/\r/g, "\n")
+            .replace(/[ \t\u3000]+\n/g, "\n")
+            .replace(/\n{3,}/g, "\n\n")
+            .trim();
+        if (!s) {
+            node.innerHTML = '<p class="reader-p reader-empty">（本章无内容）</p>';
+            return;
+        }
+        const parts = s.split(/\n+/).map(function (p) {
+            return p.replace(/^\s+|\s+$/g, "");
+        }).filter(Boolean);
+        if (!parts.length) {
+            node.innerHTML = '<p class="reader-p reader-empty">（本章无内容）</p>';
+            return;
+        }
+        node.innerHTML = parts.map(function (p) {
+            return '<p class="reader-p">' + escapeHtml(p) + "</p>";
+        }).join("");
+    }
+
     function updateNav() {
         const canPrev = index > 0;
         const canNext = index < chapters.length - 1;
@@ -78,7 +111,7 @@
             if (seq !== loadSeq) return;
             const chapTitle = (got && got.title) || ch.title || ("第 " + (index + 1) + " 章");
             el.chapterTitle.textContent = chapTitle;
-            el.content.textContent = (got && got.text) || "（本章无内容）";
+            renderChapterBody(el.content, (got && got.text) || "");
             el.content.hidden = false;
             el.status.hidden = true;
             document.title = chapTitle + " · " + (titleFromQ || bookId);

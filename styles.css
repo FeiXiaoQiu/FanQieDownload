@@ -878,8 +878,7 @@
             max-width: 480px;
             max-height: min(85dvh, 85vh, 560px);
             min-height: 280px;
-            overflow-x: hidden;
-            overflow-y: auto;
+            overflow: hidden;
             background: #fff;
             border-radius: 16px;
             padding: 16px 18px 20px;
@@ -887,6 +886,8 @@
             box-sizing: border-box;
             margin: auto;
             flex-shrink: 0;
+            display: flex;
+            flex-direction: column;
         }
 
         @media (min-width: 560px) {
@@ -903,6 +904,7 @@
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 14px;
+            flex-shrink: 0;
         }
 
         .book-preview-head-title {
@@ -937,8 +939,12 @@
         .book-preview-main {
             display: grid;
             grid-template-columns: 96px minmax(0, 1fr);
+            grid-template-rows: auto minmax(0, 1fr);
             gap: 12px 14px;
             align-items: start;
+            flex: 1 1 auto;
+            min-height: 0;
+            overflow: hidden;
         }
 
         .book-preview-cover-wrap {
@@ -1045,7 +1051,9 @@
             line-height: 1.75;
             overflow-wrap: anywhere;
             word-break: break-word;
-            max-height: min(42vh, 320px);
+            min-height: 0;
+            max-height: none;
+            overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             background: #f8f9fb;
@@ -1074,6 +1082,7 @@
             grid-template-columns: 1fr 1fr 0.8fr;
             gap: 8px;
             margin-top: 16px;
+            flex-shrink: 0;
         }
 
         .book-preview-actions .btn {
@@ -1205,9 +1214,6 @@
                 grid-column: 1 / -1;
             }
 
-            .book-preview-desc {
-                max-height: min(38vh, 280px);
-            }
         }
         
         .info-section {
