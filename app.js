@@ -1265,15 +1265,17 @@
         }
 
         function finishDownloadUi(ok) {
-            const downloadBtn = document.getElementById('downloadBtn');
+            const searchBtn = document.getElementById('searchBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const loadingSection = document.getElementById('loadingSection');
             const resultSection = document.getElementById('resultSection');
             loadingSection.style.display = 'none';
             resultSection.style.display = 'block';
             resultSection.classList.add('show');
-            downloadBtn.disabled = false;
-            downloadBtn.innerHTML = '<span>下载</span>';
+            if (searchBtn) {
+                searchBtn.disabled = false;
+                searchBtn.innerHTML = '<span>搜索</span>';
+            }
             if (cancelBtn) cancelBtn.style.display = 'none';
             currentJobId = null;
             staticJobActive = false;
@@ -1288,15 +1290,17 @@
 
         // 执行下载：有 Node 走后端；GitHub Pages 走 browser-client
         async function executeDownload(bookId, userInput) {
-            const downloadBtn = document.getElementById('downloadBtn');
+            const searchBtn = document.getElementById('searchBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const loadingSection = document.getElementById('loadingSection');
             const resultSection = document.getElementById('resultSection');
             resetUI();
             // 保留搜索列表，方便预览后继续勾选 / 批量
-            
-            downloadBtn.disabled = true;
-            downloadBtn.innerHTML = '<span>处理中…</span>';
+
+            if (searchBtn) {
+                searchBtn.disabled = true;
+                searchBtn.innerHTML = '<span>处理中…</span>';
+            }
             if (cancelBtn) cancelBtn.style.display = 'inline-flex';
             
             loadingSection.style.display = 'block';
@@ -1613,10 +1617,10 @@
             const debouncedAutoDetect = debounce(autoDetectAndDownload, 800);
             bookIdInput.addEventListener('input', debouncedAutoDetect);
             
-            // 输入框回车触发下载
+            // 输入框回车触发搜索（纯 ID 会在 searchByName 内直接下载）
             bookIdInput.addEventListener('keydown', function(e) {
                 if (e.key === 'Enter') {
-                    startDownload();
+                    searchByName();
                 }
             });
             

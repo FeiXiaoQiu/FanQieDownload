@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>番茄小说下载器</title>
-    <link rel="stylesheet" href="styles.css?v=20260724k">
+    <link rel="stylesheet" href="styles.css?v=20260724m">
 </head>
 <body>
     <div class="popup-container" id="popupContainer"></div>
@@ -59,15 +59,12 @@
                        placeholder="抽象职校生存手册"
                        autocomplete="off">
             </div>
-            <div class="input-hint">空着点搜索会搜示例书名；点卡片看简介，勾选可批量下载</div>
+            <div class="input-hint">空着点搜索会搜示例书名；点卡片看简介，列表内下载或勾选批量</div>
         </div>
 
         <div class="button-group">
             <button class="btn btn-primary" onclick="searchByName()" id="searchBtn">
                 <span>搜索</span>
-            </button>
-            <button class="btn btn-secondary" onclick="startDownload()" id="downloadBtn">
-                <span>下载</span>
             </button>
             <button class="btn btn-danger" onclick="cancelCurrentJob()" id="cancelBtn" style="display:none;">
                 <span>取消</span>
@@ -134,8 +131,8 @@
         <div class="info-section">
             <div class="info-title">说明</div>
             <ul class="info-list">
-                <li><span>先搜索，点卡片看简介；勾选可批量下载</span></li>
-                <li><span>也可直接贴 ID / 分享链接后点「下载」</span></li>
+                <li><span>先搜索，点卡片看简介；列表内下载或勾选批量</span></li>
+                <li><span>粘贴纯数字 ID / 分享链接后搜索，可直接开下</span></li>
                 <li><span>章节范围与断点续传在「下载选项」里</span></li>
                 <li><span>浏览器拦截下载时，点「手动下载」</span></li>
             </ul>
@@ -163,7 +160,7 @@
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724k"></script>
-    <script src="app.js?v=20260724k"></script>
+    <script src="browser-client.js?v=20260724m"></script>
+    <script src="app.js?v=20260724m"></script>
 </body>
 </html>
