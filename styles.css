@@ -1038,15 +1038,14 @@
         .book-preview-desc {
             grid-column: 1 / -1;
             grid-row: 2;
-            margin: 2px 0 0;
-            padding: 12px 12px;
-            font-size: 0.9rem;
-            color: #555;
-            line-height: 1.65;
-            white-space: pre-wrap;
+            margin: 4px 0 0;
+            padding: 14px 14px;
+            font-size: 0.92rem;
+            color: #444;
+            line-height: 1.75;
             overflow-wrap: anywhere;
             word-break: break-word;
-            max-height: min(18vh, 140px);
+            max-height: min(42vh, 320px);
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
             background: #f8f9fb;
@@ -1054,30 +1053,20 @@
             border: 1px solid rgba(0, 0, 0, 0.05);
         }
 
-        .book-preview-body-label {
-            grid-column: 1 / -1;
-            margin: 10px 0 0;
-            font-size: 0.82rem;
-            font-weight: 600;
-            color: var(--gray);
+        .book-preview-desc .abstract-p {
+            margin: 0 0 0.7em;
+            text-indent: 2em;
+            text-align: justify;
         }
 
-        .book-preview-body {
-            grid-column: 1 / -1;
-            margin: 6px 0 0;
-            padding: 12px;
-            font-size: 0.92rem;
-            color: #333;
-            line-height: 1.7;
-            white-space: pre-wrap;
-            overflow-wrap: anywhere;
-            word-break: break-word;
-            max-height: min(36vh, 280px);
-            overflow-y: auto;
-            -webkit-overflow-scrolling: touch;
-            background: #fffdf8;
-            border-radius: 10px;
-            border: 1px solid rgba(255, 71, 87, 0.12);
+        .book-preview-desc .abstract-p:last-child {
+            margin-bottom: 0;
+        }
+
+        .book-preview-desc .abstract-empty {
+            text-indent: 0;
+            color: #999;
+            text-align: left;
         }
 
         .book-preview-actions {
@@ -1216,8 +1205,8 @@
                 grid-column: 1 / -1;
             }
 
-            .book-preview-body {
-                max-height: min(32vh, 240px);
+            .book-preview-desc {
+                max-height: min(38vh, 280px);
             }
         }
         
