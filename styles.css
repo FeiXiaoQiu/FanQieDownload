@@ -721,13 +721,35 @@
         .search-results {
             display: none;
             flex-direction: column;
-            margin: 0 0 12px;
-            max-height: min(60vh, 560px);
+            margin: 0 0 10px;
+            max-height: min(48vh, 420px);
             overflow: hidden;
             border-radius: 10px;
             background: #fff;
             border: 1px solid rgba(0, 0, 0, 0.08);
             box-shadow: none;
+        }
+
+        /* 有结果时：卡片高度受控，列表内滚，减少整页上下晃 */
+        .container:has(.search-results[style*="flex"]) {
+            max-height: calc(100dvh - 40px);
+            display: flex;
+            flex-direction: column;
+        }
+
+        .container:has(.search-results[style*="flex"]) .search-results {
+            flex: 1 1 auto;
+            min-height: 0;
+            max-height: none;
+        }
+
+        .container:has(.search-results[style*="flex"]) .download-options,
+        .container:has(.search-results[style*="flex"]) .site-footer,
+        .container:has(.search-results[style*="flex"]) .header,
+        .container:has(.search-results[style*="flex"]) .search-bar,
+        .container:has(.search-results[style*="flex"]) .loading-section,
+        .container:has(.search-results[style*="flex"]) .result-section {
+            flex-shrink: 0;
         }
 
         .search-toolbar {
@@ -1386,7 +1408,11 @@
             }
 
             .search-results {
-                max-height: min(52vh, 460px);
+                max-height: min(44vh, 360px);
+            }
+
+            .container:has(.search-results[style*="flex"]) {
+                max-height: calc(100dvh - 24px);
             }
 
             .range-row {
