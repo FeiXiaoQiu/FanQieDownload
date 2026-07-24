@@ -21,8 +21,8 @@
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
-            --container-max-width: 880px;
-            --container-padding: 22px 24px 18px;
+            --container-max-width: 720px;
+            --container-padding: 22px 22px 18px;
             --title-font-size: 1.4rem;
             --subtitle-font-size: 0.88rem;
             --content-font-size: 15px;
@@ -34,12 +34,18 @@
 
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
-            background: #f0f1f4;
+            background: #1a1b22;
+            background-image:
+                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.2), transparent 55%),
+                radial-gradient(ellipse 70% 45% at 90% 10%, rgba(55, 66, 250, 0.12), transparent 50%),
+                linear-gradient(180deg, #1a1b22 0%, #12131a 100%);
             min-height: 100vh;
             min-height: 100dvh;
-            display: block;
+            display: flex;
+            justify-content: center;
+            align-items: flex-start;
             margin: 0;
-            padding: 0;
+            padding: 24px 14px 36px;
             position: relative;
             overflow-x: hidden;
             box-sizing: border-box;
@@ -239,19 +245,15 @@
         
         .container {
             background: #fff;
-            border-radius: 0;
+            border-radius: 14px;
             padding: var(--container-padding);
             width: 100%;
             max-width: var(--container-max-width);
-            min-height: 100vh;
-            min-height: 100dvh;
             margin: 0 auto;
-            box-shadow: none;
+            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
             position: relative;
             overflow: hidden;
-            border: 0;
-            border-left: 1px solid rgba(0, 0, 0, 0.06);
-            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            border: 1px solid rgba(255, 255, 255, 0.08);
             box-sizing: border-box;
         }
         
@@ -1352,13 +1354,16 @@
         @media (max-width: 767px) {
             :root {
                 --container-max-width: 100%;
-                --container-padding: 16px 14px 20px;
+                --container-padding: 16px 14px 16px;
                 --title-font-size: 1.22rem;
             }
 
+            body {
+                padding: 12px 10px 28px;
+            }
+
             .container {
-                border-left: 0;
-                border-right: 0;
+                border-radius: 12px;
             }
 
             .search-submit {
@@ -1375,7 +1380,7 @@
             }
 
             .search-results {
-                max-height: min(55vh, 480px);
+                max-height: min(52vh, 460px);
             }
 
             .range-row {
@@ -1397,217 +1402,47 @@
             }
         }
         
-        /* 平板设备（768px - 1024px） */
-        @media (min-width: 768px) and (max-width: 1024px) {
-            :root {
-                --container-max-width: 90vw;
-                --title-font-size: clamp(2.2rem, 4vw, 2.8rem);
-            }
-            
-            body {
-                padding: 15px;
-            }
-            
+        @media (min-width: 768px) {
             .popup-container {
-                width: min(300px, 40vw);
-                right: clamp(14px, 2vw, 20px);
-            }
-            
-            .button-group {
-                flex-wrap: nowrap;
-            }
-            
-            .btn {
-                min-width: auto;
-            }
-            
-            .title::after {
-                width: 70px;
-            }
-            
-            .subtitle {
-                padding: 0 10px;
+                width: min(300px, 36vw);
             }
         }
-        
-        /* 电脑设备（大于1024px） */
-        @media (min-width: 1025px) {
-            :root {
-                --container-max-width: min(900px, 85vw);
-                --title-font-size: clamp(2.5rem, 4vw, 3.5rem);
-            }
-            
-            .container {
-                max-width: var(--container-max-width);
-            }
-            
-            .button-group {
-                justify-content: center;
-            }
-            
-            .btn {
-                flex: 0 1 auto;
-                min-width: 200px;
-            }
-            
-            .title::after {
-                width: 80px;
-            }
-            
-            .header::before {
-                content: '📚';
-                position: absolute;
-                top: -10px;
-                left: 10%;
-                font-size: 2.5rem;
-                opacity: 0.1;
-                transform: rotate(-15deg);
-                pointer-events: none;
-            }
-            
-            .header::after {
-                content: '🔥';
-                position: absolute;
-                bottom: -10px;
-                right: 10%;
-                font-size: 2.5rem;
-                opacity: 0.1;
-                transform: rotate(15deg);
-                pointer-events: none;
-            }
-            
-            .input-section::before {
-                content: '';
-                position: absolute;
-                left: -20px;
-                top: 50%;
-                transform: translateY(-50%);
-                width: 4px;
-                height: 80%;
-                background: linear-gradient(to bottom, var(--primary), var(--accent));
-                border-radius: 2px;
-                opacity: 0.3;
-                pointer-events: none;
-            }
-        }
-        
-        /* 超大屏幕设备（大于1440px） */
-        @media (min-width: 1440px) {
-            :root {
-                --container-max-width: 1000px;
-                --container-padding: 45px;
-                --title-font-size: 3.2rem;
-            }
-            
-            body {
-                padding: 30px;
-            }
-            
-            .info-section {
-                display: grid;
-                grid-template-columns: 1fr 1fr;
-                gap: 30px;
-            }
-            
-            .info-title {
-                grid-column: 1 / -1;
-            }
-            
-            .info-list {
-                display: contents;
-            }
-            
-            .info-list li:nth-child(odd) {
-                grid-column: 1;
-            }
-            
-            .info-list li:nth-child(even) {
-                grid-column: 2;
-            }
-            
-            .info-list li {
-                border-bottom: none;
-                padding: 12px 0;
-            }
-        }
-        
-        /* 横屏模式优化 */
+
         @media (orientation: landscape) and (max-height: 600px) {
             body {
                 padding: 10px;
-                align-items: flex-start;
             }
-            
-            .container {
-                margin-top: 20px;
-                margin-bottom: 20px;
-            }
-            
+
             .popup-container {
                 bottom: 68px;
                 max-height: min(40vh, 240px);
             }
-            
-            .button-group {
-                flex-direction: row;
-                flex-wrap: wrap;
-            }
-            
-            .btn {
-                flex: 1;
-                min-width: 120px;
-            }
         }
-        
-        /* 暗色模式支持 */
+
+        /* 系统暗色：只影响浮层，主卡片保持白底 */
         @media (prefers-color-scheme: dark) {
-            :root {
-                --light: #2d3436;
-                --dark: #f8f9fa;
-                --gray: #a4b0be;
-            }
-            
-            .container {
-                background: rgba(45, 52, 54, 0.92);
-                border: 1px solid rgba(255, 255, 255, 0.1);
-            }
-            
             .daily-popup {
                 background: #2d3436;
                 border-color: rgba(255, 255, 255, 0.1);
                 color: #f0f0f0;
             }
-            
+
             .popup-title {
                 color: #999;
             }
-            
+
             .popup-content {
                 color: #e8e8e8;
                 background: transparent;
                 border: 0;
             }
-            
+
             .popup-close {
                 background: rgba(255, 255, 255, 0.08);
                 color: #ccc;
             }
-            
+
             .popup-timer {
                 background: rgba(255, 255, 255, 0.1);
-            }
-            
-            .input-field {
-                background: rgba(255, 255, 255, 0.1);
-                color: var(--dark);
-                border-color: rgba(255, 255, 255, 0.2);
-            }
-            
-            .input-field:focus {
-                background: rgba(255, 255, 255, 0.15);
-            }
-            
-            .info-section {
-                background: linear-gradient(135deg, rgba(255, 71, 87, 0.1), rgba(55, 66, 250, 0.1));
             }
         }
