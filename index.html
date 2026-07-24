@@ -4,7 +4,7 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
     <title>番茄小说下载器</title>
-    <link rel="stylesheet" href="styles.css?v=20260724n">
+    <link rel="stylesheet" href="styles.css?v=20260724p">
 </head>
 <body>
     <div class="popup-container" id="popupContainer"></div>
@@ -59,7 +59,7 @@
                        placeholder="抽象职校生存手册"
                        autocomplete="off">
             </div>
-            <div class="input-hint">空着点搜索会搜示例书名；点卡片看简介，列表内下载或勾选批量</div>
+            <p class="help-line">空搜用示例；点卡片看简介，列表下载或勾选批量；ID 可直接搜下</p>
         </div>
 
         <div class="button-group">
@@ -94,7 +94,6 @@
             </div>
         </details>
         
-        <!-- 加载动画 -->
         <div class="loading-section" id="loadingSection">
             <div class="loading-spinner">
                 <div class="spinner-ring"></div>
@@ -102,8 +101,6 @@
                 <div class="spinner-ring"></div>
             </div>
             <div class="loading-text" id="loadingText">正在准备下载，请稍候...</div>
-            
-            <!-- 进度条 -->
             <div class="progress-container" id="progressContainer">
                 <div class="progress-bar" id="progressBar"></div>
             </div>
@@ -127,40 +124,22 @@
                 </button>
             </div>
         </div>
-        
-        <div class="info-section">
-            <div class="info-title">说明</div>
-            <ul class="info-list">
-                <li><span>先搜索，点卡片看简介；列表内下载或勾选批量</span></li>
-                <li><span>粘贴纯数字 ID / 分享链接后搜索，可直接开下</span></li>
-                <li><span>章节范围与断点续传在「下载选项」里</span></li>
-                <li><span>浏览器拦截下载时，点「手动下载」</span></li>
-            </ul>
-        </div>
-
-        <hr>
 
         <footer class="site-footer">
-            <div class="footer-meta">
-                <span>番茄小说下载器 v2.4.0</span>
-                <span class="footer-dot">·</span>
-                <span>by 是非酋啊awa</span>
-            </div>
+            <span>v2.4.0</span>
+            <span class="footer-dot">·</span>
+            <span>是非酋啊awa</span>
+            <span class="footer-dot">·</span>
             <a class="github-link"
                href="https://github.com/FeiXiaoQiu/FanQieDownload"
                target="_blank"
-               rel="noopener noreferrer"
-               aria-label="GitHub">
-                <svg class="github-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
-                    <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
-                </svg>
-                <span>GitHub</span>
-            </a>
-            <p class="footer-note">仅供个人学习研究</p>
+               rel="noopener noreferrer">GitHub</a>
+            <span class="footer-dot">·</span>
+            <span class="footer-note">学习研究</span>
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724n"></script>
-    <script src="app.js?v=20260724n"></script>
+    <script src="browser-client.js?v=20260724p"></script>
+    <script src="app.js?v=20260724p"></script>
 </body>
 </html>

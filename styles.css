@@ -22,17 +22,21 @@
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
             /* 响应式变量 */
-            --container-max-width: 800px;
-            --container-padding: clamp(20px, 5vw, 40px);
-            --title-font-size: clamp(2rem, 5vw, 3.5rem);
-            --subtitle-font-size: clamp(0.9rem, 2vw, 1.2rem);
-            --content-font-size: clamp(14px, 1.1vw, 18px);
-            --button-font-size: clamp(1rem, 1.2vw, 1.1rem);
-            --input-font-size: clamp(1rem, 1.1vw, 1.1rem);
-            --input-padding: clamp(14px, 2vw, 18px);
-            --gap-size: clamp(15px, 2vw, 20px);
+            --container-max-width: 720px;
+            --container-padding: clamp(14px, 3vw, 22px);
+            --title-font-size: clamp(1.4rem, 3.5vw, 1.75rem);
+            --subtitle-font-size: clamp(0.82rem, 1.5vw, 0.95rem);
+            --content-font-size: clamp(14px, 1.1vw, 16px);
+            --button-font-size: 0.95rem;
+            --input-font-size: 1rem;
+            --input-padding: 12px 14px;
+            --gap-size: 10px;
         }
         
+        html {
+            height: 100%;
+        }
+
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
             background: #1a1b22;
@@ -40,13 +44,16 @@
                 radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.22), transparent 55%),
                 radial-gradient(ellipse 70% 45% at 90% 10%, rgba(55, 66, 250, 0.14), transparent 50%),
                 linear-gradient(180deg, #1a1b22 0%, #12131a 100%);
-            min-height: 100vh;
+            min-height: 100%;
+            min-height: 100dvh;
             display: flex;
             justify-content: center;
-            align-items: flex-start;
-            padding: clamp(16px, 3vw, 32px) clamp(10px, 2vw, 20px);
+            align-items: center;
+            padding: 12px;
             position: relative;
             overflow-x: hidden;
+            overflow-y: auto;
+            box-sizing: border-box;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
@@ -279,15 +286,15 @@
         
         .header {
             text-align: center;
-            margin-bottom: clamp(25px, 4vw, 45px);
+            margin-bottom: 12px;
             position: relative;
         }
         
         .title {
-            font-size: clamp(1.55rem, 4vw, 2rem);
+            font-size: var(--title-font-size);
             font-weight: 700;
             color: var(--dark);
-            margin-bottom: 6px;
+            margin-bottom: 2px;
             position: relative;
             display: inline-block;
             letter-spacing: -0.02em;
@@ -299,22 +306,22 @@
         
         .subtitle {
             color: #666;
-            font-size: clamp(0.88rem, 1.5vw, 0.98rem);
-            margin-top: 4px;
-            line-height: 1.5;
+            font-size: var(--subtitle-font-size);
+            margin-top: 0;
+            line-height: 1.4;
             font-weight: 400;
         }
         
         .input-section {
-            margin-bottom: 12px;
+            margin-bottom: 8px;
         }
         
         .input-label {
             display: block;
-            font-size: 0.92rem;
+            font-size: 0.88rem;
             font-weight: 600;
             color: var(--dark);
-            margin-bottom: 10px;
+            margin-bottom: 6px;
         }
         
         .input-label i {
@@ -323,7 +330,7 @@
         
         .input-wrapper {
             position: relative;
-            margin-bottom: clamp(15px, 2vw, 20px);
+            margin-bottom: 6px;
         }
         
         .input-field {
@@ -350,17 +357,18 @@
             font-size: clamp(0.9rem, 1vw, 1rem);
         }
         
-        .input-hint {
+        .input-hint,
+        .help-line {
             color: #888;
-            font-size: 0.82rem;
-            margin-top: 8px;
-            line-height: 1.45;
+            font-size: 0.8rem;
+            margin: 0;
+            line-height: 1.4;
         }
         
         .button-group {
             display: flex;
             gap: var(--gap-size);
-            margin-bottom: 14px;
+            margin-bottom: 10px;
             flex-wrap: wrap;
         }
         
@@ -417,9 +425,9 @@
         }
 
         .download-options {
-            margin: 0 0 16px;
+            margin: 0 0 10px;
             border: 1px solid rgba(0, 0, 0, 0.08);
-            border-radius: 12px;
+            border-radius: 10px;
             background: #fafbfc;
             overflow: hidden;
         }
@@ -427,8 +435,8 @@
         .download-options-summary {
             list-style: none;
             cursor: pointer;
-            padding: 12px 14px;
-            font-size: 0.9rem;
+            padding: 9px 12px;
+            font-size: 0.85rem;
             font-weight: 600;
             color: #444;
             user-select: none;
@@ -527,7 +535,7 @@
         
         .loading-section {
             text-align: center;
-            margin: clamp(30px, 4vw, 45px) 0;
+            margin: 10px 0;
             display: none;
         }
         
@@ -618,7 +626,7 @@
         }
         
         .result-section {
-            margin: clamp(25px, 3vw, 35px) 0;
+            margin: 8px 0;
             display: none;
         }
         
@@ -709,13 +717,13 @@
         .search-results {
             display: none;
             flex-direction: column;
-            margin: 0 0 16px;
-            max-height: min(56vh, 520px);
+            margin: 0 0 10px;
+            max-height: min(42vh, 380px);
             overflow: hidden;
-            border-radius: clamp(10px, 1.2vw, 12px);
+            border-radius: 10px;
             background: #fff;
             border: 1px solid rgba(255, 71, 87, 0.12);
-            box-shadow: 0 8px 24px rgba(0, 0, 0, 0.06);
+            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
         }
 
         .search-toolbar {
@@ -1290,62 +1298,58 @@
             border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
         
-        /* 页脚 */
+        /* 页脚：单行紧凑 */
         .site-footer {
             text-align: center;
-            padding: clamp(16px, 2vw, 22px) 0 clamp(8px, 1vw, 12px);
-            color: #666;
-            font-size: clamp(12px, 1vw, 14px);
-        }
-
-        .footer-meta {
+            padding: 8px 0 0;
+            margin-top: 4px;
+            color: #888;
+            font-size: 0.78rem;
+            line-height: 1.5;
             display: flex;
             flex-wrap: wrap;
             justify-content: center;
             align-items: center;
-            gap: 6px 8px;
-            margin-bottom: 12px;
-            line-height: 1.5;
+            gap: 4px 6px;
+            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            padding-top: 10px;
+        }
+
+        .footer-meta {
+            display: contents;
         }
 
         .footer-dot {
-            opacity: 0.45;
-        }
-
-        .github-link {
-            display: inline-flex;
-            align-items: center;
-            justify-content: center;
-            gap: 8px;
-            padding: 10px 16px;
-            border-radius: 999px;
-            text-decoration: none;
-            color: #24292f;
-            background: rgba(36, 41, 47, 0.06);
-            border: 1px solid rgba(36, 41, 47, 0.12);
-            font-weight: 600;
-            font-size: clamp(0.9rem, 1.1vw, 1rem);
-            transition: var(--transition);
-        }
-
-        .github-link:hover {
-            color: #fff;
-            background: #24292f;
-            border-color: #24292f;
-            transform: translateY(-2px);
-            box-shadow: 0 8px 20px rgba(36, 41, 47, 0.2);
-        }
-
-        .github-icon {
-            flex-shrink: 0;
-            display: block;
+            opacity: 0.4;
         }
 
         .footer-note {
-            margin-top: 12px;
-            font-size: clamp(11px, 0.95vw, 12px);
-            color: #888;
-            line-height: 1.5;
+            color: #999;
+        }
+
+        .github-link {
+            display: inline;
+            padding: 0;
+            border-radius: 0;
+            text-decoration: none;
+            color: #555;
+            background: transparent;
+            border: 0;
+            font-weight: 600;
+            font-size: inherit;
+            transition: color 0.15s;
+        }
+
+        .github-link:hover {
+            color: var(--primary);
+            background: transparent;
+            border-color: transparent;
+            transform: none;
+            box-shadow: none;
+        }
+
+        .github-icon {
+            display: none;
         }
         
         /* ========== 设备特定优化 ========== */
@@ -1353,22 +1357,18 @@
         /* 手机设备（小于768px） */
         @media (max-width: 767px) {
             :root {
-                --container-max-width: 95vw;
-                --gap-size: 12px;
+                --container-max-width: 100%;
+                --gap-size: 10px;
+                --container-padding: 14px;
             }
             
             body {
-                padding: 10px;
+                padding: 8px;
                 align-items: flex-start;
-                padding-top: 20px;
-            }
-            
-            .button-group {
-                flex-direction: column;
             }
             
             .btn {
-                width: 100%;
+                min-width: 0;
             }
             
             .popup-container {
@@ -1378,11 +1378,9 @@
                 width: min(280px, calc(100vw - 20px));
                 max-height: min(36vh, 260px);
             }
-            
-            .info-list li {
-                flex-wrap: wrap;
-                line-height: 1.4;
-                align-items: flex-start;
+
+            .search-results {
+                max-height: min(38vh, 320px);
             }
 
             .range-row {
@@ -1397,19 +1395,6 @@
 
             .range-input {
                 width: 120px;
-            }
-
-            .footer-meta {
-                flex-direction: column;
-                gap: 4px;
-            }
-
-            .footer-dot {
-                display: none;
-            }
-
-            .github-link {
-                width: min(100%, 260px);
             }
             
             .title::after {
