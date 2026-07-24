@@ -436,6 +436,10 @@
             overflow: hidden;
         }
 
+        .download-options[hidden] {
+            display: none !important;
+        }
+
         .download-options-summary {
             list-style: none;
             cursor: pointer;

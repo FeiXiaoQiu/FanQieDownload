@@ -575,9 +575,8 @@
             
             // 如果是链接（输入内容不等于提取的ID），则自动下载
             if (userInput !== bookId) {
-                showResult(`检测到分享链接，已提取小说ID：${bookId}，开始自动下载...`, 'info');
-                setTimeout(() => {
-                    executeDownload(bookId, userInput);
+                setTimeout(function () {
+                    executeDownload(bookId, userInput, { single: true });
                 }, 800);
             }
         }
@@ -743,7 +742,7 @@
             }
             const asId = extractBookId(input);
             if (asId && /^\d{10,}$/.test(input.trim())) {
-                executeDownload(asId, input);
+                executeDownload(asId, input, { single: true });
                 return;
             }
             if (box) {
@@ -934,8 +933,7 @@
                     e.stopPropagation();
                     document.getElementById('bookId').value = id;
                     closeBookPreview();
-                    showResult('开始下载《' + title + '》…', 'info');
-                    executeDownload(id, title);
+                    executeDownload(id, title, { single: true });
                 });
             }
         }
@@ -1115,8 +1113,7 @@
             const title = previewBook.title || id;
             document.getElementById('bookId').value = id;
             closeBookPreview();
-            showResult('开始下载《' + title + '》…', 'info');
-            executeDownload(id, title);
+            executeDownload(id, title, { single: true });
         }
 
         function startBatchDownload(books) {
@@ -1129,8 +1126,8 @@
                 showResult('当前有下载任务进行中，请稍后再批量下载', 'warning');
                 return;
             }
+            setDownloadOptionsVisible(false);
             batchDownloadQueue = list.slice();
-            showResult('已加入批量队列：' + list.length + ' 本，将依次下载', 'info');
             runNextBatchDownload();
         }
 
@@ -1147,11 +1144,8 @@
             document.getElementById('bookId').value = id;
             batchDownloadRunning = true;
             updateSearchSelectionUi();
-            showResult(
-                '批量下载中：《' + title + '》（剩余 ' + batchDownloadQueue.length + ' 本）',
-                'info'
-            );
-            Promise.resolve(executeDownload(id, title)).catch(function () {
+            // 批量：默认整本，忽略章节范围
+            Promise.resolve(executeDownload(id, title, { fullBook: true })).catch(function () {
                 /* finishDownloadUi 会继续队列 */
             });
         }
@@ -1178,19 +1172,29 @@
             }
             
             if (userInput !== bookId && !/^\d+$/.test(userInput.trim())) {
-                showResult(`已从输入中提取小说ID：${bookId}，开始下载...`, 'info');
-                setTimeout(() => {
-                    executeDownload(bookId, userInput);
+                setTimeout(function () {
+                    executeDownload(bookId, userInput, { single: true });
                 }, 400);
                 return;
             }
-            
-            executeDownload(bookId, userInput);
+
+            executeDownload(bookId, userInput, { single: true });
         }
         
         let currentJobId = null;
 
-        function getDownloadOptions() {
+        function setDownloadOptionsVisible(show) {
+            const el = document.getElementById('downloadOptions');
+            if (!el) return;
+            el.hidden = !show;
+            if (show) el.open = true;
+        }
+
+        /** fullBook / 批量：整本；单本可读章节范围 */
+        function getDownloadOptions(forceFullBook) {
+            if (forceFullBook || batchDownloadRunning) {
+                return { start_chapter: 0, end_chapter: 0, resume: true };
+            }
             const start = Number(document.getElementById('startChapter')?.value || 0) || 0;
             const end = Number(document.getElementById('endChapter')?.value || 0) || 0;
             const resume = document.getElementById('resumeCache')
@@ -1271,7 +1275,16 @@
         }
 
         // 执行下载：有 Node 走后端；GitHub Pages 走 browser-client
-        async function executeDownload(bookId, userInput) {
+        // flags: { single: 显示下载选项, fullBook: 强制整本 }
+        async function executeDownload(bookId, userInput, flags) {
+            flags = flags || {};
+            const forceFull = Boolean(flags.fullBook || batchDownloadRunning);
+            if (flags.single && !forceFull) {
+                setDownloadOptionsVisible(true);
+            } else if (forceFull) {
+                setDownloadOptionsVisible(false);
+            }
+
             const searchBtn = document.getElementById('searchBtn');
             const cancelBtn = document.getElementById('cancelBtn');
             const loadingSection = document.getElementById('loadingSection');
@@ -1292,7 +1305,7 @@
             updateProgress(5, '准备下载...');
 
             try {
-                const opts = getDownloadOptions();
+                const opts = getDownloadOptions(forceFull);
                 const backend = await detectBackend();
 
                 if (!backend) {
