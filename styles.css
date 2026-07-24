@@ -915,8 +915,8 @@
             position: relative;
             width: 100%;
             max-width: 480px;
-            max-height: min(92vh, 680px);
-            min-height: min(58vh, 420px);
+            max-height: min(85vh, 560px);
+            min-height: 340px;
             overflow-x: hidden;
             overflow-y: auto;
             background: #fff;
@@ -924,15 +924,15 @@
             padding: 16px 18px 20px;
             box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.22);
             box-sizing: border-box;
-            display: flex;
-            flex-direction: column;
         }
 
         @media (min-width: 560px) {
             .book-preview {
                 border-radius: 16px;
                 box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
-                padding: 20px 20px 18px;
+                padding: 22px 22px 20px;
+                max-height: min(88vh, 640px);
+                min-height: 360px;
             }
         }
 
@@ -942,7 +942,6 @@
             justify-content: space-between;
             gap: 10px;
             margin-bottom: 14px;
-            flex-shrink: 0;
         }
 
         .book-preview-head-title {
