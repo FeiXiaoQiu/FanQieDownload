@@ -8,6 +8,20 @@ data class NodeConfig(
     val builtin: Boolean = false,
 )
 
+/** 主界面背景：三选一 */
+enum class BackgroundMode {
+    DEFAULT,
+    CUSTOM_API,
+    CUSTOM_IMAGE,
+    ;
+
+    companion object {
+        fun fromStorage(raw: String?): BackgroundMode {
+            return entries.find { it.name == raw } ?: DEFAULT
+        }
+    }
+}
+
 data class BookSummary(
     val bookId: String,
     val title: String,

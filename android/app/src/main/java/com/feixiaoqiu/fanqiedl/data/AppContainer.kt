@@ -26,9 +26,4 @@ class AppContainer(context: Context) {
     )
 
     val downloads = DownloadRepository(appContext, client)
-
-    companion object {
-        /** 二次元随机图 API，用作主界面背景 */
-        const val BACKGROUND_IMAGE_URL = "https://t.alcy.cc/ycy"
-    }
 }

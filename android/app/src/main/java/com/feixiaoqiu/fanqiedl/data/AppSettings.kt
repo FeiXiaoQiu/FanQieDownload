@@ -17,6 +17,9 @@ class AppSettings(private val context: Context) {
     private val keyNodes = stringPreferencesKey("nodes_json")
     private val keyHitokoto = stringPreferencesKey("hitokoto_url")
     private val keyLastGood = stringPreferencesKey("last_good_base")
+    private val keyBgMode = stringPreferencesKey("bg_mode")
+    private val keyBgApi = stringPreferencesKey("bg_api_url")
+    private val keyBgImage = stringPreferencesKey("bg_image_url")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -30,6 +33,18 @@ class AppSettings(private val context: Context) {
         prefs[keyLastGood]
     }
 
+    val backgroundModeFlow: Flow<BackgroundMode> = context.dataStore.data.map { prefs ->
+        BackgroundMode.fromStorage(prefs[keyBgMode])
+    }
+
+    val backgroundApiUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[keyBgApi].orEmpty()
+    }
+
+    val backgroundImageUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[keyBgImage].orEmpty()
+    }
+
     suspend fun setNodes(nodes: List<NodeConfig>) {
         context.dataStore.edit { prefs ->
             prefs[keyNodes] = serializeNodes(nodes)
@@ -39,6 +54,18 @@ class AppSettings(private val context: Context) {
     suspend fun setHitokotoUrl(url: String) {
         context.dataStore.edit { prefs ->
             prefs[keyHitokoto] = url.trim().ifEmpty { DefaultNodes.DEFAULT_HITOKOTO }
+        }
+    }
+
+    suspend fun setBackground(
+        mode: BackgroundMode,
+        apiUrl: String,
+        imageUrl: String,
+    ) {
+        context.dataStore.edit { prefs ->
+            prefs[keyBgMode] = mode.name
+            prefs[keyBgApi] = apiUrl.trim()
+            prefs[keyBgImage] = imageUrl.trim()
         }
     }
 

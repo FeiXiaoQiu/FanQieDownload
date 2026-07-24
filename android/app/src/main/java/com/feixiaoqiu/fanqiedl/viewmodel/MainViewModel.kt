@@ -4,6 +4,7 @@ import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.feixiaoqiu.fanqiedl.data.AppContainer
+import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BookInfo
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
@@ -14,10 +15,13 @@ import com.feixiaoqiu.fanqiedl.data.NoEnabledNodeException
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
+import kotlinx.coroutines.flow.combine
 import kotlinx.coroutines.flow.update
+import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -42,6 +46,11 @@ data class MainUiState(
     val nodes: List<NodeConfig> = emptyList(),
     val hitokotoUrl: String = DefaultNodes.DEFAULT_HITOKOTO,
     val probeMessage: String? = null,
+    val backgroundMode: BackgroundMode = BackgroundMode.DEFAULT,
+    val backgroundApiUrl: String = "",
+    val backgroundImageUrl: String = "",
+    /** Coil 用的实际背景地址；随机图床会带 cache-bust 参数 */
+    val backgroundDisplayUrl: String = DefaultNodes.DEFAULT_BACKGROUND_API,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -49,6 +58,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     val ui: StateFlow<MainUiState> = _ui.asStateFlow()
 
     private var downloadJob: Job? = null
+    private var hitokotoJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -61,7 +71,61 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 _ui.update { it.copy(hitokotoUrl = url) }
             }
         }
-        refreshHitokoto()
+        viewModelScope.launch {
+            combine(
+                container.settings.backgroundModeFlow,
+                container.settings.backgroundApiUrlFlow,
+                container.settings.backgroundImageUrlFlow,
+            ) { mode, api, image -> Triple(mode, api, image) }.collect { (mode, api, image) ->
+                _ui.update {
+                    it.copy(
+                        backgroundMode = mode,
+                        backgroundApiUrl = api,
+                        backgroundImageUrl = image,
+                        backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = true),
+                    )
+                }
+            }
+        }
+        startHitokotoLoop()
+    }
+
+    private fun resolveBackgroundUrl(
+        mode: BackgroundMode,
+        apiUrl: String,
+        imageUrl: String,
+        bust: Boolean,
+    ): String {
+        return when (mode) {
+            BackgroundMode.DEFAULT -> {
+                val base = DefaultNodes.DEFAULT_BACKGROUND_API
+                if (bust) cacheBust(base) else base
+            }
+            BackgroundMode.CUSTOM_API -> {
+                val base = apiUrl.trim().ifEmpty { DefaultNodes.DEFAULT_BACKGROUND_API }
+                if (bust) cacheBust(base) else base
+            }
+            BackgroundMode.CUSTOM_IMAGE -> imageUrl.trim()
+        }
+    }
+
+    private fun cacheBust(url: String): String {
+        val sep = if (url.contains("?")) "&" else "?"
+        return url + sep + "_t=" + System.currentTimeMillis()
+    }
+
+    private fun startHitokotoLoop() {
+        hitokotoJob?.cancel()
+        hitokotoJob = viewModelScope.launch {
+            while (isActive) {
+                val url = _ui.value.hitokotoUrl
+                val text = withContext(Dispatchers.IO) {
+                    container.hitokoto.fetchOrFallback(url)
+                }
+                _ui.update { it.copy(hitokoto = text) }
+                delay(HITOKOTO_INTERVAL_MS)
+            }
+        }
     }
 
     fun onQueryChange(q: String) {
@@ -237,6 +301,73 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         _ui.update { it.copy(hitokotoUrl = url) }
     }
 
+    fun setBackgroundMode(mode: BackgroundMode) {
+        _ui.update { it.copy(backgroundMode = mode) }
+    }
+
+    fun setBackgroundApiUrl(url: String) {
+        _ui.update { it.copy(backgroundApiUrl = url) }
+    }
+
+    fun setBackgroundImageUrl(url: String) {
+        _ui.update { it.copy(backgroundImageUrl = url) }
+    }
+
+    fun saveBackground() {
+        viewModelScope.launch {
+            val s = _ui.value
+            when (s.backgroundMode) {
+                BackgroundMode.CUSTOM_API -> {
+                    if (s.backgroundApiUrl.isNotBlank() && !DefaultNodes.isValidHttpUrl(s.backgroundApiUrl)) {
+                        _ui.update { it.copy(snackbar = "请输入有效的图床 API 地址") }
+                        return@launch
+                    }
+                }
+                BackgroundMode.CUSTOM_IMAGE -> {
+                    if (!DefaultNodes.isValidHttpUrl(s.backgroundImageUrl)) {
+                        _ui.update { it.copy(snackbar = "请输入有效的图片地址") }
+                        return@launch
+                    }
+                }
+                BackgroundMode.DEFAULT -> Unit
+            }
+            container.settings.setBackground(
+                mode = s.backgroundMode,
+                apiUrl = s.backgroundApiUrl,
+                imageUrl = s.backgroundImageUrl,
+            )
+            _ui.update {
+                it.copy(
+                    backgroundDisplayUrl = resolveBackgroundUrl(
+                        s.backgroundMode,
+                        s.backgroundApiUrl,
+                        s.backgroundImageUrl,
+                        bust = true,
+                    ),
+                    snackbar = "背景已保存",
+                )
+            }
+        }
+    }
+
+    fun refreshBackground() {
+        val s = _ui.value
+        if (s.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
+            _ui.update { it.copy(snackbar = "当前为固定图片，无需刷新") }
+            return
+        }
+        _ui.update {
+            it.copy(
+                backgroundDisplayUrl = resolveBackgroundUrl(
+                    s.backgroundMode,
+                    s.backgroundApiUrl,
+                    s.backgroundImageUrl,
+                    bust = true,
+                ),
+            )
+        }
+    }
+
     fun saveHitokotoUrl() {
         viewModelScope.launch {
             container.settings.setHitokotoUrl(_ui.value.hitokotoUrl)
@@ -269,13 +400,13 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun addNode(name: String, baseUrl: String) {
+    fun addNode(baseUrl: String) {
         viewModelScope.launch {
             if (!DefaultNodes.isValidHttpUrl(baseUrl)) {
                 _ui.update { it.copy(snackbar = "请输入有效的 http(s) 地址") }
                 return@launch
             }
-            container.settings.addNode(name, baseUrl)
+            container.settings.addNode("", baseUrl)
             _ui.update { it.copy(snackbar = "节点已添加") }
         }
     }
@@ -296,14 +427,14 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun updateNodeUrl(id: String, name: String, baseUrl: String) {
+    fun updateNodeUrl(id: String, baseUrl: String) {
         viewModelScope.launch {
             if (!DefaultNodes.isValidHttpUrl(baseUrl)) {
                 _ui.update { it.copy(snackbar = "请输入有效的 http(s) 地址") }
                 return@launch
             }
             val n = _ui.value.nodes.find { it.id == id } ?: return@launch
-            container.settings.updateNode(n.copy(name = name.ifBlank { n.name }, baseUrl = baseUrl))
+            container.settings.updateNode(n.copy(baseUrl = baseUrl))
             _ui.update { it.copy(snackbar = "节点已更新") }
         }
     }
@@ -335,5 +466,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         override fun <T : ViewModel> create(modelClass: Class<T>): T {
             return MainViewModel(container) as T
         }
+    }
+
+    companion object {
+        private const val HITOKOTO_INTERVAL_MS = 30_000L
     }
 }

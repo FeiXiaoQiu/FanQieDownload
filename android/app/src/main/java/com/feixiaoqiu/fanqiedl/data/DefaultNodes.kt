@@ -3,6 +3,8 @@ package com.feixiaoqiu.fanqiedl.data
 object DefaultNodes {
     val PROBE_ITEM = "7580458932431225368"
     val DEFAULT_HITOKOTO = "https://v1.hitokoto.cn/"
+    /** 默认随机图床（二次元） */
+    val DEFAULT_BACKGROUND_API = "https://t.alcy.cc/ycy"
 
     fun builtin(): List<NodeConfig> = listOf(
         NodeConfig("builtin-1", "节点1", "http://110.42.57.146:4018", enabled = true, builtin = true),

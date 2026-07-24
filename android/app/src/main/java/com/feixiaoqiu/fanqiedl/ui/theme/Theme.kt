@@ -11,6 +11,11 @@ val TextPrimary = Color(0xFF111111)
 val TextSecondary = Color(0xFF666666)
 val Accent = Color(0xFF222222)
 val Scrim = Color(0x99000000)
+val Primary = Color(0xFFFF4757)
+val PrimaryDark = Color(0xFFFF3838)
+val InputBg = Color(0xFFF7F8FA)
+val InputBorder = Color(0xFFE0E0E0)
+val Placeholder = Color(0xFFAAAAAA)
 
 private val Scheme = darkColorScheme(
     primary = CardWhite,

@@ -28,6 +28,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.text.style.TextIndent
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
@@ -88,7 +89,7 @@ fun BookDetailDialog(
         confirmButton = {
             Button(
                 onClick = onDownload,
-                colors = ButtonDefaults.buttonColors(containerColor = TextPrimary, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
             ) { Text("下载") }
         },
         dismissButton = {
@@ -137,7 +138,7 @@ fun DownloadOptionsDialog(
         confirmButton = {
             Button(
                 onClick = onStart,
-                colors = ButtonDefaults.buttonColors(containerColor = TextPrimary, contentColor = Color.White),
+                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
             ) { Text("开始") }
         },
         dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },

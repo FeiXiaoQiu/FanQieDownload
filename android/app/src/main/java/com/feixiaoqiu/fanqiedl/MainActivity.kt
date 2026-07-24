@@ -66,6 +66,11 @@ class MainActivity : ComponentActivity() {
                                 onHitokotoUrlChange = vm::setHitokotoUrl,
                                 onSaveHitokoto = vm::saveHitokotoUrl,
                                 onTestHitokoto = vm::testHitokoto,
+                                onBgModeChange = vm::setBackgroundMode,
+                                onBgApiChange = vm::setBackgroundApiUrl,
+                                onBgImageChange = vm::setBackgroundImageUrl,
+                                onSaveBackground = vm::saveBackground,
+                                onRefreshBackground = vm::refreshBackground,
                             )
                         } else {
                             SearchScreen(
