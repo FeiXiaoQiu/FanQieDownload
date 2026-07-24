@@ -23,11 +23,11 @@ Release 使用仓库内固定密钥（`keystore/` + `keystore.properties`）。*
 - `app/build/outputs/apk/release/app-armeabi-v7a-release.apk`
 - `app/build/outputs/apk/release/app-universal-release.apk`
 
-CI 发布命名：
+CI 发布命名（应用显示名仍为「观隅」；GitHub 附件名用拼音）：
 
-- `观隅-{version}-arm64-v8a.apk`
-- `观隅-{version}-armeabi-v7a.apk`
-- `观隅-{version}-universal.apk`
+- `guanyu-{version}-arm64-v8a.apk`
+- `guanyu-{version}-armeabi-v7a.apk`
+- `guanyu-{version}-universal.apk`
 
 ## 功能
 

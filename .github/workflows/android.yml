@@ -1,5 +1,7 @@
 # Android APK：Actions 手动构建 / 打 v* tag 挂 Release
-# 产物命名：观隅-{version}-{abi}.apk（arm64-v8a / armeabi-v7a / universal）
+# 应用显示名：观隅
+# 产物命名：guanyu-{version}-{abi}.apk（GitHub Release 不支持中文文件名）
+# abi: arm64-v8a / armeabi-v7a / universal
 # 不标注 debug/release、不写 android
 
 name: Android APK
@@ -55,7 +57,7 @@ jobs:
       - name: Build release APKs (per-ABI + universal)
         run: ./gradlew :app:assembleRelease --stacktrace
 
-      - name: Name APKs as 观隅-{version}-{abi}
+      - name: Name APKs as guanyu-{version}-{abi}
         run: |
           VER="${{ steps.ver.outputs.version }}"
           mkdir -p dist-apk
@@ -69,7 +71,7 @@ jobs:
             if [[ -z "$abi" || "$abi" == "app" ]]; then
               abi="universal"
             fi
-            dest="dist-apk/观隅-${VER}-${abi}.apk"
+            dest="dist-apk/guanyu-${VER}-${abi}.apk"
             cp -f "$f" "$dest"
             echo "packed: $dest"
           done
@@ -89,5 +91,11 @@ jobs:
         with:
           files: android/dist-apk/*.apk
           fail_on_unmatched_files: true
+          body: |
+            **观隅 ${{ steps.ver.outputs.version }}**
+
+            - `guanyu-${{ steps.ver.outputs.version }}-arm64-v8a.apk`：64 位 ARM（多数新机）
+            - `guanyu-${{ steps.ver.outputs.version }}-armeabi-v7a.apk`：32 位 ARM
+            - `guanyu-${{ steps.ver.outputs.version }}-universal.apk`：全架构合集（推荐不确定时用）
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
