@@ -3,30 +3,41 @@ package com.feixiaoqiu.fanqiedl.ui
 import android.net.Uri
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.ColumnScope
+import androidx.compose.foundation.layout.IntrinsicSize
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.navigationBarsPadding
+import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
+import androidx.compose.foundation.layout.size
 import androidx.compose.foundation.layout.statusBarsPadding
+import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.selection.selectable
 import androidx.compose.foundation.selection.selectableGroup
 import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
+import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
@@ -39,13 +50,21 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
+import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
+import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.text.style.TextOverflow
+import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
@@ -59,6 +78,10 @@ import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
+import com.feixiaoqiu.fanqiedl.viewmodel.NodeProbeInfo
+import com.feixiaoqiu.fanqiedl.viewmodel.NodeProbePhase
+import kotlinx.coroutines.launch
+import kotlin.math.roundToInt
 import java.io.File
 
 @Composable
@@ -69,7 +92,7 @@ fun SettingsScreen(
     onAdd: (String) -> Unit,
     onUpdate: (String, String) -> Unit,
     onRestore: () -> Unit,
-    onProbe: (String) -> Unit,
+    onProbeAll: () -> Unit,
     onHitokotoUrlChange: (String) -> Unit,
     onSaveHitokoto: () -> Unit,
     onTestHitokoto: () -> Unit,
@@ -110,6 +133,7 @@ fun SettingsScreen(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
             )
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))
@@ -227,37 +251,67 @@ fun SettingsScreen(
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                     )
-                    Spacer(modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(10.dp))
 
-                    state.nodes.forEach { node ->
+                    Column(verticalArrangement = Arrangement.spacedBy(0.dp)) {
+                    state.nodes.forEachIndexed { idx, node ->
                         NodeRow(
                             node = node,
+                            probeInfo = state.nodeProbes[node.id],
+                            onUpdate = { url -> onUpdate(node.id, url) },
                             onRemove = { onRemove(node.id) },
-                            onProbe = { onProbe(node.baseUrl) },
-                            onSave = { url -> onUpdate(node.id, url) },
                         )
-                        Spacer(modifier = Modifier.height(8.dp))
+                            if (idx < state.nodes.lastIndex) {
+                                Box(
+                                    modifier = Modifier
+                                        .fillMaxWidth()
+                                        .padding(horizontal = 6.dp)
+                                        .height(0.5.dp)
+                                        .background(Color.White.copy(alpha = 0.08f)),
+                                )
+                            }
+                        }
                     }
                     if (state.probeMessage != null) {
+                        Spacer(Modifier.height(6.dp))
                         Text(state.probeMessage, color = TextSecondary, fontSize = 12.sp)
-                        Spacer(modifier = Modifier.height(6.dp))
                     }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        Button(
+                            onClick = onProbeAll,
+                            enabled = !state.probingAll,
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Color(0xFF4CAF50),
+                                contentColor = Color.White,
+                            ),
+                        ) {
+                            if (state.probingAll) {
+                                CircularProgressIndicator(
+                                    modifier = Modifier.size(16.dp),
+                                    color = Color.White,
+                                    strokeWidth = 2.dp,
+                                )
+                                Spacer(Modifier.width(6.dp))
+                            }
+                            Text(if (state.probingAll) "测活中…" else "一键测活")
+                        }
+                        TextButton(onClick = onRestore) { Text("恢复默认", color = Primary) }
+                    }
+                    Spacer(modifier = Modifier.height(8.dp))
                     Field(
                         value = newUrl,
                         onValueChange = { newUrl = it },
                         label = "http(s)://…",
                     )
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(
-                            onClick = {
-                                onAdd(newUrl)
-                                newUrl = ""
-                            },
-                            colors = primaryBtn(),
-                        ) { Text("添加") }
-                        TextButton(onClick = onRestore) { Text("恢复默认", color = Primary) }
-                    }
+                    Button(
+                        onClick = {
+                            onAdd(newUrl)
+                            newUrl = ""
+                        },
+                        colors = primaryBtn(),
+                    ) { Text("添加") }
                 }
 
                 SectionCard(title = "关于") {
@@ -381,24 +435,188 @@ private fun SectionCard(
 @Composable
 private fun NodeRow(
     node: NodeConfig,
+    probeInfo: NodeProbeInfo?,
+    onUpdate: (String) -> Unit,
     onRemove: () -> Unit,
-    onProbe: () -> Unit,
-    onSave: (String) -> Unit,
 ) {
     var url by remember(node.id, node.baseUrl) { mutableStateOf(node.baseUrl) }
-    Card(
-        colors = CardDefaults.cardColors(containerColor = CardMuted),
-        shape = RoundedCornerShape(12.dp),
-        modifier = Modifier.fillMaxWidth(),
+    var editing by remember { mutableStateOf(false) }
+    val scope = rememberCoroutineScope()
+    val density = LocalDensity.current
+    val actionWidthDp = 56.dp
+    val actionWidthPx = with(density) { actionWidthDp.toPx() * 2 }
+    val offsetX = remember { Animatable(0f) }
+
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .clip(RoundedCornerShape(10.dp)),
     ) {
-        Column(modifier = Modifier.padding(10.dp)) {
-            Field(value = url, onValueChange = { url = it }, label = "URL")
-            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { onSave(url) }) { Text("保存", color = Primary) }
-                TextButton(onClick = onProbe) { Text("测活", color = TextPrimary) }
-                TextButton(onClick = onRemove) { Text("删除", color = Primary) }
+        // 左滑操作层
+        Row(
+            modifier = Modifier
+                .matchParentSize()
+                .background(Color.Transparent),
+            horizontalArrangement = Arrangement.End,
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(
+                modifier = Modifier
+                    .width(actionWidthDp)
+                    .fillMaxHeight()
+                    .background(Color(0xFF1976D2))
+                    .clickable {
+                        editing = true
+                        scope.launch { offsetX.animateTo(0f) }
+                    },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("编辑", color = Color.White, fontSize = 13.sp)
+            }
+            Box(
+                modifier = Modifier
+                    .width(actionWidthDp)
+                    .fillMaxHeight()
+                    .background(Color(0xFFD32F2F))
+                    .clickable { onRemove() },
+                contentAlignment = Alignment.Center,
+            ) {
+                Text("删除", color = Color.White, fontSize = 13.sp)
             }
         }
+
+        // 前景行
+        Column(
+            modifier = Modifier
+                .fillMaxWidth()
+                .offset { IntOffset(offsetX.value.roundToInt(), 0) }
+                .pointerInput(Unit) {
+                    detectHorizontalDragGestures(
+                        onDragEnd = {
+                            scope.launch {
+                                if (offsetX.value < -actionWidthPx / 2) {
+                                    offsetX.animateTo(-actionWidthPx)
+                                } else {
+                                    offsetX.animateTo(0f)
+                                }
+                            }
+                        },
+                        onHorizontalDrag = { _, dragAmount ->
+                            scope.launch {
+                                offsetX.snapTo(
+                                    (offsetX.value + dragAmount)
+                                        .coerceIn(-actionWidthPx, 0f),
+                                )
+                            }
+                        },
+                    )
+                }
+                .background(CardMuted.copy(alpha = 0f)),
+        ) {
+            Row(
+                verticalAlignment = Alignment.CenterVertically,
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 6.dp, vertical = 10.dp),
+            ) {
+                ProbeDot(probeInfo)
+                Spacer(Modifier.width(8.dp))
+                Text(
+                    text = url,
+                    color = TextPrimary,
+                    fontSize = 13.sp,
+                    maxLines = 1,
+                    overflow = TextOverflow.Ellipsis,
+                    modifier = Modifier.weight(1f),
+                )
+                Spacer(Modifier.width(6.dp))
+                ProbeLabel(probeInfo)
+            }
+            if (editing) {
+                Row(
+                    verticalAlignment = Alignment.CenterVertically,
+                    modifier = Modifier.padding(start = 6.dp, end = 6.dp, bottom = 8.dp),
+                ) {
+                    BasicTextField(
+                        value = url,
+                        onValueChange = { url = it },
+                        singleLine = true,
+                        textStyle = TextStyle(color = TextPrimary, fontSize = 13.sp),
+                        cursorBrush = SolidColor(Primary),
+                        modifier = Modifier
+                            .weight(1f)
+                            .background(
+                                Color.White.copy(alpha = 0.12f),
+                                RoundedCornerShape(8.dp),
+                            )
+                            .padding(horizontal = 10.dp, vertical = 8.dp),
+                    )
+                    Spacer(Modifier.width(8.dp))
+                    TextButton(onClick = {
+                        onUpdate(url)
+                        editing = false
+                    }) { Text("保存", color = Primary, fontSize = 13.sp) }
+                    TextButton(onClick = { editing = false }) {
+                        Text("取消", color = TextSecondary, fontSize = 13.sp)
+                    }
+                }
+            }
+        }
+    }
+}
+
+@Composable
+private fun ProbeDot(info: NodeProbeInfo?) {
+    val color = probeLatencyColor(info)
+    Icon(
+        Icons.Default.Circle,
+        contentDescription = null,
+        tint = color,
+        modifier = Modifier.size(8.dp),
+    )
+}
+
+@Composable
+private fun ProbeLabel(info: NodeProbeInfo?) {
+    if (info == null) return
+    val text = when (info.phase) {
+        NodeProbePhase.Idle -> return
+        NodeProbePhase.Probing -> "测活中…"
+        NodeProbePhase.Ok -> formatLatencyLabel(info.latencyMs ?: return)
+        NodeProbePhase.Timeout -> "超时"
+        NodeProbePhase.Fail -> info.error ?: "失败"
+    }
+    val color = probeLatencyColor(info)
+    Text(text, color = color, fontSize = 12.sp)
+}
+
+private fun formatLatencyLabel(ms: Long): String {
+    return when {
+        ms <= 100 -> "${ms}ms"
+        ms <= 200 -> "${ms}ms"
+        ms <= 500 -> "%.2fs".format(ms / 1000.0)
+        ms <= 1000 -> "${ms}ms"
+        else -> "%.1fs".format(ms / 1000.0)
+    }
+}
+
+private fun probeLatencyColor(info: NodeProbeInfo?): Color {
+    if (info == null) return TextSecondary
+    return when (info.phase) {
+        NodeProbePhase.Idle -> TextSecondary
+        NodeProbePhase.Probing -> Color(0xFF9E9E9E)
+        NodeProbePhase.Ok -> {
+            val ms = info.latencyMs ?: return TextSecondary
+            when {
+                ms <= 100 -> Color(0xFF2E7D32)
+                ms <= 200 -> Color(0xFF66BB6A)
+                ms <= 500 -> Color(0xFFFDD835)
+                ms <= 1000 -> Color(0xFFFF9800)
+                else -> Color(0xFFFF5722)
+            }
+        }
+        NodeProbePhase.Timeout -> Color(0xFFD32F2F)
+        NodeProbePhase.Fail -> Color(0xFFD32F2F)
     }
 }
 

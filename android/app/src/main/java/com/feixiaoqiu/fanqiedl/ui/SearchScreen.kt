@@ -96,6 +96,7 @@ fun SearchScreen(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
+                alignment = Alignment.TopCenter,
             )
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))

@@ -96,7 +96,7 @@ class MainActivity : ComponentActivity() {
                                         onAdd = vm::addNode,
                                         onUpdate = vm::updateNodeUrl,
                                         onRestore = vm::restoreNodes,
-                                        onProbe = vm::probeNode,
+                                        onProbeAll = vm::probeAllNodes,
                                         onHitokotoUrlChange = vm::setHitokotoUrl,
                                         onSaveHitokoto = vm::saveHitokotoUrl,
                                         onTestHitokoto = vm::testHitokoto,
