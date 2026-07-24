@@ -21,29 +21,25 @@
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
-            --container-max-width: 640px;
-            --container-padding: 20px 20px 16px;
-            --title-font-size: 1.35rem;
-            --subtitle-font-size: 0.85rem;
+            --container-max-width: 880px;
+            --container-padding: 22px 24px 18px;
+            --title-font-size: 1.4rem;
+            --subtitle-font-size: 0.88rem;
             --content-font-size: 15px;
             --button-font-size: 0.95rem;
             --input-font-size: 0.95rem;
-            --input-padding: 11px 14px;
+            --input-padding: 12px 14px;
             --gap-size: 10px;
         }
 
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
-            background: #1a1b22;
-            background-image:
-                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.18), transparent 55%),
-                linear-gradient(180deg, #1a1b22 0%, #12131a 100%);
+            background: #f0f1f4;
             min-height: 100vh;
             min-height: 100dvh;
-            display: flex;
-            justify-content: center;
-            align-items: flex-start;
-            padding: 28px 14px 40px;
+            display: block;
+            margin: 0;
+            padding: 0;
             position: relative;
             overflow-x: hidden;
             box-sizing: border-box;
@@ -243,14 +239,20 @@
         
         .container {
             background: #fff;
-            border-radius: 12px;
+            border-radius: 0;
             padding: var(--container-padding);
             width: 100%;
             max-width: var(--container-max-width);
-            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
+            min-height: 100vh;
+            min-height: 100dvh;
+            margin: 0 auto;
+            box-shadow: none;
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.06);
+            border: 0;
+            border-left: 1px solid rgba(0, 0, 0, 0.06);
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            box-sizing: border-box;
         }
         
         .container.loaded {
@@ -712,7 +714,7 @@
             display: none;
             flex-direction: column;
             margin: 0 0 12px;
-            max-height: min(52vh, 480px);
+            max-height: min(60vh, 560px);
             overflow: hidden;
             border-radius: 10px;
             background: #fff;
@@ -1350,12 +1352,13 @@
         @media (max-width: 767px) {
             :root {
                 --container-max-width: 100%;
-                --container-padding: 16px 14px 14px;
-                --title-font-size: 1.2rem;
+                --container-padding: 16px 14px 20px;
+                --title-font-size: 1.22rem;
             }
-            
-            body {
-                padding: 12px 10px 28px;
+
+            .container {
+                border-left: 0;
+                border-right: 0;
             }
 
             .search-submit {
@@ -1372,7 +1375,7 @@
             }
 
             .search-results {
-                max-height: min(48vh, 420px);
+                max-height: min(55vh, 480px);
             }
 
             .range-row {

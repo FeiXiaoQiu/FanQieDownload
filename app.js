@@ -759,7 +759,6 @@
                     lastSearchNextOffset = 0;
                     lastSearchHasMore = false;
                     box.innerHTML = '<div class="search-empty">未找到相关书籍</div>';
-                    showResult('未找到相关书籍', 'warning');
                     return;
                 }
                 lastSearchBooks = books.slice();
@@ -767,17 +766,10 @@
                 lastSearchNextOffset = page.next_offset || books.length;
                 lastSearchHasMore = Boolean(page.has_more);
                 renderSearchList(box, lastSearchBooks);
-                showResult(
-                    '已加载 ' + books.length + ' 本' +
-                    (lastSearchHasMore ? '，可继续加载更多' : '') +
-                    ' · 点卡片预览，勾选后可批量下载',
-                    'info'
-                );
             } catch (e) {
                 lastSearchBooks = [];
                 lastSearchHasMore = false;
                 box.innerHTML = '<div class="search-empty">搜索失败：' + escapeHtml(e.message || String(e)) + '</div>';
-                showResult('搜索失败：' + e.message, 'error');
             }
         }
 
@@ -829,21 +821,11 @@
                 updateSearchMoreFooter(box);
                 updateSearchSelectionUi();
                 if (listEl) listEl.scrollTop = scrollTop;
-
-                if (!appended.length && !lastSearchHasMore) {
-                    showResult('没有更多结果了', 'info');
-                } else {
-                    showResult(
-                        '已累计 ' + lastSearchBooks.length + ' 本' +
-                        (lastSearchHasMore ? '，还可继续加载' : ''),
-                        'info'
-                    );
-                }
             } catch (e) {
-                showResult('加载更多失败：' + (e.message || e), 'error');
                 if (moreBtn) {
                     moreBtn.disabled = false;
-                    moreBtn.textContent = '加载更多';
+                    moreBtn.textContent = '加载失败，重试';
+                    moreBtn.title = String(e.message || e);
                 }
             } finally {
                 searchLoadingMore = false;
@@ -1535,8 +1517,10 @@
             }, 500);
         }
         
-        // 显示结果
+        // 显示结果（info 不占版面，避免搜索后高度跳动）
         function showResult(message, type = 'info') {
+            if (type === 'info') return;
+
             const resultCard = document.getElementById('resultCard');
             const resultTitle = document.getElementById('resultTitle');
             const resultMessage = document.getElementById('resultMessage');
@@ -1545,46 +1529,36 @@
             const downloadLink = document.getElementById('downloadLink');
             const downgradeBtn = document.getElementById('downgradeBtn');
             const manualHint = document.getElementById('manualHint');
-            
+            if (!resultCard || !resultSection) return;
+
             resultCard.className = 'result-card';
             switch (type) {
                 case 'success':
                     resultCard.classList.add('result-success');
-                    resultIcon.textContent = '';
-                    resultTitle.textContent = '下载成功';
+                    if (resultIcon) resultIcon.textContent = '';
+                    if (resultTitle) resultTitle.textContent = '下载成功';
                     break;
                 case 'error':
                     resultCard.classList.add('result-error');
-                    resultIcon.textContent = '';
-                    resultTitle.textContent = '下载失败';
+                    if (resultIcon) resultIcon.textContent = '';
+                    if (resultTitle) resultTitle.textContent = '下载失败';
                     break;
                 case 'warning':
                     resultCard.classList.add('result-warning');
-                    resultIcon.textContent = '';
-                    resultTitle.textContent = '注意';
+                    if (resultIcon) resultIcon.textContent = '';
+                    if (resultTitle) resultTitle.textContent = '注意';
                     break;
                 default:
-                    resultCard.classList.add('result-success');
-                    resultIcon.textContent = '';
-                    resultTitle.textContent = '提示';
+                    return;
             }
-            
-            resultMessage.textContent = message;
+
+            if (resultMessage) resultMessage.textContent = message;
             resultSection.style.display = 'block';
             resultSection.classList.add('show');
-            
-            downgradeBtn.style.display = 'none';
-            downloadLink.style.display = 'none';
-            manualHint.style.display = 'none';
-            
-            if (type === 'info') {
-                setTimeout(() => {
-                    resultSection.classList.remove('show');
-                    setTimeout(() => {
-                        resultSection.style.display = 'none';
-                    }, 400);
-                }, 3000);
-            }
+
+            if (downgradeBtn) downgradeBtn.style.display = 'none';
+            if (downloadLink) downloadLink.style.display = 'none';
+            if (manualHint) manualHint.style.display = 'none';
         }
         
         // 重置界面
