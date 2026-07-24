@@ -936,20 +936,16 @@
             background: rgba(0, 0, 0, 0.1);
         }
 
-        .book-preview-main {
-            display: grid;
-            grid-template-columns: 96px minmax(0, 1fr);
-            grid-template-rows: auto minmax(0, 1fr);
+        /* 封面+信息：固定，不参与滚动 */
+        .book-preview-meta-row {
+            display: flex;
             gap: 12px 14px;
-            align-items: start;
-            flex: 1 1 auto;
-            min-height: 0;
-            overflow: hidden;
+            align-items: flex-start;
+            flex-shrink: 0;
+            margin-bottom: 12px;
         }
 
         .book-preview-cover-wrap {
-            grid-column: 1;
-            grid-row: 1;
             width: 96px;
             height: 128px;
             border-radius: 10px;
@@ -1007,9 +1003,8 @@
         .result-warning .result-dot { color: var(--warning); }
 
         .book-preview-info {
-            grid-column: 2;
-            grid-row: 1;
             min-width: 0;
+            flex: 1 1 auto;
             align-self: center;
         }
 
@@ -1041,18 +1036,17 @@
             word-break: break-all;
         }
 
+        /* 仅简介区域可滚动 */
         .book-preview-desc {
-            grid-column: 1 / -1;
-            grid-row: 2;
-            margin: 4px 0 0;
-            padding: 14px 14px;
+            flex: 1 1 auto;
+            margin: 0;
+            padding: 14px;
             font-size: 0.92rem;
             color: #444;
             line-height: 1.75;
             overflow-wrap: anywhere;
             word-break: break-word;
-            min-height: 0;
-            max-height: none;
+            min-height: 120px;
             overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
@@ -1192,8 +1186,7 @@
                 font-size: 0.78rem;
             }
 
-            .book-preview-main {
-                grid-template-columns: 76px minmax(0, 1fr);
+            .book-preview-meta-row {
                 gap: 10px 12px;
             }
 

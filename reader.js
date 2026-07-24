@@ -116,7 +116,9 @@
             el.status.hidden = true;
             document.title = chapTitle + " · " + (titleFromQ || bookId);
             try {
-                window.scrollTo(0, 0);
+                var sc = document.getElementById("readerScroll");
+                if (sc) sc.scrollTop = 0;
+                else window.scrollTo(0, 0);
             } catch (e) { /* ignore */ }
         } catch (e) {
             if (seq !== loadSeq) return;
