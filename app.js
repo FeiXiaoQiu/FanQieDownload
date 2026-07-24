@@ -1273,7 +1273,7 @@
             resultSection.style.display = 'block';
             resultSection.classList.add('show');
             downloadBtn.disabled = false;
-            downloadBtn.innerHTML = '<i>🚀</i><span>开始下载</span>';
+            downloadBtn.innerHTML = '<span>下载</span>';
             if (cancelBtn) cancelBtn.style.display = 'none';
             currentJobId = null;
             staticJobActive = false;
@@ -1296,7 +1296,7 @@
             // 保留搜索列表，方便预览后继续勾选 / 批量
             
             downloadBtn.disabled = true;
-            downloadBtn.innerHTML = '<i>⏳</i><span>处理中...</span>';
+            downloadBtn.innerHTML = '<span>处理中…</span>';
             if (cancelBtn) cancelBtn.style.display = 'inline-flex';
             
             loadingSection.style.display = 'block';
