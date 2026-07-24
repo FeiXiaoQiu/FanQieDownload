@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">番茄小说下载器</string>
+    <string name="disclaimer">仅供个人学习研究，请遵守版权与平台条款</string>
+    <string name="example_query">抽象职校生存手册</string>
+</resources>

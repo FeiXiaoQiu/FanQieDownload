@@ -29,15 +29,26 @@ node server.js
 
 浏览器打开 `http://127.0.0.1:8787`。
 
+## Android 客户端
+
+源码：`android/`（Kotlin + Compose）。本地无 SDK 时用 GitHub Actions 出包：
+
+1. 打开仓库 **Actions → Android APK → Run workflow**
+2. 构建完成后在 Artifacts 下载 `fanqie-android-debug` / `release`
+3. 或打 tag：`git tag v2.5.0-android && git push origin v2.5.0-android`，APK 挂到 Release
+
+详见 `android/README.md`。背景图 API：`https://t.alcy.cc/ycy`；一言默认 Hitokoto；番茄节点可在 App 设置里增减。
+
 ## 目录
 
 ```
 index.html styles.css app.js browser-client.js charset.json
-Speech/                 # 一言
+Speech/                 # 一言（Web）
 api/                    # Vercel Serverless
 server.js               # 本机完整 Node 服务
+android/                # Android 客户端
 一键启动.bat / .command
-.github/workflows/      # Pages / Release
+.github/workflows/      # Pages / Release / Android APK
 ```
 
 ## 说明
