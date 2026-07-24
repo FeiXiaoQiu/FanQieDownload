@@ -4,11 +4,12 @@ import android.content.Intent
 import android.net.Uri
 import android.os.Bundle
 import androidx.activity.ComponentActivity
+import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
-import androidx.compose.foundation.layout.padding
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
@@ -53,13 +54,29 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
+                // 系统返回：设置/阅读/弹层逐级退出，避免直接杀进程
+                BackHandler(enabled = !showSplash) {
+                    when {
+                        state.showCatalog -> vm.toggleCatalog(false)
+                        state.downloadResult != null -> vm.dismissDownloadResult()
+                        state.downloading -> vm.cancelDownload()
+                        state.showDownloadOptions -> vm.closeDownloadOptions()
+                        state.selected != null && !state.reading -> vm.closeDetail()
+                        state.reading -> vm.closeReader()
+                        showSettings -> showSettings = false
+                        else -> finish()
+                    }
+                }
+
                 Box(modifier = Modifier.fillMaxSize()) {
+                    // 背景铺满全屏（含刘海/挖孔区域），避免顶部黑条
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
                         snackbarHost = { SnackbarHost(snackbarHostState) },
                         containerColor = androidx.compose.ui.graphics.Color.Transparent,
-                    ) { padding ->
-                        Box(modifier = Modifier.fillMaxSize().padding(padding)) {
+                        contentWindowInsets = WindowInsets(0, 0, 0, 0),
+                    ) { _ ->
+                        Box(modifier = Modifier.fillMaxSize()) {
                             when {
                                 state.reading -> {
                                     ReaderScreen(
@@ -85,13 +102,12 @@ class MainActivity : ComponentActivity() {
                                         onTestHitokoto = vm::testHitokoto,
                                         onBgModeChange = vm::setBackgroundMode,
                                         onBgApiChange = vm::setBackgroundApiUrl,
-                                        onBgImageChange = vm::setBackgroundImageUrl,
                                         onSaveBackground = vm::saveBackground,
                                         onRefreshBackground = vm::refreshBackground,
+                                        onPickLocalBackground = vm::importLocalBackground,
+                                        onClearLocalBackground = vm::clearLocalBackground,
                                         onCheckUpdate = { vm.checkForUpdate(silent = false) },
-                                        onOpenRepo = {
-                                            openUrl(UpdateChecker.REPO_URL)
-                                        },
+                                        onOpenRepo = { openUrl(UpdateChecker.REPO_URL) },
                                         onOpenLatestRelease = {
                                             val url = state.latestReleaseUrl
                                                 ?: "${UpdateChecker.REPO_URL}/releases/latest"
@@ -106,6 +122,7 @@ class MainActivity : ComponentActivity() {
                                         onSearch = { vm.search(true) },
                                         onLoadMore = vm::loadMoreSearch,
                                         onOpenSettings = { showSettings = true },
+                                        onOpenWeb = { openUrl(MainViewModel.WEB_HOME_URL) },
                                         onOpenBook = vm::openDetail,
                                         onRefreshHitokoto = vm::refreshHitokoto,
                                     )

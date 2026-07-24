@@ -1,5 +1,6 @@
 package com.feixiaoqiu.fanqiedl.viewmodel
 
+import android.net.Uri
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -27,6 +28,20 @@ import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
+enum class NodeProbePhase {
+    Idle,
+    Probing,
+    Ok,
+    Fail,
+    Timeout,
+}
+
+data class NodeProbeInfo(
+    val phase: NodeProbePhase = NodeProbePhase.Idle,
+    val latencyMs: Long? = null,
+    val error: String? = null,
+)
+
 data class MainUiState(
     val query: String = "",
     val searching: Boolean = false,
@@ -52,6 +67,8 @@ data class MainUiState(
     val nodes: List<NodeConfig> = emptyList(),
     val hitokotoUrl: String = DefaultNodes.DEFAULT_HITOKOTO,
     val probeMessage: String? = null,
+    val nodeProbes: Map<String, NodeProbeInfo> = emptyMap(),
+    val probingAll: Boolean = false,
     val backgroundMode: BackgroundMode = BackgroundMode.DEFAULT,
     val backgroundApiUrl: String = "",
     val backgroundImageUrl: String = "",
@@ -86,11 +103,15 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     private var hitokotoJob: Job? = null
     private var readerJob: Job? = null
     private var updateJob: Job? = null
+    private var probeAllJob: Job? = null
 
     init {
         viewModelScope.launch {
             container.settings.nodesFlow.collect { nodes ->
-                _ui.update { it.copy(nodes = nodes) }
+                _ui.update { s ->
+                    val keep = s.nodeProbes.filterKeys { id -> nodes.any { it.id == id } }
+                    s.copy(nodes = nodes, nodeProbes = keep)
+                }
             }
         }
         viewModelScope.launch {
@@ -134,8 +155,20 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 val base = apiUrl.trim().ifEmpty { DefaultNodes.DEFAULT_BACKGROUND_API }
                 if (bust) cacheBust(base) else base
             }
-            BackgroundMode.CUSTOM_IMAGE -> imageUrl.trim()
+            BackgroundMode.CUSTOM_IMAGE -> {
+                val local = container.backgroundImages.localPathOrEmpty()
+                when {
+                    local.isNotBlank() -> local
+                    imageUrl.isNotBlank() -> imageUrl.trim()
+                    else -> ""
+                }
+            }
         }
+    }
+
+    /** Coil 可直接加载的背景 model（File / URL 字符串） */
+    fun backgroundModel(pathOrUrl: String): Any? {
+        return container.backgroundImages.displayModel(pathOrUrl)
     }
 
     private fun cacheBust(url: String): String {
@@ -488,6 +521,55 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         _ui.update { it.copy(backgroundImageUrl = url) }
     }
 
+    fun importLocalBackground(uri: Uri) {
+        viewModelScope.launch {
+            try {
+                val path = withContext(Dispatchers.IO) {
+                    container.backgroundImages.saveFromUri(uri)
+                }
+                container.settings.setBackground(
+                    mode = BackgroundMode.CUSTOM_IMAGE,
+                    apiUrl = _ui.value.backgroundApiUrl,
+                    imageUrl = path,
+                )
+                _ui.update {
+                    it.copy(
+                        backgroundMode = BackgroundMode.CUSTOM_IMAGE,
+                        backgroundImageUrl = path,
+                        backgroundDisplayUrl = path,
+                        snackbar = "本地背景已保存",
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update { it.copy(snackbar = "导入失败：${e.message ?: "未知错误"}") }
+            }
+        }
+    }
+
+    fun clearLocalBackground() {
+        viewModelScope.launch {
+            withContext(Dispatchers.IO) { container.backgroundImages.clear() }
+            container.settings.setBackground(
+                mode = BackgroundMode.DEFAULT,
+                apiUrl = _ui.value.backgroundApiUrl,
+                imageUrl = "",
+            )
+            _ui.update {
+                it.copy(
+                    backgroundMode = BackgroundMode.DEFAULT,
+                    backgroundImageUrl = "",
+                    backgroundDisplayUrl = resolveBackgroundUrl(
+                        BackgroundMode.DEFAULT,
+                        it.backgroundApiUrl,
+                        "",
+                        bust = true,
+                    ),
+                    snackbar = "已清除本地背景，恢复默认图床",
+                )
+            }
+        }
+    }
+
     fun saveBackground() {
         viewModelScope.launch {
             val s = _ui.value
@@ -499,24 +581,32 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 BackgroundMode.CUSTOM_IMAGE -> {
-                    if (!DefaultNodes.isValidHttpUrl(s.backgroundImageUrl)) {
-                        _ui.update { it.copy(snackbar = "请输入有效的图片地址") }
+                    val hasLocal = container.backgroundImages.hasLocal() ||
+                        s.backgroundImageUrl.isNotBlank()
+                    if (!hasLocal) {
+                        _ui.update { it.copy(snackbar = "请先从相册选择一张图片") }
                         return@launch
                     }
                 }
                 BackgroundMode.DEFAULT -> Unit
             }
+            val imagePath = when (s.backgroundMode) {
+                BackgroundMode.CUSTOM_IMAGE ->
+                    container.backgroundImages.localPathOrEmpty().ifBlank { s.backgroundImageUrl }
+                else -> s.backgroundImageUrl
+            }
             container.settings.setBackground(
                 mode = s.backgroundMode,
                 apiUrl = s.backgroundApiUrl,
-                imageUrl = s.backgroundImageUrl,
+                imageUrl = imagePath,
             )
             _ui.update {
                 it.copy(
+                    backgroundImageUrl = imagePath,
                     backgroundDisplayUrl = resolveBackgroundUrl(
                         s.backgroundMode,
                         s.backgroundApiUrl,
-                        s.backgroundImageUrl,
+                        imagePath,
                         bust = true,
                     ),
                     snackbar = "背景已保存",
@@ -528,7 +618,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun refreshBackground() {
         val s = _ui.value
         if (s.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
-            _ui.update { it.copy(snackbar = "当前为固定图片，无需刷新") }
+            _ui.update { it.copy(snackbar = "当前为本地图片，无需刷新") }
             return
         }
         _ui.update {
@@ -607,16 +697,98 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     fun probeNode(baseUrl: String) {
         viewModelScope.launch {
-            _ui.update { it.copy(probeMessage = "测活中…") }
-            val msg = withContext(Dispatchers.IO) {
-                try {
-                    val ms = container.client.probe(baseUrl)
-                    "可用 · ${ms}ms"
-                } catch (e: Exception) {
-                    "失败：${e.message}"
-                }
+            val node = _ui.value.nodes.find {
+                DefaultNodes.normalizeBaseUrl(it.baseUrl) == DefaultNodes.normalizeBaseUrl(baseUrl)
             }
+            if (node != null) {
+                setProbe(node.id, NodeProbeInfo(phase = NodeProbePhase.Probing))
+            }
+            val result = withContext(Dispatchers.IO) {
+                runCatching { container.client.probe(baseUrl, timeoutMs = PROBE_TIMEOUT_MS) }
+            }
+            if (node != null) {
+                applyProbeResult(node.id, result)
+            }
+            val msg = result.fold(
+                onSuccess = { ms -> "可用 · ${formatLatency(ms)}" },
+                onFailure = { e ->
+                    if (isTimeout(e)) "超时（>${PROBE_TIMEOUT_MS / 1000}s）"
+                    else "失败：${e.message}"
+                },
+            )
             _ui.update { it.copy(probeMessage = msg, snackbar = msg) }
+        }
+    }
+
+    fun probeAllNodes() {
+        if (probeAllJob?.isActive == true) return
+        val list = _ui.value.nodes
+        if (list.isEmpty()) {
+            _ui.update { it.copy(snackbar = "没有可测活的节点") }
+            return
+        }
+        probeAllJob = viewModelScope.launch {
+            _ui.update { it.copy(probingAll = true, probeMessage = "一键测活中…") }
+            list.forEach { node ->
+                setProbe(node.id, NodeProbeInfo(phase = NodeProbePhase.Probing))
+            }
+            // 串行测活，避免同时打满节点
+            for (node in list) {
+                val result = withContext(Dispatchers.IO) {
+                    runCatching { container.client.probe(node.baseUrl, timeoutMs = PROBE_TIMEOUT_MS) }
+                }
+                applyProbeResult(node.id, result)
+            }
+            _ui.update {
+                it.copy(
+                    probingAll = false,
+                    probeMessage = "测活完成",
+                    snackbar = "节点测活完成",
+                )
+            }
+        }
+    }
+
+    private fun setProbe(id: String, info: NodeProbeInfo) {
+        _ui.update { s ->
+            s.copy(nodeProbes = s.nodeProbes + (id to info))
+        }
+    }
+
+    private fun applyProbeResult(id: String, result: Result<Long>) {
+        result.fold(
+            onSuccess = { ms ->
+                setProbe(id, NodeProbeInfo(phase = NodeProbePhase.Ok, latencyMs = ms))
+            },
+            onFailure = { e ->
+                if (isTimeout(e)) {
+                    setProbe(id, NodeProbeInfo(phase = NodeProbePhase.Timeout, error = "超时"))
+                } else {
+                    setProbe(
+                        id,
+                        NodeProbeInfo(
+                            phase = NodeProbePhase.Fail,
+                            error = e.message?.take(40) ?: "失败",
+                        ),
+                    )
+                }
+            },
+        )
+    }
+
+    private fun isTimeout(e: Throwable): Boolean {
+        val msg = (e.message ?: "").lowercase()
+        return e is java.net.SocketTimeoutException ||
+            e is java.io.InterruptedIOException ||
+            msg.contains("timeout") ||
+            msg.contains("timed out")
+    }
+
+    private fun formatLatency(ms: Long): String {
+        return when {
+            ms <= 500L -> "${ms}ms"
+            ms < 1000L -> String.format("%.2fs", ms / 1000.0)
+            else -> String.format("%.1fs", ms / 1000.0)
         }
     }
 
@@ -692,5 +864,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     companion object {
         private const val HITOKOTO_INTERVAL_MS = 30_000L
+        const val PROBE_TIMEOUT_MS = 40_000L
+        const val WEB_HOME_URL = "https://fanqie-dl.feixiaoqiu.top/"
     }
 }

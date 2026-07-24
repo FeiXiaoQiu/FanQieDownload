@@ -12,8 +12,10 @@ import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
 import androidx.compose.foundation.layout.heightIn
+import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.padding
 import androidx.compose.foundation.layout.size
+import androidx.compose.foundation.layout.statusBarsPadding
 import androidx.compose.foundation.layout.width
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
@@ -22,6 +24,7 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
+import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Settings
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
@@ -29,7 +32,9 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
@@ -56,6 +61,7 @@ import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
+import java.io.File
 
 @Composable
 fun SearchScreen(
@@ -64,16 +70,29 @@ fun SearchScreen(
     onSearch: () -> Unit,
     onLoadMore: () -> Unit,
     onOpenSettings: () -> Unit,
+    onOpenWeb: () -> Unit,
     onOpenBook: (BookSummary) -> Unit,
     onRefreshHitokoto: () -> Unit,
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
     val corner = RoundedCornerShape(10.dp)
+    val bgModel: Any? = remember(state.backgroundDisplayUrl) {
+        val p = state.backgroundDisplayUrl
+        when {
+            p.isBlank() -> null
+            p.startsWith("http://") || p.startsWith("https://") ||
+                p.startsWith("file://") || p.startsWith("content://") -> p
+            else -> {
+                val f = File(p)
+                if (f.isFile) f else null
+            }
+        }
+    }
 
     Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
-        if (state.backgroundDisplayUrl.isNotBlank()) {
+        if (bgModel != null) {
             AsyncImage(
-                model = state.backgroundDisplayUrl,
+                model = bgModel,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
@@ -81,7 +100,12 @@ fun SearchScreen(
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))
 
-        Column(modifier = Modifier.fillMaxSize()) {
+        Column(
+            modifier = Modifier
+                .fillMaxSize()
+                .statusBarsPadding()
+                .navigationBarsPadding(),
+        ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -89,6 +113,16 @@ fun SearchScreen(
                 horizontalArrangement = Arrangement.End,
                 verticalAlignment = Alignment.CenterVertically,
             ) {
+                TextButton(onClick = onOpenWeb) {
+                    Icon(
+                        Icons.AutoMirrored.Filled.OpenInNew,
+                        contentDescription = null,
+                        tint = Color.White,
+                        modifier = Modifier.size(16.dp),
+                    )
+                    Spacer(modifier = Modifier.width(4.dp))
+                    Text("网页端", color = Color.White, fontSize = 13.sp)
+                }
                 IconButton(onClick = onOpenSettings) {
                     Icon(Icons.Default.Settings, contentDescription = "设置", tint = Color.White)
                 }
@@ -215,13 +249,6 @@ fun SearchScreen(
                             onSearch = onSearch,
                             corner = corner,
                             modifier = Modifier.fillMaxWidth(),
-                        )
-                        Spacer(modifier = Modifier.height(12.dp))
-                        Text(
-                            "输入书名搜索；留空将使用示例书名。",
-                            color = Color.White.copy(alpha = 0.65f),
-                            fontSize = 13.sp,
-                            textAlign = TextAlign.Center,
                         )
                     }
                 }

@@ -79,12 +79,16 @@ class FanqieNodeClient(
         return ChapterContent(title = got.second, text = text)
     }
 
-    /** @return latency ms */
-    fun probe(baseUrl: String): Long {
+    /**
+     * 探活节点。
+     * @param timeoutMs 超时（默认 40s，与 UI 超时展示一致）
+     * @return 延迟毫秒
+     */
+    fun probe(baseUrl: String, timeoutMs: Long = 40_000L): Long {
         val base = DefaultNodes.normalizeBaseUrl(baseUrl)
         val t0 = System.currentTimeMillis()
         val url = "$base/content?item_id=${DefaultNodes.PROBE_ITEM}"
-        val text = httpGet(url, 12_000)
+        val text = httpGet(url, timeoutMs)
         val data = JSONObject(text)
         val raw = extractContentRaw(data, DefaultNodes.PROBE_ITEM)
             ?: throw IllegalStateException("探活无正文")

@@ -235,31 +235,27 @@
             box-sizing: border-box;
         }
 
+        /* 页脚文字链，与 GitHub 同级，不抢主搜索区 */
         .app-download-link {
-            display: inline-flex;
-            align-items: center;
-            gap: 6px;
-            margin-top: 10px;
-            padding: 8px 12px;
-            border-radius: 999px;
-            font-size: 0.86rem;
+            display: inline;
+            padding: 0;
+            border-radius: 0;
+            font-size: inherit;
             font-weight: 600;
-            color: #fff;
+            color: #555;
             text-decoration: none;
-            background: linear-gradient(135deg, rgba(255, 71, 87, 0.92), rgba(255, 99, 72, 0.88));
-            border: 1px solid rgba(255, 255, 255, 0.35);
-            box-shadow: 0 6px 18px rgba(255, 71, 87, 0.28);
-            transition: transform 0.15s ease, box-shadow 0.15s ease;
+            background: transparent;
+            border: 0;
+            box-shadow: none;
+            transition: color 0.15s;
         }
 
         .app-download-link:hover {
-            transform: translateY(-1px);
-            box-shadow: 0 8px 22px rgba(255, 71, 87, 0.36);
-            color: #fff;
+            color: var(--primary);
         }
 
         .app-download-link:active {
-            transform: translateY(0);
+            color: var(--primary-dark);
         }
         
         .container.loaded {

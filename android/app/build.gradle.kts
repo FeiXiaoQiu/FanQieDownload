@@ -20,9 +20,9 @@ android {
         applicationId = "com.feixiaoqiu.fanqiedl"
         minSdk = 26
         targetSdk = 34
-        // 以 1.0.0 重新起号；固定签名密钥勿动
-        versionCode = 1
-        versionName = "1.0.0"
+        // 固定签名密钥勿动
+        versionCode = 2
+        versionName = "1.0.1"
         ndk {
             // 常见手机架构
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
