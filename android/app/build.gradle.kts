@@ -1,6 +1,15 @@
+import java.util.Properties
+
 plugins {
     id("com.android.application")
     id("org.jetbrains.kotlin.android")
+}
+
+val keystorePropsFile = rootProject.file("keystore.properties")
+val keystoreProps = Properties().apply {
+    if (keystorePropsFile.exists()) {
+        keystorePropsFile.inputStream().use { load(it) }
+    }
 }
 
 android {
@@ -11,15 +20,29 @@ android {
         applicationId = "com.feixiaoqiu.fanqiedl"
         minSdk = 26
         targetSdk = 34
-        versionCode = 2
-        versionName = "1.0.1"
+        versionCode = 3
+        versionName = "1.0.2"
+    }
+
+    signingConfigs {
+        create("fanqieDebug") {
+            storeFile = rootProject.file(keystoreProps.getProperty("debug.storeFile"))
+            storePassword = keystoreProps.getProperty("debug.storePassword")
+            keyAlias = keystoreProps.getProperty("debug.keyAlias")
+            keyPassword = keystoreProps.getProperty("debug.keyPassword")
+        }
+        create("fanqieRelease") {
+            storeFile = rootProject.file(keystoreProps.getProperty("release.storeFile"))
+            storePassword = keystoreProps.getProperty("release.storePassword")
+            keyAlias = keystoreProps.getProperty("release.keyAlias")
+            keyPassword = keystoreProps.getProperty("release.keyPassword")
+        }
     }
 
     buildTypes {
         release {
             isMinifyEnabled = false
-            // CI / 预览：使用 debug 签名，便于直接安装
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = signingConfigs.getByName("fanqieRelease")
             proguardFiles(
                 getDefaultProguardFile("proguard-android-optimize.txt"),
                 "proguard-rules.pro"
@@ -28,6 +51,7 @@ android {
         debug {
             applicationIdSuffix = ".debug"
             versionNameSuffix = "-debug"
+            signingConfig = signingConfigs.getByName("fanqieDebug")
         }
     }
 

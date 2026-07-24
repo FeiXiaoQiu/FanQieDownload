@@ -22,6 +22,7 @@ import com.feixiaoqiu.fanqiedl.ui.BookDetailDialog
 import com.feixiaoqiu.fanqiedl.ui.DownloadOptionsDialog
 import com.feixiaoqiu.fanqiedl.ui.DownloadProgressDialog
 import com.feixiaoqiu.fanqiedl.ui.DownloadResultDialog
+import com.feixiaoqiu.fanqiedl.ui.ReaderScreen
 import com.feixiaoqiu.fanqiedl.ui.SearchScreen
 import com.feixiaoqiu.fanqiedl.ui.SettingsScreen
 import com.feixiaoqiu.fanqiedl.ui.theme.FanqieTheme
@@ -53,41 +54,60 @@ class MainActivity : ComponentActivity() {
                     containerColor = androidx.compose.ui.graphics.Color.Transparent,
                 ) { padding ->
                     Box(modifier = Modifier.fillMaxSize().padding(padding)) {
-                        if (showSettings) {
-                            SettingsScreen(
-                                state = state,
-                                onBack = { showSettings = false },
-                                onToggle = vm::toggleNode,
-                                onRemove = vm::removeNode,
-                                onAdd = vm::addNode,
-                                onUpdate = vm::updateNodeUrl,
-                                onRestore = vm::restoreNodes,
-                                onProbe = vm::probeNode,
-                                onHitokotoUrlChange = vm::setHitokotoUrl,
-                                onSaveHitokoto = vm::saveHitokotoUrl,
-                                onTestHitokoto = vm::testHitokoto,
-                                onBgModeChange = vm::setBackgroundMode,
-                                onBgApiChange = vm::setBackgroundApiUrl,
-                                onBgImageChange = vm::setBackgroundImageUrl,
-                                onSaveBackground = vm::saveBackground,
-                                onRefreshBackground = vm::refreshBackground,
-                            )
-                        } else {
-                            SearchScreen(
-                                state = state,
-                                onQueryChange = vm::onQueryChange,
-                                onSearch = { vm.search(true) },
-                                onOpenSettings = { showSettings = true },
-                                onOpenBook = vm::openDetail,
-                                onRefreshHitokoto = vm::refreshHitokoto,
-                            )
+                        when {
+                            state.reading -> {
+                                ReaderScreen(
+                                    state = state,
+                                    onBack = vm::closeReader,
+                                    onToggleCatalog = vm::toggleCatalog,
+                                    onPrev = vm::prevChapter,
+                                    onNext = vm::nextChapter,
+                                    onJump = vm::goChapter,
+                                )
+                            }
+                            showSettings -> {
+                                SettingsScreen(
+                                    state = state,
+                                    onBack = { showSettings = false },
+                                    onRemove = vm::removeNode,
+                                    onAdd = vm::addNode,
+                                    onUpdate = vm::updateNodeUrl,
+                                    onRestore = vm::restoreNodes,
+                                    onProbe = vm::probeNode,
+                                    onHitokotoUrlChange = vm::setHitokotoUrl,
+                                    onSaveHitokoto = vm::saveHitokotoUrl,
+                                    onTestHitokoto = vm::testHitokoto,
+                                    onBgModeChange = vm::setBackgroundMode,
+                                    onBgApiChange = vm::setBackgroundApiUrl,
+                                    onBgImageChange = vm::setBackgroundImageUrl,
+                                    onSaveBackground = vm::saveBackground,
+                                    onRefreshBackground = vm::refreshBackground,
+                                )
+                            }
+                            else -> {
+                                SearchScreen(
+                                    state = state,
+                                    onQueryChange = vm::onQueryChange,
+                                    onSearch = { vm.search(true) },
+                                    onLoadMore = vm::loadMoreSearch,
+                                    onOpenSettings = { showSettings = true },
+                                    onOpenBook = vm::openDetail,
+                                    onRefreshHitokoto = vm::refreshHitokoto,
+                                )
+                            }
                         }
 
-                        if (state.selected != null && !state.showDownloadOptions && !state.downloading) {
+                        if (
+                            state.selected != null &&
+                            !state.showDownloadOptions &&
+                            !state.downloading &&
+                            !state.reading
+                        ) {
                             BookDetailDialog(
                                 state = state,
                                 onDismiss = vm::closeDetail,
                                 onDownload = vm::openDownloadOptions,
+                                onRead = vm::openReader,
                             )
                         }
                         if (state.showDownloadOptions) {

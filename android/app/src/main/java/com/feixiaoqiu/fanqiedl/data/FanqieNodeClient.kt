@@ -14,14 +14,28 @@ class FanqieNodeClient(
     private val basesProvider: suspend () -> List<String>,
     private val http: OkHttpClient = defaultClient(),
 ) {
-    suspend fun search(query: String, offset: Int = 0): List<BookSummary> {
+    suspend fun search(query: String, offset: Int = 0): SearchPage {
         val q = query.trim()
-        if (q.isEmpty()) return emptyList()
-        val path = "/search?query=" + URLEncoder.encode(q, "UTF-8") + "&page=0&offset=$offset"
+        if (q.isEmpty()) return SearchPage(emptyList(), 0, false)
+        val page = max(0, offset / 10)
+        val path = "/search?query=" + URLEncoder.encode(q, "UTF-8") + "&page=$page&offset=$offset"
         val data = requestJson(path, 20_000) {
-            parseSearch(it).isNotEmpty() || it.has("search_tabs")
+            parseSearch(it).isNotEmpty() || it.has("search_tabs") || offset > 0
         }
-        return parseSearch(data)
+        val books = parseSearch(data)
+        val next = when {
+            data.has("next_offset") -> data.optInt("next_offset", offset + books.size)
+            data.optJSONObject("data")?.has("offset") == true ->
+                data.optJSONObject("data")!!.optInt("offset", offset + books.size)
+            else -> offset + books.size
+        }
+        val hasMore = when {
+            data.has("has_more") -> data.optBoolean("has_more")
+            data.optJSONObject("data")?.has("has_more") == true ->
+                data.optJSONObject("data")!!.optBoolean("has_more")
+            else -> books.size >= 7
+        }
+        return SearchPage(books = books, nextOffset = next, hasMore = hasMore && books.isNotEmpty())
     }
 
     suspend fun info(bookId: String): BookInfo {

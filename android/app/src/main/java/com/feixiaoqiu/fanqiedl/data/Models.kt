@@ -2,10 +2,16 @@ package com.feixiaoqiu.fanqiedl.data
 
 data class NodeConfig(
     val id: String,
-    val name: String,
+    val name: String = "",
     val baseUrl: String,
     val enabled: Boolean = true,
     val builtin: Boolean = false,
+)
+
+data class SearchPage(
+    val books: List<BookSummary>,
+    val nextOffset: Int,
+    val hasMore: Boolean,
 )
 
 /** 主界面背景：三选一 */
@@ -76,4 +82,4 @@ data class DownloadResult(
     val message: String,
 )
 
-class NoEnabledNodeException : Exception("请至少启用一个番茄节点")
+class NoEnabledNodeException : Exception("请至少添加一个下载节点")

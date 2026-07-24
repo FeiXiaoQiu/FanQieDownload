@@ -7,6 +7,8 @@ import com.feixiaoqiu.fanqiedl.data.AppContainer
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BookInfo
 import com.feixiaoqiu.fanqiedl.data.BookSummary
+import com.feixiaoqiu.fanqiedl.data.ChapterContent
+import com.feixiaoqiu.fanqiedl.data.ChapterRef
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.DownloadProgress
 import com.feixiaoqiu.fanqiedl.data.DownloadRequest
@@ -28,8 +30,12 @@ import kotlinx.coroutines.withContext
 data class MainUiState(
     val query: String = "",
     val searching: Boolean = false,
+    val loadingMore: Boolean = false,
     val books: List<BookSummary> = emptyList(),
     val searchError: String? = null,
+    val searchHasMore: Boolean = false,
+    val searchNextOffset: Int = 0,
+    val lastSearchQuery: String = "",
     val hitokoto: String = "",
     val selected: BookSummary? = null,
     val detail: BookInfo? = null,
@@ -49,8 +55,15 @@ data class MainUiState(
     val backgroundMode: BackgroundMode = BackgroundMode.DEFAULT,
     val backgroundApiUrl: String = "",
     val backgroundImageUrl: String = "",
-    /** Coil 用的实际背景地址；随机图床会带 cache-bust 参数 */
     val backgroundDisplayUrl: String = DefaultNodes.DEFAULT_BACKGROUND_API,
+    val reading: Boolean = false,
+    val readerTitle: String = "",
+    val readerChapters: List<ChapterRef> = emptyList(),
+    val readerIndex: Int = 0,
+    val readerContent: ChapterContent? = null,
+    val readerLoading: Boolean = false,
+    val readerError: String? = null,
+    val showCatalog: Boolean = false,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -59,6 +72,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     private var downloadJob: Job? = null
     private var hitokotoJob: Job? = null
+    private var readerJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -154,14 +168,25 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 _ui.update { it.copy(query = q) }
             }
             if (q.isEmpty()) return@launch
-            _ui.update { it.copy(searching = true, searchError = null) }
+            _ui.update {
+                it.copy(
+                    searching = true,
+                    searchError = null,
+                    books = emptyList(),
+                    searchHasMore = false,
+                    searchNextOffset = 0,
+                    lastSearchQuery = q,
+                )
+            }
             try {
-                val books = withContext(Dispatchers.IO) { container.client.search(q) }
+                val page = withContext(Dispatchers.IO) { container.client.search(q, 0) }
                 _ui.update {
                     it.copy(
                         searching = false,
-                        books = books,
-                        searchError = if (books.isEmpty()) "未找到相关书籍" else null,
+                        books = page.books,
+                        searchNextOffset = page.nextOffset,
+                        searchHasMore = page.hasMore,
+                        searchError = if (page.books.isEmpty()) "未找到相关书籍" else null,
                     )
                 }
             } catch (e: NoEnabledNodeException) {
@@ -174,6 +199,35 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                         searching = false,
                         searchError = "搜索失败：${e.message ?: e}",
                         books = emptyList(),
+                    )
+                }
+            }
+        }
+    }
+
+    fun loadMoreSearch() {
+        val s = _ui.value
+        if (s.searching || s.loadingMore || !s.searchHasMore || s.lastSearchQuery.isBlank()) return
+        viewModelScope.launch {
+            _ui.update { it.copy(loadingMore = true) }
+            try {
+                val page = withContext(Dispatchers.IO) {
+                    container.client.search(s.lastSearchQuery, s.searchNextOffset)
+                }
+                val merged = (s.books + page.books).distinctBy { it.bookId }
+                _ui.update {
+                    it.copy(
+                        loadingMore = false,
+                        books = merged,
+                        searchNextOffset = page.nextOffset,
+                        searchHasMore = page.hasMore && page.books.isNotEmpty(),
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(
+                        loadingMore = false,
+                        snackbar = "加载更多失败：${e.message ?: e}",
                     )
                 }
             }
@@ -227,6 +281,112 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun setStartChapter(v: String) = _ui.update { it.copy(startChapter = v.filter { c -> c.isDigit() }) }
     fun setEndChapter(v: String) = _ui.update { it.copy(endChapter = v.filter { c -> c.isDigit() }) }
     fun setResume(v: Boolean) = _ui.update { it.copy(resume = v) }
+
+    fun openReader() {
+        val book = _ui.value.selected ?: return
+        val title = _ui.value.detail?.title ?: book.title
+        readerJob?.cancel()
+        _ui.update {
+            it.copy(
+                reading = true,
+                readerTitle = title,
+                readerChapters = emptyList(),
+                readerIndex = 0,
+                readerContent = null,
+                readerLoading = true,
+                readerError = null,
+                showCatalog = false,
+            )
+        }
+        readerJob = viewModelScope.launch {
+            try {
+                val chapters = withContext(Dispatchers.IO) { container.client.catalog(book.bookId) }
+                if (chapters.isEmpty()) {
+                    _ui.update {
+                        it.copy(readerLoading = false, readerError = "目录为空")
+                    }
+                    return@launch
+                }
+                _ui.update { it.copy(readerChapters = chapters, readerIndex = 0) }
+                loadChapterAt(0)
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(readerLoading = false, readerError = e.message ?: "打开阅读失败")
+                }
+            }
+        }
+    }
+
+    fun closeReader() {
+        readerJob?.cancel()
+        readerJob = null
+        _ui.update {
+            it.copy(
+                reading = false,
+                readerContent = null,
+                readerChapters = emptyList(),
+                readerError = null,
+                readerLoading = false,
+                showCatalog = false,
+            )
+        }
+    }
+
+    fun toggleCatalog(show: Boolean) {
+        _ui.update { it.copy(showCatalog = show) }
+    }
+
+    fun goChapter(index: Int) {
+        val chapters = _ui.value.readerChapters
+        if (index !in chapters.indices) return
+        loadChapterAt(index)
+    }
+
+    fun prevChapter() {
+        val i = _ui.value.readerIndex
+        if (i > 0) loadChapterAt(i - 1)
+    }
+
+    fun nextChapter() {
+        val i = _ui.value.readerIndex
+        val max = _ui.value.readerChapters.lastIndex
+        if (i < max) loadChapterAt(i + 1)
+    }
+
+    private fun loadChapterAt(index: Int) {
+        val chapters = _ui.value.readerChapters
+        if (index !in chapters.indices) return
+        val ch = chapters[index]
+        readerJob?.cancel()
+        _ui.update {
+            it.copy(
+                readerIndex = index,
+                readerLoading = true,
+                readerError = null,
+                showCatalog = false,
+            )
+        }
+        readerJob = viewModelScope.launch {
+            try {
+                val content = withContext(Dispatchers.IO) { container.client.content(ch.itemId) }
+                val title = content.title.ifBlank { ch.title }
+                _ui.update {
+                    it.copy(
+                        readerLoading = false,
+                        readerContent = content.copy(title = title),
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(
+                        readerLoading = false,
+                        readerContent = null,
+                        readerError = e.message ?: "正文加载失败",
+                    )
+                }
+            }
+        }
+    }
 
     fun startDownload() {
         val book = _ui.value.selected ?: return
@@ -389,17 +549,6 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun toggleNode(id: String, enabled: Boolean) {
-        viewModelScope.launch {
-            val nodes = _ui.value.nodes.map { if (it.id == id) it.copy(enabled = enabled) else it }
-            if (enabled.not() && nodes.none { it.enabled }) {
-                _ui.update { it.copy(snackbar = "请至少启用一个番茄节点") }
-                return@launch
-            }
-            container.settings.setNodes(nodes)
-        }
-    }
-
     fun addNode(baseUrl: String) {
         viewModelScope.launch {
             if (!DefaultNodes.isValidHttpUrl(baseUrl)) {
@@ -413,14 +562,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     fun removeNode(id: String) {
         viewModelScope.launch {
-            val target = _ui.value.nodes.find { it.id == id } ?: return@launch
-            if (target.builtin) {
-                _ui.update { it.copy(snackbar = "内置节点不可删除，可禁用") }
-                return@launch
-            }
             val next = _ui.value.nodes.filterNot { it.id == id }
-            if (next.none { it.enabled }) {
-                _ui.update { it.copy(snackbar = "请至少启用一个番茄节点") }
+            if (next.isEmpty()) {
+                _ui.update { it.copy(snackbar = "至少保留一个节点，或点「恢复默认」") }
                 return@launch
             }
             container.settings.removeNode(id)
@@ -434,7 +578,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 return@launch
             }
             val n = _ui.value.nodes.find { it.id == id } ?: return@launch
-            container.settings.updateNode(n.copy(baseUrl = baseUrl))
+            container.settings.updateNode(n.copy(baseUrl = baseUrl, enabled = true))
             _ui.update { it.copy(snackbar = "节点已更新") }
         }
     }

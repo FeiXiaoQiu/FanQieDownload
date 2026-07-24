@@ -101,7 +101,8 @@ class AppSettings(private val context: Context) {
     }
 
     suspend fun removeNode(id: String) {
-        setNodes(snapshotNodes().filterNot { it.id == id && !it.builtin })
+        // 内置也可删；列表为空时业务层会提示恢复默认
+        setNodes(snapshotNodes().filterNot { it.id == id })
     }
 
     private suspend fun snapshotNodes(): List<NodeConfig> = nodesFlow.first()

@@ -1,6 +1,6 @@
-# 番茄小说下载器 · Android
+# 飞小秋阅 · Android
 
-Kotlin + Jetpack Compose 本地客户端：搜索、简介、TXT 下载；设置中可配置番茄节点 API 与一言 API。
+Kotlin + Jetpack Compose 本地客户端：搜索、简介、在线阅读、TXT 下载；设置中可配置下载节点、一言与背景。
 
 ## 环境
 
@@ -19,27 +19,19 @@ APK 输出：
 
 `app/build/outputs/apk/debug/app-debug.apk`
 
-Release（debug 签名，便于 CI）：
+Release / Debug 使用仓库内固定密钥（`keystore/` + `keystore.properties`），从 1.0.2 起各版本签名一致，debug 与 release 分开：
 
 ```bash
 ./gradlew :app:assembleRelease
+./gradlew :app:assembleDebug
 ```
 
 ## 功能
 
-- 主页：背景图 `https://t.alcy.cc/ycy`，黑底半透明叠层 + 圆角白卡片搜索区
-- 搜索 / 简介 / 单本下载（起止章、断点续传）
+- 主页：背景可配置（默认图床 / 自定义 API / 固定图），黑底 + 圆角白卡
+- 搜索分页 / 书籍简介 / 在线阅读 / 单本下载（起止章、断点续传）
 - TXT 写入系统 Download/`FanQieDownload`
-- 设置：番茄节点增删改、测活、恢复默认；一言 URL（默认 Hitokoto）
-
-## 节点协议
-
-与 Web 一致：
-
-- `GET {base}/search?query=&page=0`
-- `GET {base}/info?book_id=`
-- `GET {base}/catalog?book_id=`
-- `GET {base}/content?item_id=`
+- 设置：下载节点列表（填入即用，删掉即停）、一言、背景
 
 ## CI
 

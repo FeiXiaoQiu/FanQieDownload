@@ -65,6 +65,7 @@ fun SearchScreen(
     state: MainUiState,
     onQueryChange: (String) -> Unit,
     onSearch: () -> Unit,
+    onLoadMore: () -> Unit,
     onOpenSettings: () -> Unit,
     onOpenBook: (BookSummary) -> Unit,
     onRefreshHitokoto: () -> Unit,
@@ -148,6 +149,46 @@ fun SearchScreen(
                                 items(state.books, key = { it.bookId }) { book ->
                                     BookRow(book = book, onClick = { onOpenBook(book) })
                                 }
+                                if (state.searchHasMore) {
+                                    item {
+                                        Box(
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            contentAlignment = Alignment.Center,
+                                        ) {
+                                            if (state.loadingMore) {
+                                                CircularProgressIndicator(
+                                                    color = Primary,
+                                                    modifier = Modifier.size(22.dp),
+                                                    strokeWidth = 2.dp,
+                                                )
+                                            } else {
+                                                Text(
+                                                    "加载更多",
+                                                    color = Primary,
+                                                    fontWeight = FontWeight.SemiBold,
+                                                    fontSize = 14.sp,
+                                                    modifier = Modifier
+                                                        .clickable(onClick = onLoadMore)
+                                                        .padding(8.dp),
+                                                )
+                                            }
+                                        }
+                                    }
+                                } else if (state.books.isNotEmpty()) {
+                                    item {
+                                        Text(
+                                            "已全部加载（${state.books.size}）",
+                                            color = TextSecondary,
+                                            fontSize = 12.sp,
+                                            modifier = Modifier
+                                                .fillMaxWidth()
+                                                .padding(vertical = 8.dp),
+                                            textAlign = TextAlign.Center,
+                                        )
+                                    }
+                                }
                             }
                         }
                     }
@@ -167,7 +208,7 @@ fun SearchScreen(
                     ) {
                         SearchHeader(
                             title = stringResource(R.string.app_name),
-                            subtitle = "搜书 · 简介 · 下载 TXT",
+                            subtitle = stringResource(R.string.app_tagline),
                             compact = false,
                         )
                         Spacer(modifier = Modifier.height(20.dp))

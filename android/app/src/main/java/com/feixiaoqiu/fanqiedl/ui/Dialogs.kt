@@ -1,6 +1,5 @@
 package com.feixiaoqiu.fanqiedl.ui
 
-import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
@@ -14,9 +13,11 @@ import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Checkbox
+import androidx.compose.material3.CheckboxDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -38,13 +39,21 @@ fun BookDetailDialog(
     state: MainUiState,
     onDismiss: () -> Unit,
     onDownload: () -> Unit,
+    onRead: () -> Unit,
 ) {
     val book = state.selected ?: return
     val info = state.detail
     AlertDialog(
         onDismissRequest = onDismiss,
+        containerColor = Color.White,
+        titleContentColor = TextPrimary,
+        textContentColor = TextPrimary,
         title = {
-            Text(info?.title ?: book.title, fontWeight = FontWeight.SemiBold)
+            Column {
+                Text("书籍简介", color = TextSecondary, fontSize = 12.sp, fontWeight = FontWeight.Medium)
+                Spacer(modifier = Modifier.height(4.dp))
+                Text(info?.title ?: book.title, color = TextPrimary, fontWeight = FontWeight.SemiBold)
+            }
         },
         text = {
             Column(
@@ -59,7 +68,10 @@ fun BookDetailDialog(
                     Spacer(modifier = Modifier.height(8.dp))
                 }
                 if (state.detailLoading) {
-                    CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
+                    CircularProgressIndicator(
+                        modifier = Modifier.align(Alignment.CenterHorizontally),
+                        color = Primary,
+                    )
                 } else {
                     val abstract = info?.abstract ?: book.description
                     if (abstract.isBlank()) {
@@ -87,13 +99,16 @@ fun BookDetailDialog(
             }
         },
         confirmButton = {
-            Button(
-                onClick = onDownload,
-                colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
-            ) { Text("下载") }
+            Row {
+                TextButton(onClick = onRead) { Text("在线阅读", color = Primary) }
+                Button(
+                    onClick = onDownload,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
+                ) { Text("下载") }
+            }
         },
         dismissButton = {
-            TextButton(onClick = onDismiss) { Text("关闭") }
+            TextButton(onClick = onDismiss) { Text("关闭", color = TextSecondary) }
         },
     )
 }
@@ -109,7 +124,10 @@ fun DownloadOptionsDialog(
 ) {
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text("下载选项") },
+        containerColor = Color.White,
+        titleContentColor = TextPrimary,
+        textContentColor = TextPrimary,
+        title = { Text("下载选项", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
                 Text("起始/结束章留空或 0 表示整本", color = TextSecondary, fontSize = 12.sp)
@@ -117,21 +135,29 @@ fun DownloadOptionsDialog(
                 OutlinedTextField(
                     value = state.startChapter,
                     onValueChange = onStartChange,
-                    label = { Text("起始章") },
+                    label = { Text("起始章", color = TextSecondary) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    colors = dialogFieldColors(),
+                    textStyle = TextStyle(color = TextPrimary),
                 )
                 Spacer(modifier = Modifier.height(6.dp))
                 OutlinedTextField(
                     value = state.endChapter,
                     onValueChange = onEndChange,
-                    label = { Text("结束章") },
+                    label = { Text("结束章", color = TextSecondary) },
                     singleLine = true,
                     modifier = Modifier.fillMaxWidth(),
+                    colors = dialogFieldColors(),
+                    textStyle = TextStyle(color = TextPrimary),
                 )
                 Row(verticalAlignment = Alignment.CenterVertically) {
-                    Checkbox(checked = state.resume, onCheckedChange = onResumeChange)
-                    Text("断点续传")
+                    Checkbox(
+                        checked = state.resume,
+                        onCheckedChange = onResumeChange,
+                        colors = CheckboxDefaults.colors(checkedColor = Primary),
+                    )
+                    Text("断点续传", color = TextPrimary)
                 }
             }
         },
@@ -141,9 +167,24 @@ fun DownloadOptionsDialog(
                 colors = ButtonDefaults.buttonColors(containerColor = Primary, contentColor = Color.White),
             ) { Text("开始") }
         },
-        dismissButton = { TextButton(onClick = onDismiss) { Text("取消") } },
+        dismissButton = {
+            TextButton(onClick = onDismiss) { Text("取消", color = TextSecondary) }
+        },
     )
 }
+
+@Composable
+private fun dialogFieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = TextPrimary,
+    unfocusedTextColor = TextPrimary,
+    focusedBorderColor = Primary,
+    unfocusedBorderColor = TextSecondary.copy(alpha = 0.35f),
+    cursorColor = Primary,
+    focusedLabelColor = Primary,
+    unfocusedLabelColor = TextSecondary,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+)
 
 @Composable
 fun DownloadProgressDialog(
@@ -153,14 +194,18 @@ fun DownloadProgressDialog(
     val p = state.downloadProgress ?: return
     AlertDialog(
         onDismissRequest = {},
-        title = { Text("下载中") },
+        containerColor = Color.White,
+        titleContentColor = TextPrimary,
+        textContentColor = TextPrimary,
+        title = { Text("下载中", color = TextPrimary, fontWeight = FontWeight.SemiBold) },
         text = {
             Column {
-                Text(p.message)
+                Text(p.message, color = TextPrimary)
                 Spacer(modifier = Modifier.height(8.dp))
                 LinearProgressIndicator(
                     progress = { (p.percent.coerceIn(0, 100)) / 100f },
                     modifier = Modifier.fillMaxWidth(),
+                    color = Primary,
                 )
                 if (p.total > 0) {
                     Text("${p.current}/${p.total}", color = TextSecondary, fontSize = 12.sp)
@@ -168,7 +213,7 @@ fun DownloadProgressDialog(
             }
         },
         confirmButton = {
-            TextButton(onClick = onCancel) { Text("取消") }
+            TextButton(onClick = onCancel) { Text("取消", color = Primary) }
         },
     )
 }
@@ -181,16 +226,25 @@ fun DownloadResultDialog(
     val r = state.downloadResult ?: return
     AlertDialog(
         onDismissRequest = onDismiss,
-        title = { Text(if (r.status == "done") "完成" else "结果") },
+        containerColor = Color.White,
+        titleContentColor = TextPrimary,
+        textContentColor = TextPrimary,
+        title = {
+            Text(
+                if (r.status == "done") "完成" else "结果",
+                color = TextPrimary,
+                fontWeight = FontWeight.SemiBold,
+            )
+        },
         text = {
             Column {
-                Text(r.message)
+                Text(r.message, color = TextPrimary)
                 Spacer(modifier = Modifier.height(6.dp))
                 Text(r.displayPath, color = TextSecondary, fontSize = 12.sp)
             }
         },
         confirmButton = {
-            TextButton(onClick = onDismiss) { Text("好的") }
+            TextButton(onClick = onDismiss) { Text("好的", color = Primary) }
         },
     )
 }

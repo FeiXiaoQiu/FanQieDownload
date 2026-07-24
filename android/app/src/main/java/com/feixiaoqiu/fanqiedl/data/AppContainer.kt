@@ -13,14 +13,17 @@ class AppContainer(context: Context) {
         settings = settings,
         decoder = decoder,
         basesProvider = {
-            val nodes = settings.nodesFlow.first()
-            val enabled = nodes.filter { it.enabled }.map { DefaultNodes.normalizeBaseUrl(it.baseUrl) }
-            if (enabled.isEmpty()) return@FanqieNodeClient emptyList()
+            // 列表里有的节点一律启用；不想用只能删
+            val all = settings.nodesFlow.first()
+                .map { DefaultNodes.normalizeBaseUrl(it.baseUrl) }
+                .filter { it.isNotBlank() }
+                .distinct()
+            if (all.isEmpty()) return@FanqieNodeClient emptyList()
             val last = settings.lastGoodBaseFlow.first()
-            if (last != null && last in enabled) {
-                listOf(last) + enabled.filter { it != last }
+            if (last != null && last in all) {
+                listOf(last) + all.filter { it != last }
             } else {
-                enabled
+                all
             }
         },
     )

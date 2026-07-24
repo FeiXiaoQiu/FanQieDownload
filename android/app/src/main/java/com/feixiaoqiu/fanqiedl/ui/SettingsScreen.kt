@@ -24,8 +24,9 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.OutlinedTextField
+import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
-import androidx.compose.material3.Switch
+import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -44,6 +45,7 @@ import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
+import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
 import com.feixiaoqiu.fanqiedl.ui.theme.CardWhite
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
@@ -54,7 +56,6 @@ import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
 fun SettingsScreen(
     state: MainUiState,
     onBack: () -> Unit,
-    onToggle: (String, Boolean) -> Unit,
     onRemove: (String) -> Unit,
     onAdd: (String) -> Unit,
     onUpdate: (String, String) -> Unit,
@@ -108,13 +109,11 @@ fun SettingsScreen(
                         onClick = { onBgModeChange(BackgroundMode.CUSTOM_API) },
                     )
                     if (state.backgroundMode == BackgroundMode.CUSTOM_API) {
-                        OutlinedTextField(
+                        Field(
                             value = state.backgroundApiUrl,
                             onValueChange = onBgApiChange,
-                            modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
-                            singleLine = true,
-                            label = { Text("API 地址") },
-                            placeholder = { Text(DefaultNodes.DEFAULT_BACKGROUND_API) },
+                            label = "API 地址",
+                            placeholder = DefaultNodes.DEFAULT_BACKGROUND_API,
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
@@ -125,12 +124,10 @@ fun SettingsScreen(
                         onClick = { onBgModeChange(BackgroundMode.CUSTOM_IMAGE) },
                     )
                     if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
-                        OutlinedTextField(
+                        Field(
                             value = state.backgroundImageUrl,
                             onValueChange = onBgImageChange,
-                            modifier = Modifier.fillMaxWidth().padding(start = 8.dp),
-                            singleLine = true,
-                            label = { Text("图片 URL") },
+                            label = "图片 URL",
                         )
                         Spacer(modifier = Modifier.height(4.dp))
                     }
@@ -139,23 +136,23 @@ fun SettingsScreen(
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onSaveBackground, colors = primaryBtn()) { Text("保存") }
                     if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
-                        TextButton(onClick = onRefreshBackground) { Text("换一张") }
+                        TextButton(onClick = onRefreshBackground) {
+                            Text("换一张", color = Primary)
+                        }
                     }
                 }
             }
 
             SectionCard(title = "一言") {
-                OutlinedTextField(
+                Field(
                     value = state.hitokotoUrl,
                     onValueChange = onHitokotoUrlChange,
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("URL") },
+                    label = "URL",
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                     Button(onClick = onSaveHitokoto, colors = primaryBtn()) { Text("保存") }
-                    TextButton(onClick = onTestHitokoto) { Text("测试") }
+                    TextButton(onClick = onTestHitokoto) { Text("测试", color = Primary) }
                 }
             }
 
@@ -163,7 +160,6 @@ fun SettingsScreen(
                 state.nodes.forEach { node ->
                     NodeRow(
                         node = node,
-                        onToggle = { onToggle(node.id, it) },
                         onRemove = { onRemove(node.id) },
                         onProbe = { onProbe(node.baseUrl) },
                         onSave = { url -> onUpdate(node.id, url) },
@@ -174,12 +170,10 @@ fun SettingsScreen(
                     Text(state.probeMessage, color = TextSecondary, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(6.dp))
                 }
-                OutlinedTextField(
+                Field(
                     value = newUrl,
                     onValueChange = { newUrl = it },
-                    modifier = Modifier.fillMaxWidth(),
-                    singleLine = true,
-                    label = { Text("http(s)://…") },
+                    label = "http(s)://…",
                 )
                 Spacer(modifier = Modifier.height(8.dp))
                 Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -190,12 +184,46 @@ fun SettingsScreen(
                         },
                         colors = primaryBtn(),
                     ) { Text("添加") }
-                    TextButton(onClick = onRestore) { Text("恢复默认") }
+                    TextButton(onClick = onRestore) { Text("恢复默认", color = Primary) }
                 }
             }
         }
     }
 }
+
+@Composable
+private fun Field(
+    value: String,
+    onValueChange: (String) -> Unit,
+    label: String,
+    placeholder: String = "",
+) {
+    OutlinedTextField(
+        value = value,
+        onValueChange = onValueChange,
+        modifier = Modifier.fillMaxWidth(),
+        singleLine = true,
+        label = { Text(label, color = TextSecondary) },
+        placeholder = if (placeholder.isNotEmpty()) {
+            { Text(placeholder, color = TextSecondary.copy(alpha = 0.6f)) }
+        } else null,
+        colors = fieldColors(),
+        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontSize = 14.sp),
+    )
+}
+
+@Composable
+private fun fieldColors() = OutlinedTextFieldDefaults.colors(
+    focusedTextColor = TextPrimary,
+    unfocusedTextColor = TextPrimary,
+    focusedBorderColor = Primary,
+    unfocusedBorderColor = TextSecondary.copy(alpha = 0.35f),
+    cursorColor = Primary,
+    focusedLabelColor = Primary,
+    unfocusedLabelColor = TextSecondary,
+    focusedContainerColor = Color.White,
+    unfocusedContainerColor = Color.White,
+)
 
 @Composable
 private fun BgOption(
@@ -211,7 +239,14 @@ private fun BgOption(
             .padding(vertical = 4.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {
-        RadioButton(selected = selected, onClick = onClick)
+        RadioButton(
+            selected = selected,
+            onClick = onClick,
+            colors = RadioButtonDefaults.colors(
+                selectedColor = Primary,
+                unselectedColor = TextSecondary,
+            ),
+        )
         Column(modifier = Modifier.weight(1f)) {
             Text(title, color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
             Text(subtitle, color = TextSecondary, fontSize = 11.sp, maxLines = 2)
@@ -222,13 +257,13 @@ private fun BgOption(
 @Composable
 private fun SectionCard(
     title: String,
-    modifier: Modifier = Modifier,
     content: @Composable ColumnScope.() -> Unit,
 ) {
     Card(
         shape = RoundedCornerShape(16.dp),
         colors = CardDefaults.cardColors(containerColor = CardWhite),
-        modifier = modifier.fillMaxWidth(),
+        elevation = CardDefaults.cardElevation(defaultElevation = 2.dp),
+        modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
             Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
@@ -241,35 +276,22 @@ private fun SectionCard(
 @Composable
 private fun NodeRow(
     node: NodeConfig,
-    onToggle: (Boolean) -> Unit,
     onRemove: () -> Unit,
     onProbe: () -> Unit,
     onSave: (String) -> Unit,
 ) {
     var url by remember(node.id, node.baseUrl) { mutableStateOf(node.baseUrl) }
     Card(
-        colors = CardDefaults.cardColors(containerColor = Color(0xFFF2F2F2)),
+        colors = CardDefaults.cardColors(containerColor = CardMuted),
         shape = RoundedCornerShape(12.dp),
         modifier = Modifier.fillMaxWidth(),
     ) {
         Column(modifier = Modifier.padding(10.dp)) {
-            Row(verticalAlignment = Alignment.CenterVertically) {
-                OutlinedTextField(
-                    value = url,
-                    onValueChange = { url = it },
-                    modifier = Modifier.weight(1f),
-                    singleLine = true,
-                    label = { Text("URL") },
-                )
-                Spacer(modifier = Modifier.padding(horizontal = 4.dp))
-                Switch(checked = node.enabled, onCheckedChange = onToggle)
-            }
+            Field(value = url, onValueChange = { url = it }, label = "URL")
             Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                TextButton(onClick = { onSave(url) }) { Text("保存") }
-                TextButton(onClick = onProbe) { Text("测活") }
-                if (!node.builtin) {
-                    TextButton(onClick = onRemove) { Text("删除") }
-                }
+                TextButton(onClick = { onSave(url) }) { Text("保存", color = Primary) }
+                TextButton(onClick = onProbe) { Text("测活", color = TextPrimary) }
+                TextButton(onClick = onRemove) { Text("删除", color = Primary) }
             }
         }
     }
