@@ -730,12 +730,16 @@
             };
         }
 
+        const EXAMPLE_QUERY = '抽象职校生存手册';
+
         async function searchByName(forceQuery) {
-            const input = (forceQuery || document.getElementById('bookId').value || '').trim();
             const box = document.getElementById('searchResults');
+            const inputEl = document.getElementById('bookId');
+            let input = (forceQuery != null ? forceQuery : (inputEl && inputEl.value) || '').trim();
+            // 空输入时用示例书名（占位符看起来像已填，实际 value 为空）
             if (!input) {
-                showResult('请输入书名后再搜索', 'warning');
-                return;
+                input = EXAMPLE_QUERY;
+                if (inputEl) inputEl.value = input;
             }
             const asId = extractBookId(input);
             if (asId && /^\d{10,}$/.test(input.trim())) {
@@ -1200,17 +1204,10 @@
             });
         }
         
-        // 显示示例
         function showExample() {
             const bookIdInput = document.getElementById('bookId');
-            bookIdInput.value = '抽象职校生存手册';
-            
-            // 聚焦输入框并选中文本
-            bookIdInput.focus();
-            bookIdInput.select();
-            
-            showResult('示例书名已填入，点击「搜索书名」试试', 'info');
-            searchByName('抽象职校生存手册');
+            if (bookIdInput) bookIdInput.value = EXAMPLE_QUERY;
+            searchByName(EXAMPLE_QUERY);
         }
         
         // 开始下载
