@@ -184,11 +184,11 @@
             // 添加到容器
             const container = document.getElementById('popupContainer');
             if (container) {
-                container.appendChild(popup);
-                
-                // 滚动到最新消息
-                setTimeout(() => {
-                    container.scrollTop = container.scrollHeight;
+                // 右上角：新一言插到最上面
+                if (container.firstChild) container.insertBefore(popup, container.firstChild);
+                else container.appendChild(popup);
+                setTimeout(function () {
+                    container.scrollTop = 0;
                 }, 100);
             }
             
