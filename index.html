@@ -3,24 +3,23 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
-    <title>🍅 番茄小说下载器 🍅</title>
-    <link rel="stylesheet" href="styles.css?v=20260724b">
+    <title>番茄小说下载器</title>
+    <link rel="stylesheet" href="styles.css?v=20260724c">
 </head>
 <body>
-    <!-- 一言弹窗容器 -->
     <div class="popup-container" id="popupContainer"></div>
 
-    <!-- 书籍预览（必须在 body 下，避免被 .container 的 transform/overflow 裁切） -->
+    <!-- 书籍预览（挂 body 下，避免 container 的 transform 裁切 fixed） -->
     <div class="book-preview-mask" id="bookPreviewMask" hidden>
         <div class="book-preview" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
             <div class="book-preview-head">
-                <p class="book-preview-head-title">书籍预览</p>
+                <p class="book-preview-head-title">试读</p>
                 <button type="button" class="book-preview-close" id="previewCloseBtn" aria-label="关闭">×</button>
             </div>
             <div class="book-preview-main">
                 <div class="book-preview-cover-wrap">
                     <img class="book-preview-cover" id="previewCover" alt="" hidden>
-                    <div class="book-preview-cover-ph" id="previewCoverPh" aria-hidden="true">🍅</div>
+                    <div class="book-preview-cover-ph" id="previewCoverPh" aria-hidden="true"></div>
                 </div>
                 <div class="book-preview-info">
                     <h3 class="book-preview-title" id="previewTitle">—</h3>
@@ -28,53 +27,41 @@
                     <p class="book-preview-id" id="previewId"></p>
                 </div>
                 <p class="book-preview-desc" id="previewDesc"></p>
-                <div class="book-preview-body-label">正文试读</div>
-                <div class="book-preview-body" id="previewBody">点击书籍后自动加载前两章…</div>
+                <div class="book-preview-body-label">正文</div>
+                <div class="book-preview-body" id="previewBody">加载中…</div>
             </div>
             <div class="book-preview-actions">
                 <button type="button" class="btn btn-primary" id="previewDownloadBtn">
-                    <i>⬇️</i><span>下载本书</span>
+                    <span>下载</span>
                 </button>
                 <button type="button" class="btn btn-secondary" id="previewReaderBtn">
-                    <i>📖</i><span>新开页阅读</span>
+                    <span>新开页阅读</span>
                 </button>
                 <button type="button" class="btn btn-secondary" id="previewCloseBtn2">关闭</button>
             </div>
         </div>
     </div>
     
-    <!-- 固定侧边按钮 -->
-    <div class="daily-button" onclick="createDailyPopup()" title="点击查看一言">
-        💬
-    </div>
+    <div class="daily-button" onclick="createDailyPopup()" title="一言">言</div>
     
-    <!-- 主容器 -->
     <div class="container" id="mainContainer">
         <div class="decoration"></div>
         
-        <!-- 标题 -->
         <div class="header">
-            <h1 class="title">🍅 番茄小说下载器</h1>
-            <p class="subtitle">极速下载 · 流畅体验 · 精美设计 · 全设备适配</p>
+            <h1 class="title">番茄小说下载器</h1>
+            <p class="subtitle">搜书 · 试读 · 批量下载 TXT</p>
         </div>
         
-        <!-- 输入区域 -->
         <div class="input-section">
-            <label class="input-label">
-                <i>📚</i>
-                输入书名、小说ID或分享链接
-            </label>
+            <label class="input-label" for="bookId">书名 / ID / 分享链接</label>
             <div class="input-wrapper">
                 <input type="text" 
                        class="input-field" 
                        id="bookId" 
-                       placeholder="例如：抽象职校生存手册 / 小说ID / 分享链接"
+                       placeholder="抽象职校生存手册"
                        autocomplete="off">
             </div>
-            <div class="input-hint">
-                <i>💡</i>
-                支持书名搜索、粘贴分享链接自动提取ID，以及直接输入ID下载
-            </div>
+            <div class="input-hint">点搜索看列表；点卡片试读正文，勾选可批量下载</div>
             <div class="range-row" id="rangeRow">
                 <label class="range-item">
                     <span>起始章</span>
@@ -89,27 +76,22 @@
                     <span>断点续传</span>
                 </label>
             </div>
-            <div class="node-status" id="nodeStatus">节点状态加载中...</div>
+            <div class="node-status" id="nodeStatus">节点检测中…</div>
             <div class="search-results" id="searchResults"></div>
         </div>
         
-        <!-- 按钮组 -->
         <div class="button-group">
             <button class="btn btn-primary" onclick="startDownload()" id="downloadBtn">
-                <i>🚀</i>
                 <span>开始下载</span>
             </button>
             <button class="btn btn-secondary" onclick="searchByName()" id="searchBtn">
-                <i>🔍</i>
-                <span>搜索书名</span>
+                <span>搜索</span>
             </button>
             <button class="btn btn-secondary" onclick="showExample()">
-                <i>📋</i>
-                <span>查看示例</span>
+                <span>填入示例</span>
             </button>
             <button class="btn btn-danger" onclick="cancelCurrentJob()" id="cancelBtn" style="display:none;">
-                <i>⏹</i>
-                <span>取消下载</span>
+                <span>取消</span>
             </button>
         </div>
         
@@ -128,61 +110,33 @@
             </div>
         </div>
         
-        <!-- 结果区域 -->
         <div class="result-section" id="resultSection">
             <div class="result-card" id="resultCard">
                 <div class="result-title">
-                    <i id="resultIcon">📥</i>
-                    <span id="resultTitle">下载准备完成</span>
+                    <span id="resultIcon" class="result-dot" aria-hidden="true"></span>
+                    <span id="resultTitle">就绪</span>
                 </div>
-                <div class="result-message" id="resultMessage">
-                    文件已准备就绪，正在开始下载...
-                </div>
+                <div class="result-message" id="resultMessage"></div>
                 <a href="#" class="download-link" id="downloadLink" target="_blank" style="display: none;">
-                    <i>⬇️</i>
-                    手动下载文件
+                    手动下载
                 </a>
                 <span class="manual-download-hint" id="manualHint" style="display: none;">
-                    若下载没有自动开始，请点击上方手动下载按钮
+                    若未自动下载，点上方链接
                 </span>
                 <button class="downgrade-btn" id="downgradeBtn" style="display: none;" onclick="window.open('https://m.wandoujia.com/apps/8048758/history_v68132', '_blank')">
-                    <i>⬇️</i>
-                    前往更换版本
+                    更换版本
                 </button>
             </div>
         </div>
         
-        <!-- 信息区域 -->
         <div class="info-section">
-            <div class="info-title">
-                <i>📖</i>
-                使用说明
-            </div>
+            <div class="info-title">说明</div>
             <ul class="info-list">
-                <li>
-                    <i>1️⃣</i>
-                    <span>输入书名搜索；点卡片预览，勾选后可批量下载</span>
-                </li>
-                <li>
-                    <i>2️⃣</i>
-                    <span>也可粘贴小说 ID / 分享链接后点「开始下载」</span>
-                </li>
-                <li>
-                    <i>3️⃣</i>
-                    <span>可填起始/结束章；默认断点续传；下载中可取消</span>
-                </li>
-                <li>
-                    <i>⚠️</i>
-                    <span>若浏览器拦截自动下载，请点「手动下载文件」</span>
-                </li>
-                <li>
-                    <i>📱</i>
-                    <span>适配手机 / 平板 / 电脑；纯静态托管即可用</span>
-                </li>
-                <li>
-                    <i>⚡</i>
-                    <span>本机完整下载可双击「一键启动」打开 127.0.0.1:8787</span>
-                </li>
+                <li><span>搜索后点卡片试读正文；勾选可批量下载</span></li>
+                <li><span>也可直接贴 ID / 分享链接后下载</span></li>
+                <li><span>可选起始/结束章，默认断点续传</span></li>
+                <li><span>浏览器拦截下载时，点「手动下载」</span></li>
+                <li><span>本机完整服务：一键启动后打开 127.0.0.1:8787</span></li>
             </ul>
         </div>
 
@@ -190,27 +144,25 @@
 
         <footer class="site-footer">
             <div class="footer-meta">
-                <span>番茄小说下载器 v2.2</span>
+                <span>番茄小说下载器 v2.3.0</span>
                 <span class="footer-dot">·</span>
                 <span>by 是非酋啊awa</span>
-                <span class="footer-dot">·</span>
-                <span>静态站 · 断点续传</span>
             </div>
             <a class="github-link"
                href="https://github.com/FeiXiaoQiu/FanQieDownload"
                target="_blank"
                rel="noopener noreferrer"
-               aria-label="在 GitHub 打开本仓库">
+               aria-label="GitHub">
                 <svg class="github-icon" viewBox="0 0 16 16" width="18" height="18" aria-hidden="true">
                     <path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82.64-.18 1.32-.27 2-.27s1.36.09 2 .27c1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/>
                 </svg>
-                <span>GitHub 仓库</span>
+                <span>GitHub</span>
             </a>
-            <p class="footer-note">仅供个人学习研究，请遵守版权与平台条款</p>
+            <p class="footer-note">仅供个人学习研究</p>
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724b"></script>
-    <script src="app.js?v=20260724b"></script>
+    <script src="browser-client.js?v=20260724c"></script>
+    <script src="app.js?v=20260724c"></script>
 </body>
 </html>

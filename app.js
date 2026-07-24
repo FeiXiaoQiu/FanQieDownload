@@ -896,8 +896,8 @@
             if (batchBtn) {
                 batchBtn.disabled = n === 0 || batchDownloadRunning;
                 batchBtn.innerHTML = n > 1
-                    ? '<i>⬇️</i><span>批量下载 (' + n + ')</span>'
-                    : '<i>⬇️</i><span>下载所选</span>';
+                    ? '<span>批量下载 (' + n + ')</span>'
+                    : '<span>下载所选</span>';
             }
         }
 
@@ -909,7 +909,7 @@
             const isChecked = !!checked;
             const img = coverSrc
                 ? '<img class="search-cover" src="' + escapeHtml(coverSrc) + '" alt="" loading="lazy" decoding="async" referrerpolicy="no-referrer" onerror="this.onerror=null;this.src=\'\';this.classList.add(\'search-cover-fail\');this.alt=\'无封面\'">'
-                : '<div class="search-cover search-cover-ph" aria-hidden="true">🍅</div>';
+                : '<div class="search-cover search-cover-ph" aria-hidden="true"></div>';
             return (
                 '<div class="search-item' + (isChecked ? ' is-selected' : '') + '" data-id="' + escapeHtml(b.book_id) + '" data-title="' + escapeHtml(title) + '">' +
                 '<input type="checkbox" class="search-item-check" aria-label="选择《' + escapeHtml(title) + '》"' + (isChecked ? ' checked' : '') + '>' +
@@ -993,7 +993,7 @@
                 '<div class="search-toolbar">' +
                 '<label class="search-check-all"><input type="checkbox" id="searchCheckAll"> 全选</label>' +
                 '<span class="search-toolbar-count" id="searchSelectCount">已选 0 本 / 共 ' + books.length + ' 本</span>' +
-                '<button type="button" class="btn btn-secondary" id="batchDownloadBtn" disabled><i>⬇️</i><span>下载所选</span></button>' +
+                '<button type="button" class="btn btn-secondary" id="batchDownloadBtn" disabled><span>下载所选</span></button>' +
                 '</div>' +
                 '<div class="search-list">' + rows + '</div>' +
                 '<div class="search-more-wrap"></div>';
@@ -1432,7 +1432,7 @@
             } catch (e) {
                 finishDownloadUi();
                 const resultCard = document.getElementById('resultCard');
-                document.getElementById('resultIcon').textContent = '❌';
+                document.getElementById('resultIcon').textContent = '';
                 document.getElementById('resultTitle').textContent = '下载失败';
                 document.getElementById('resultMessage').textContent = e.message || String(e);
                 resultCard.className = 'result-card result-error';
@@ -1450,7 +1450,7 @@
             const resultSection = document.getElementById('resultSection');
             
             resultCard.className = 'result-card result-success';
-            resultIcon.textContent = '✅';
+            resultIcon.textContent = '';
             resultTitle.textContent = '下载完成';
             const name = title || ('ID: ' + bookId);
             const bits = [];
@@ -1476,9 +1476,9 @@
             const manualHint = document.getElementById('manualHint');
             
             resultCard.className = 'result-card result-warning';
-            resultIcon.textContent = '⚠️';
-            resultTitle.textContent = '没有检测到ID哦';
-            resultMessage.innerHTML = '<span style="font-size: 0.9em; color: var(--gray); display: block; margin-bottom: 10px;">(ó﹏ò｡)</span>请用户您降级<br><span style="color: var(--primary); font-weight: bold; font-size: 1.2em;">番茄免费小说</span>';
+            resultIcon.textContent = '';
+            resultTitle.textContent = '未识别到小说 ID';
+            resultMessage.textContent = '可降级安装「番茄免费小说」后从分享链接再试，或直接输入数字 ID。';
             
             downloadLink.style.display = 'none';
             manualHint.style.display = 'none';
@@ -1579,22 +1579,22 @@
             switch (type) {
                 case 'success':
                     resultCard.classList.add('result-success');
-                    resultIcon.textContent = '✅';
+                    resultIcon.textContent = '';
                     resultTitle.textContent = '下载成功';
                     break;
                 case 'error':
                     resultCard.classList.add('result-error');
-                    resultIcon.textContent = '❌';
+                    resultIcon.textContent = '';
                     resultTitle.textContent = '下载失败';
                     break;
                 case 'warning':
                     resultCard.classList.add('result-warning');
-                    resultIcon.textContent = '⚠️';
+                    resultIcon.textContent = '';
                     resultTitle.textContent = '注意';
                     break;
                 default:
                     resultCard.classList.add('result-success');
-                    resultIcon.textContent = '💡';
+                    resultIcon.textContent = '';
                     resultTitle.textContent = '提示';
             }
             
@@ -1695,47 +1695,5 @@
                 this.parentElement.style.transform = 'translateY(0)';
             });
             
-            // 显示欢迎信息
-            setTimeout(() => {
-                const deviceType = isMobile ? '手机' : isTablet ? '平板' : '电脑';
-                showResult(`欢迎使用番茄小说下载器！当前设备：${deviceType}，已自动适配最佳显示效果！`, 'info');
-            }, 1000);
-            
-            // 添加按钮点击动画
-            document.querySelectorAll('.btn').forEach(btn => {
-                btn.addEventListener('click', function() {
-                    this.style.transform = 'scale(0.95)';
-                    setTimeout(() => {
-                        this.style.transform = '';
-                    }, 200);
-                });
-            });
-            
-            // 添加定期清理任务（每30秒清理一次可能残留的弹窗）
             setInterval(cleanupStalePopups, 30000);
-            
-            // 监听窗口大小变化，实时适配
-            let resizeTimer;
-            window.addEventListener('resize', function() {
-                clearTimeout(resizeTimer);
-                resizeTimer = setTimeout(function() {
-                    // 在窗口调整后更新布局
-                    const container = document.getElementById('mainContainer');
-                    container.style.transform = 'scale(0.99)';
-                    setTimeout(() => {
-                        container.style.transform = 'scale(1)';
-                    }, 100);
-                }, 200);
-            });
-        });
-        
-        // 修复页面位置问题
-        window.addEventListener('load', function() {
-            if (window.scrollY > 0) {
-                window.scrollTo(0, 0);
-            }
-            
-            setTimeout(() => {
-                window.scrollTo(0, 0);
-            }, 100);
         });
