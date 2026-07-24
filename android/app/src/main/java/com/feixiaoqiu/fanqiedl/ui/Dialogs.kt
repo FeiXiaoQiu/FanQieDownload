@@ -21,7 +21,7 @@ import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier.Modifier
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -55,7 +55,7 @@ fun BookDetailDialog(
                 val author = info?.author ?: book.author
                 if (author.isNotBlank()) {
                     Text("作者：$author", color = TextSecondary, fontSize = 13.sp)
-                    Spacer(Modifier = Modifier.height(8.dp))
+                    Spacer(modifier = Modifier.height(8.dp))
                 }
                 if (state.detailLoading) {
                     CircularProgressIndicator(modifier = Modifier.align(Alignment.CenterHorizontally))
@@ -112,7 +112,7 @@ fun DownloadOptionsDialog(
         text = {
             Column {
                 Text("起始/结束章留空或 0 表示整本", color = TextSecondary, fontSize = 12.sp)
-                Spacer(Modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 OutlinedTextField(
                     value = state.startChapter,
                     onValueChange = onStartChange,

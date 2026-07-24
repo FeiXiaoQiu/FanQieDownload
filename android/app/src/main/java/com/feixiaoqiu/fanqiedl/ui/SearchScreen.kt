@@ -33,7 +33,7 @@ import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.Text
 import androidx.compose.runtime.Composable
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier.Modifier
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.layout.ContentScale
@@ -63,14 +63,14 @@ fun SearchScreen(
     onOpenBook: (BookSummary) -> Unit,
     onRefreshHitokoto: () -> Unit,
 ) {
-    Box(Modifier = Modifier.fillMaxSize().background(BgBlack)) {
+    Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
         AsyncImage(
             model = AppContainer.BACKGROUND_IMAGE_URL,
             contentDescription = null,
             modifier = Modifier.fillMaxSize(),
             contentScale = ContentScale.Crop,
         )
-        Box(Modifier = Modifier.fillMaxSize().background(Scrim))
+        Box(modifier = Modifier.fillMaxSize().background(Scrim))
 
         Column(
             modifier = Modifier
@@ -102,7 +102,7 @@ fun SearchScreen(
             }
 
             if (state.hitokoto.isNotBlank()) {
-                Spacer(Modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
                 Card(
                     modifier = Modifier
                         .fillMaxWidth()
@@ -180,7 +180,7 @@ fun SearchScreen(
 
                     when {
                         state.searching && state.books.isEmpty() -> {
-                            Box(Modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
+                            Box(modifier = Modifier.fillMaxWidth().padding(24.dp), contentAlignment = Alignment.Center) {
                                 CircularProgressIndicator(color = TextPrimary)
                             }
                         }

@@ -30,7 +30,7 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
-import androidx.compose.ui.Modifier.modifier
+import androidx.compose.ui.Modifier
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
@@ -73,7 +73,7 @@ fun SettingsScreen(
             Text("设置", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.SemiBold)
         }
 
-        Spacer(Modifier = Modifier.height(12.dp))
+        Spacer(modifier = Modifier.height(12.dp))
 
         SectionCard(title = "一言 API") {
             OutlinedTextField(
@@ -83,7 +83,7 @@ fun SettingsScreen(
                 singleLine = true,
                 label = { Text("URL") },
             )
-            Spacer(Modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                 Button(onClick = onSaveHitokoto, colors = primaryBtn()) { Text("保存") }
                 TextButton(onClick = onTestHitokoto) { Text("测试") }
@@ -99,7 +99,7 @@ fun SettingsScreen(
                 color = TextSecondary,
                 fontSize = 12.sp,
             )
-            Spacer(Modifier = Modifier.height(8.dp))
+            Spacer(modifier = Modifier.height(8.dp))
             state.nodes.forEach { node ->
                 NodeRow(
                     node = node,
@@ -108,7 +108,7 @@ fun SettingsScreen(
                     onProbe = { onProbe(node.baseUrl) },
                     onSave = { name, url -> onUpdate(node.id, name, url) },
                 )
-                Spacer(Modifier = Modifier.height(8.dp))
+                Spacer(modifier = Modifier.height(8.dp))
             }
             if (state.probeMessage != null) {
                 Text(state.probeMessage, color = TextSecondary, fontSize = 12.sp)
