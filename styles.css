@@ -887,24 +887,22 @@
             cursor: default;
         }
 
-        /* 预览弹层 */
+        /* 预览弹层（挂在 body 下，fixed 相对视口） */
         .book-preview-mask {
             position: fixed;
-            inset: 0;
-            z-index: 1200;
+            top: 0;
+            right: 0;
+            bottom: 0;
+            left: 0;
+            z-index: 2000;
             background: rgba(15, 23, 42, 0.55);
             display: flex;
-            align-items: flex-end;
+            align-items: center;
             justify-content: center;
-            padding: 0;
+            padding: 16px;
+            padding-bottom: max(16px, env(safe-area-inset-bottom, 0px));
             box-sizing: border-box;
-        }
-
-        @media (min-width: 560px) {
-            .book-preview-mask {
-                align-items: center;
-                padding: 20px;
-            }
+            -webkit-overflow-scrolling: touch;
         }
 
         .book-preview-mask[hidden] {
@@ -915,24 +913,24 @@
             position: relative;
             width: 100%;
             max-width: 480px;
-            max-height: min(85vh, 560px);
-            min-height: 340px;
+            max-height: min(85dvh, 85vh, 560px);
+            min-height: 280px;
             overflow-x: hidden;
             overflow-y: auto;
             background: #fff;
-            border-radius: 18px 18px 0 0;
+            border-radius: 16px;
             padding: 16px 18px 20px;
-            box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
             box-sizing: border-box;
+            margin: auto;
+            flex-shrink: 0;
         }
 
         @media (min-width: 560px) {
             .book-preview {
-                border-radius: 16px;
-                box-shadow: 0 20px 50px rgba(0, 0, 0, 0.22);
                 padding: 22px 22px 20px;
-                max-height: min(88vh, 640px);
-                min-height: 360px;
+                max-height: min(88dvh, 88vh, 640px);
+                min-height: 320px;
             }
         }
 
