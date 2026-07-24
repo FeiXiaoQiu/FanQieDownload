@@ -74,6 +74,7 @@ import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
+import com.feixiaoqiu.fanqiedl.ui.theme.Accent
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
@@ -469,7 +470,7 @@ private fun NodeRow(
                 modifier = Modifier
                     .width(actionWidthDp)
                     .fillMaxHeight()
-                    .background(Color(0xFF1976D2))
+                    .background(Accent)
                     .clickable {
                         editing = true
                         scope.launch { offsetX.animateTo(0f) }
@@ -482,7 +483,7 @@ private fun NodeRow(
                 modifier = Modifier
                     .width(actionWidthDp)
                     .fillMaxHeight()
-                    .background(Color(0xFFD32F2F))
+                    .background(Primary)
                     .clickable { onRemove() },
                 contentAlignment = Alignment.Center,
             ) {
@@ -516,7 +517,7 @@ private fun NodeRow(
                         },
                     )
                 }
-                .background(CardMuted.copy(alpha = 0f)),
+                .background(CardMuted),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -534,8 +535,16 @@ private fun NodeRow(
                     overflow = TextOverflow.Ellipsis,
                     modifier = Modifier.weight(1f),
                 )
-                Spacer(Modifier.width(6.dp))
+                Spacer(Modifier.width(4.dp))
                 ProbeLabel(probeInfo)
+                Spacer(Modifier.width(8.dp))
+                Icon(
+                    Icons.AutoMirrored.Filled.ArrowBack,
+                    contentDescription = "左滑操作",
+                    tint = TextSecondary.copy(alpha = 0.3f),
+                    modifier = Modifier.size(12.dp)
+                        .offset { IntOffset(0, 0) },
+                )
             }
             if (editing) {
                 Row(

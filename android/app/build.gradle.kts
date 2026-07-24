@@ -21,8 +21,8 @@ android {
         minSdk = 26
         targetSdk = 34
         // 固定签名密钥勿动
-        versionCode = 4
-        versionName = "1.0.3"
+        versionCode = 5
+        versionName = "1.0.4"
         ndk {
             // 常见手机架构
             abiFilters += listOf("armeabi-v7a", "arm64-v8a")
