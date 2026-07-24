@@ -21,38 +21,31 @@
             --radius: 16px;
             --transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
             
-            /* 响应式变量 */
-            --container-max-width: 720px;
-            --container-padding: clamp(14px, 3vw, 22px);
-            --title-font-size: clamp(1.4rem, 3.5vw, 1.75rem);
-            --subtitle-font-size: clamp(0.82rem, 1.5vw, 0.95rem);
-            --content-font-size: clamp(14px, 1.1vw, 16px);
+            --container-max-width: 640px;
+            --container-padding: 20px 20px 16px;
+            --title-font-size: 1.35rem;
+            --subtitle-font-size: 0.85rem;
+            --content-font-size: 15px;
             --button-font-size: 0.95rem;
-            --input-font-size: 1rem;
-            --input-padding: 12px 14px;
+            --input-font-size: 0.95rem;
+            --input-padding: 11px 14px;
             --gap-size: 10px;
-        }
-        
-        html {
-            height: 100%;
         }
 
         body {
             font-family: 'PingFang SC', 'Microsoft YaHei', 'Segoe UI', system-ui, sans-serif;
             background: #1a1b22;
             background-image:
-                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.22), transparent 55%),
-                radial-gradient(ellipse 70% 45% at 90% 10%, rgba(55, 66, 250, 0.14), transparent 50%),
+                radial-gradient(ellipse 80% 50% at 20% -10%, rgba(255, 71, 87, 0.18), transparent 55%),
                 linear-gradient(180deg, #1a1b22 0%, #12131a 100%);
-            min-height: 100%;
+            min-height: 100vh;
             min-height: 100dvh;
             display: flex;
             justify-content: center;
-            align-items: center;
-            padding: 12px;
+            align-items: flex-start;
+            padding: 28px 14px 40px;
             position: relative;
             overflow-x: hidden;
-            overflow-y: auto;
             box-sizing: border-box;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
@@ -250,54 +243,36 @@
         
         .container {
             background: #fff;
-            border-radius: 14px;
+            border-radius: 12px;
             padding: var(--container-padding);
             width: 100%;
             max-width: var(--container-max-width);
-            box-shadow: 0 12px 40px rgba(0, 0, 0, 0.22);
+            box-shadow: 0 8px 28px rgba(0, 0, 0, 0.2);
             position: relative;
             overflow: hidden;
-            opacity: 1;
-            border: 1px solid rgba(255, 255, 255, 0.08);
+            border: 1px solid rgba(255, 255, 255, 0.06);
         }
         
         .container.loaded {
             opacity: 1;
         }
         
-        @keyframes slideUp {
-            to {
-                opacity: 1;
-                transform: none;
-            }
-        }
-        
         .decoration {
-            position: absolute;
-            top: 0;
-            right: 0;
-            width: clamp(120px, 20vw, 200px);
-            height: clamp(120px, 20vw, 200px);
-            background: linear-gradient(45deg, var(--primary), var(--accent));
-            border-radius: 0 0 0 100%;
-            opacity: 0.08;
-            pointer-events: none;
+            display: none;
         }
         
         .header {
-            text-align: center;
-            margin-bottom: 12px;
-            position: relative;
+            text-align: left;
+            margin-bottom: 16px;
         }
         
         .title {
             font-size: var(--title-font-size);
             font-weight: 700;
             color: var(--dark);
-            margin-bottom: 2px;
-            position: relative;
-            display: inline-block;
+            margin: 0 0 4px;
             letter-spacing: -0.02em;
+            line-height: 1.3;
         }
         
         .title::after {
@@ -305,89 +280,108 @@
         }
         
         .subtitle {
-            color: #666;
+            color: #888;
             font-size: var(--subtitle-font-size);
-            margin-top: 0;
+            margin: 0;
             line-height: 1.4;
             font-weight: 400;
         }
+
+        /* 输入 + 搜索 同一行 */
+        .search-bar {
+            display: flex;
+            gap: 8px;
+            align-items: stretch;
+            margin-bottom: 12px;
+        }
         
         .input-section {
-            margin-bottom: 8px;
+            margin-bottom: 0;
         }
         
         .input-label {
-            display: block;
-            font-size: 0.88rem;
-            font-weight: 600;
-            color: var(--dark);
-            margin-bottom: 6px;
-        }
-        
-        .input-label i {
             display: none;
         }
         
         .input-wrapper {
             position: relative;
-            margin-bottom: 6px;
+            margin: 0;
+            flex: 1;
         }
         
-        .input-field {
-            width: 100%;
-            padding: var(--input-padding) clamp(16px, 2vw, 22px);
+        .search-bar .input-field {
+            flex: 1 1 auto;
+            min-width: 0;
+            width: auto;
+            padding: var(--input-padding);
             font-size: var(--input-font-size);
-            border: 2px solid #e0e0e0;
-            border-radius: clamp(10px, 1.2vw, 12px);
-            background: var(--light);
-            transition: var(--transition);
+            border: 1px solid #e0e0e0;
+            border-radius: 10px;
+            background: #f7f8fa;
+            transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
             outline: none;
             color: var(--dark);
-            will-change: transform, border-color;
         }
         
-        .input-field:focus {
+        .search-bar .input-field:focus {
             border-color: var(--primary);
-            background: white;
-            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.12);
+            background: #fff;
+            box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.1);
         }
         
-        .input-field::placeholder {
-            color: var(--gray);
-            font-size: clamp(0.9rem, 1vw, 1rem);
+        .search-bar .input-field::placeholder {
+            color: #aaa;
+            font-size: 0.92rem;
         }
         
         .input-hint,
         .help-line {
-            color: #888;
-            font-size: 0.8rem;
-            margin: 0;
-            line-height: 1.4;
+            display: none;
         }
         
         .button-group {
-            display: flex;
-            gap: var(--gap-size);
-            margin-bottom: 10px;
-            flex-wrap: wrap;
+            display: none;
+        }
+
+        .search-submit,
+        .search-cancel {
+            flex: 0 0 auto;
+            width: auto;
+            align-self: stretch;
+        }
+
+        .search-submit {
+            min-width: 76px;
+            padding: 0 18px;
+        }
+
+        .search-cancel {
+            min-width: 72px;
+            padding: 0 14px;
+        }
+
+        .book-preview-actions .btn {
+            width: 100%;
+            min-width: 0;
         }
         
         .btn {
-            flex: 1;
-            min-width: clamp(100px, 12vw, 140px);
-            padding: 12px 14px;
-            font-size: 0.95rem;
+            flex: 0 0 auto;
+            min-width: 0;
+            padding: 11px 14px;
+            font-size: 0.92rem;
             font-weight: 600;
             border: none;
             border-radius: 10px;
             cursor: pointer;
-            transition: background 0.15s, box-shadow 0.15s, transform 0.1s;
-            display: flex;
+            transition: background 0.15s, box-shadow 0.15s;
+            display: inline-flex;
             align-items: center;
             justify-content: center;
             gap: 6px;
             position: relative;
             overflow: hidden;
+            white-space: nowrap;
         }
         
         .btn::before {
@@ -425,8 +419,8 @@
         }
 
         .download-options {
-            margin: 0 0 10px;
-            border: 1px solid rgba(0, 0, 0, 0.08);
+            margin: 12px 0 0;
+            border: 1px solid rgba(0, 0, 0, 0.07);
             border-radius: 10px;
             background: #fafbfc;
             overflow: hidden;
@@ -435,10 +429,10 @@
         .download-options-summary {
             list-style: none;
             cursor: pointer;
-            padding: 9px 12px;
-            font-size: 0.85rem;
+            padding: 10px 12px;
+            font-size: 0.84rem;
             font-weight: 600;
-            color: #444;
+            color: #666;
             user-select: none;
             display: flex;
             align-items: center;
@@ -717,13 +711,13 @@
         .search-results {
             display: none;
             flex-direction: column;
-            margin: 0 0 10px;
-            max-height: min(42vh, 380px);
+            margin: 0 0 12px;
+            max-height: min(52vh, 480px);
             overflow: hidden;
             border-radius: 10px;
             background: #fff;
-            border: 1px solid rgba(255, 71, 87, 0.12);
-            box-shadow: 0 6px 16px rgba(0, 0, 0, 0.05);
+            border: 1px solid rgba(0, 0, 0, 0.08);
+            box-shadow: none;
         }
 
         .search-toolbar {
@@ -1298,21 +1292,19 @@
             border-top: 1px solid rgba(0, 0, 0, 0.1);
         }
         
-        /* 页脚：单行紧凑 */
         .site-footer {
-            text-align: center;
-            padding: 8px 0 0;
-            margin-top: 4px;
-            color: #888;
-            font-size: 0.78rem;
+            text-align: left;
+            padding: 12px 0 0;
+            margin-top: 12px;
+            color: #999;
+            font-size: 0.75rem;
             line-height: 1.5;
             display: flex;
             flex-wrap: wrap;
-            justify-content: center;
+            justify-content: flex-start;
             align-items: center;
             gap: 4px 6px;
             border-top: 1px solid rgba(0, 0, 0, 0.06);
-            padding-top: 10px;
         }
 
         .footer-meta {
@@ -1358,17 +1350,17 @@
         @media (max-width: 767px) {
             :root {
                 --container-max-width: 100%;
-                --gap-size: 10px;
-                --container-padding: 14px;
+                --container-padding: 16px 14px 14px;
+                --title-font-size: 1.2rem;
             }
             
             body {
-                padding: 8px;
-                align-items: flex-start;
+                padding: 12px 10px 28px;
             }
-            
-            .btn {
-                min-width: 0;
+
+            .search-submit {
+                min-width: 68px;
+                padding: 0 14px;
             }
             
             .popup-container {
@@ -1380,7 +1372,7 @@
             }
 
             .search-results {
-                max-height: min(38vh, 320px);
+                max-height: min(48vh, 420px);
             }
 
             .range-row {

@@ -2,14 +2,13 @@
 <html lang="zh-CN">
 <head>
     <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0, minimum-scale=0.5">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=5.0">
     <title>番茄小说下载器</title>
-    <link rel="stylesheet" href="styles.css?v=20260724p">
+    <link rel="stylesheet" href="styles.css?v=20260724q">
 </head>
 <body>
     <div class="popup-container" id="popupContainer"></div>
 
-    <!-- 书籍预览（挂 body 下，避免 container 的 transform 裁切 fixed） -->
     <div class="book-preview-mask" id="bookPreviewMask" hidden>
         <div class="book-preview" role="dialog" aria-modal="true" aria-labelledby="previewTitle">
             <div class="book-preview-head">
@@ -39,39 +38,62 @@
             </div>
         </div>
     </div>
-    
+
     <div class="daily-button" onclick="createDailyPopup()" title="一言">言</div>
-    
+
     <div class="container" id="mainContainer">
-        <div class="decoration"></div>
-        
-        <div class="header">
+        <header class="header">
             <h1 class="title">番茄小说下载器</h1>
             <p class="subtitle">搜书 · 简介 · 批量下载 TXT</p>
-        </div>
-        
-        <div class="input-section">
-            <label class="input-label" for="bookId">书名 / ID / 分享链接</label>
-            <div class="input-wrapper">
-                <input type="text" 
-                       class="input-field" 
-                       id="bookId" 
-                       placeholder="抽象职校生存手册"
-                       autocomplete="off">
-            </div>
-            <p class="help-line">空搜用示例；点卡片看简介，列表下载或勾选批量；ID 可直接搜下</p>
-        </div>
+        </header>
 
-        <div class="button-group">
-            <button class="btn btn-primary" onclick="searchByName()" id="searchBtn">
+        <div class="search-bar">
+            <input type="text"
+                   class="input-field"
+                   id="bookId"
+                   placeholder="书名 / ID / 分享链接"
+                   autocomplete="off"
+                   aria-label="书名、ID 或分享链接">
+            <button type="button" class="btn btn-primary search-submit" onclick="searchByName()" id="searchBtn">
                 <span>搜索</span>
             </button>
-            <button class="btn btn-danger" onclick="cancelCurrentJob()" id="cancelBtn" style="display:none;">
+            <button type="button" class="btn btn-danger search-cancel" onclick="cancelCurrentJob()" id="cancelBtn" style="display:none;">
                 <span>取消</span>
             </button>
         </div>
 
         <div class="search-results" id="searchResults"></div>
+
+        <div class="loading-section" id="loadingSection">
+            <div class="loading-spinner">
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+                <div class="spinner-ring"></div>
+            </div>
+            <div class="loading-text" id="loadingText">正在准备下载，请稍候...</div>
+            <div class="progress-container" id="progressContainer">
+                <div class="progress-bar" id="progressBar"></div>
+            </div>
+        </div>
+
+        <div class="result-section" id="resultSection">
+            <div class="result-card" id="resultCard">
+                <div class="result-title">
+                    <span id="resultIcon" class="result-dot" aria-hidden="true"></span>
+                    <span id="resultTitle">就绪</span>
+                </div>
+                <div class="result-message" id="resultMessage"></div>
+                <a href="#" class="download-link" id="downloadLink" target="_blank" style="display: none;">
+                    手动下载
+                </a>
+                <span class="manual-download-hint" id="manualHint" style="display: none;">
+                    若未自动下载，点上方链接
+                </span>
+                <button class="downgrade-btn" id="downgradeBtn" style="display: none;" onclick="window.open('https://m.wandoujia.com/apps/8048758/history_v68132', '_blank')">
+                    更换版本
+                </button>
+            </div>
+        </div>
 
         <details class="download-options" id="downloadOptions">
             <summary class="download-options-summary">下载选项</summary>
@@ -93,37 +115,6 @@
                 <div class="node-status" id="nodeStatus">节点检测中…</div>
             </div>
         </details>
-        
-        <div class="loading-section" id="loadingSection">
-            <div class="loading-spinner">
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-                <div class="spinner-ring"></div>
-            </div>
-            <div class="loading-text" id="loadingText">正在准备下载，请稍候...</div>
-            <div class="progress-container" id="progressContainer">
-                <div class="progress-bar" id="progressBar"></div>
-            </div>
-        </div>
-        
-        <div class="result-section" id="resultSection">
-            <div class="result-card" id="resultCard">
-                <div class="result-title">
-                    <span id="resultIcon" class="result-dot" aria-hidden="true"></span>
-                    <span id="resultTitle">就绪</span>
-                </div>
-                <div class="result-message" id="resultMessage"></div>
-                <a href="#" class="download-link" id="downloadLink" target="_blank" style="display: none;">
-                    手动下载
-                </a>
-                <span class="manual-download-hint" id="manualHint" style="display: none;">
-                    若未自动下载，点上方链接
-                </span>
-                <button class="downgrade-btn" id="downgradeBtn" style="display: none;" onclick="window.open('https://m.wandoujia.com/apps/8048758/history_v68132', '_blank')">
-                    更换版本
-                </button>
-            </div>
-        </div>
 
         <footer class="site-footer">
             <span>v2.4.0</span>
@@ -134,12 +125,10 @@
                href="https://github.com/FeiXiaoQiu/FanQieDownload"
                target="_blank"
                rel="noopener noreferrer">GitHub</a>
-            <span class="footer-dot">·</span>
-            <span class="footer-note">学习研究</span>
         </footer>
     </div>
 
-    <script src="browser-client.js?v=20260724p"></script>
-    <script src="app.js?v=20260724p"></script>
+    <script src="browser-client.js?v=20260724q"></script>
+    <script src="app.js?v=20260724q"></script>
 </body>
 </html>
