@@ -42,10 +42,11 @@
             min-height: 100vh;
             min-height: 100dvh;
             display: flex;
-            justify-content: center;
-            align-items: flex-start;
+            flex-direction: column;
+            align-items: center;
+            justify-content: flex-start;
             margin: 0;
-            padding: 24px 14px 36px;
+            padding: 20px 14px;
             position: relative;
             overflow-x: hidden;
             box-sizing: border-box;
@@ -249,7 +250,12 @@
             padding: var(--container-padding);
             width: 100%;
             max-width: var(--container-max-width);
-            margin: 0 auto;
+            /* 短内容上下 auto 居中；变高后上下对称撑开，超出视口再滚动 */
+            margin-top: auto;
+            margin-bottom: auto;
+            margin-left: auto;
+            margin-right: auto;
+            flex: 0 0 auto;
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.28);
             position: relative;
             overflow: hidden;
@@ -1359,7 +1365,7 @@
             }
 
             body {
-                padding: 12px 10px 28px;
+                padding: 12px 10px;
             }
 
             .container {
