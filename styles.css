@@ -914,13 +914,14 @@
         .book-preview {
             position: relative;
             width: 100%;
-            max-width: 440px;
-            max-height: min(90vh, 640px);
+            max-width: 480px;
+            max-height: min(92vh, 680px);
+            min-height: min(58vh, 420px);
             overflow-x: hidden;
             overflow-y: auto;
             background: #fff;
             border-radius: 18px 18px 0 0;
-            padding: 14px 16px 18px;
+            padding: 16px 18px 20px;
             box-shadow: 0 -8px 40px rgba(0, 0, 0, 0.22);
             box-sizing: border-box;
             display: flex;

@@ -1052,6 +1052,8 @@
             }
             mask.hidden = false;
             document.body.style.overflow = 'hidden';
+            const previewEl = mask.querySelector('.book-preview');
+            if (previewEl) previewEl.scrollTop = 0;
         }
 
         function closeBookPreview() {
