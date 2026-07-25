@@ -462,7 +462,7 @@ private fun UpdateDialog(
                 .background(Color(0x99000000))
                 .pointerInput(Unit) {
                     detectTapGestures {
-                        if (!state.updateDownloading) onDismiss()
+                        onDismiss()
                     }
                 },
         ) {
@@ -483,6 +483,7 @@ private fun UpdateDialog(
                             Color.White.copy(alpha = 0.15f),
                             RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                         )
+                        .pointerInput(Unit) { /* consume taps inside sheet */ }
                         .padding(24.dp),
                 ) {
                     Text(
@@ -519,59 +520,37 @@ private fun UpdateDialog(
 
                     Spacer(modifier = Modifier.height(16.dp))
 
-                    if (state.updateDownloading) {
-                        LinearProgressIndicator(
-                            progress = { state.updateDownloadProgress },
-                            modifier = Modifier
-                                .fillMaxWidth()
-                                .height(6.dp)
-                                .clip(RoundedCornerShape(3.dp)),
-                            color = Primary,
-                            trackColor = Color.White.copy(alpha = 0.2f),
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                        val pct = (state.updateDownloadProgress * 100).toInt()
-                        Text(
-                            state.updateDownloadMessage ?: "下载中 $pct%",
-                            color = Color.White.copy(alpha = 0.7f),
-                            fontSize = 13.sp,
-                        )
-                        Spacer(modifier = Modifier.height(8.dp))
-                    }
-
                     Row(
                         modifier = Modifier.fillMaxWidth(),
                         horizontalArrangement = Arrangement.spacedBy(12.dp),
                     ) {
                         Button(
-                            onClick = onDownload,
-                            enabled = !state.updateDownloading,
+                            onClick = {
+                                onDownload()
+                                onDismiss()
+                            },
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.buttonColors(
                                 containerColor = Primary,
                                 contentColor = Color.White,
-                                disabledContainerColor = Primary.copy(alpha = 0.5f),
-                                disabledContentColor = Color.White.copy(alpha = 0.6f),
                             ),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
                         ) {
                             Text(
-                                if (state.updateDownloading) "下载中…" else "更新",
+                                "更新",
                                 fontSize = 15.sp,
                                 fontWeight = FontWeight.SemiBold,
                             )
                         }
                         OutlinedButton(
                             onClick = onDismiss,
-                            enabled = !state.updateDownloading,
                             shape = RoundedCornerShape(12.dp),
                             colors = ButtonDefaults.outlinedButtonColors(
                                 contentColor = Color.White.copy(alpha = 0.7f),
-                                disabledContentColor = Color.White.copy(alpha = 0.3f),
                             ),
-                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
                             modifier = Modifier
                                 .weight(1f)
                                 .height(48.dp),
@@ -586,11 +565,11 @@ private fun UpdateDialog(
 }
 
 private val UPDATE_CHANGELOG_DEFAULT = """
-- 首页新版本更新弹窗：检测到新版时底部弹出，含版本号与更新内容
+- 更新下载改为后台通知栏进度，下载完成自动拉起安装
+- 首页更新弹窗：底部 ~40%，含版本号与更新内容
 - 搜索框 / 设置页 / Web 全面毛玻璃化
-- 搜索框与设置页文字改为白色系，适配暗底玻璃
+- 搜索框与设置页文字改为白色系
 - 设置新增「启动时自动检查更新」开关
-- 下载源名称优化：镜像源增加标注
 """.trim()
 
 @Composable
