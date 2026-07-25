@@ -7,14 +7,14 @@ object DefaultNodes {
     val R18_BACKGROUND_API = "https://acg.yaohud.cn/dm/r18.php"
 
     val DOWNLOAD_SOURCES = listOf(
-        DownloadSource("direct", "原链接", "{url}", builtin = true),
+        DownloadSource("direct", "Github原链接", "{url}", builtin = true),
     )
 
     val DEFAULT_MIRRORS = listOf(
-        DownloadSource("mirror", "gh.xmly.dev", "https://gh.xmly.dev/{url}"),
-        DownloadSource("mirror-gh-proxy", "gh-proxy.com", "https://gh-proxy.com/{url}"),
-        DownloadSource("mirror-moeyy", "gh.moeyy.xyz", "https://gh.moeyy.xyz/{url}"),
-        DownloadSource("mirror-99988866", "gh.api.99988866.xyz", "https://gh.api.99988866.xyz/{url}"),
+        DownloadSource("mirror", "gh.xmly.dev 镜像源", "https://gh.xmly.dev/{url}"),
+        DownloadSource("mirror-gh-proxy", "gh-proxy.com 镜像源", "https://gh-proxy.com/{url}"),
+        DownloadSource("mirror-moeyy", "gh.moeyy.xyz 镜像源", "https://gh.moeyy.xyz/{url}"),
+        DownloadSource("mirror-99988866", "gh.api.99988866.xyz 镜像源", "https://gh.api.99988866.xyz/{url}"),
     )
 
     fun builtin(): List<NodeConfig> = listOf(

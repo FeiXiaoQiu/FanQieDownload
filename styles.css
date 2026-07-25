@@ -242,7 +242,7 @@
             border-radius: 0;
             font-size: inherit;
             font-weight: 600;
-            color: #555;
+            color: rgba(255, 255, 255, 0.7);
             text-decoration: none;
             background: transparent;
             border: 0;
@@ -1347,7 +1347,7 @@
             text-align: left;
             padding: 12px 0 0;
             margin-top: 12px;
-            color: #999;
+            color: rgba(255, 255, 255, 0.6);
             font-size: 0.75rem;
             line-height: 1.5;
             display: flex;
@@ -1355,7 +1355,7 @@
             justify-content: flex-start;
             align-items: center;
             gap: 4px 6px;
-            border-top: 1px solid rgba(0, 0, 0, 0.06);
+            border-top: 1px solid rgba(255, 255, 255, 0.15);
         }
 
         .footer-meta {
@@ -1375,7 +1375,7 @@
             padding: 0;
             border-radius: 0;
             text-decoration: none;
-            color: #555;
+            color: rgba(255, 255, 255, 0.7);
             background: transparent;
             border: 0;
             font-weight: 600;
