@@ -13,10 +13,10 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
 
-val GlassFill = Color(0xE6FFFFFF)
-val GlassFillSoft = Color(0xCCFFFFFF)
-val GlassBorder = Color(0x66FFFFFF)
-val GlassHighlight = Color(0x33FFFFFF)
+val GlassFill = Color(0x26FFFFFF)
+val GlassFillSoft = Color(0x18FFFFFF)
+val GlassBorder = Color(0x40FFFFFF)
+val GlassHighlight = Color(0x1AFFFFFF)
 
 @Composable
 fun GlassPanel(

@@ -1,13 +1,21 @@
 package com.feixiaoqiu.fanqiedl.ui
 
+import androidx.compose.animation.AnimatedVisibility
+import androidx.compose.animation.fadeIn
+import androidx.compose.animation.fadeOut
+import androidx.compose.animation.slideInVertically
+import androidx.compose.animation.slideOutVertically
 import androidx.compose.foundation.background
+import androidx.compose.foundation.BorderStroke
 import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Column
 import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.Spacer
+import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
@@ -22,10 +30,12 @@ import androidx.compose.foundation.layout.statusBars
 import androidx.compose.foundation.layout.windowInsetsPadding
 import androidx.compose.foundation.lazy.LazyColumn
 import androidx.compose.foundation.lazy.items
+import androidx.compose.foundation.rememberScrollState
 import androidx.compose.foundation.shape.RoundedCornerShape
 import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
+import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Settings
@@ -35,6 +45,7 @@ import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
 import androidx.compose.material3.LinearProgressIndicator
+import androidx.compose.material3.OutlinedButton
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -45,6 +56,7 @@ import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
+import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.res.stringResource
 import androidx.compose.ui.text.TextStyle
@@ -60,11 +72,15 @@ import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
+import com.feixiaoqiu.fanqiedl.ui.theme.GlassText
+import com.feixiaoqiu.fanqiedl.ui.theme.GlassTextSecondary
 import com.feixiaoqiu.fanqiedl.ui.theme.InputBg
 import com.feixiaoqiu.fanqiedl.ui.theme.InputBorder
 import com.feixiaoqiu.fanqiedl.ui.theme.Placeholder
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
+import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
+import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
@@ -286,14 +302,6 @@ fun SearchScreen(
                 }
             }
 
-            if (state.showHomeUpdate) {
-                UpdateBanner(
-                    state = state,
-                    onDownload = onDownloadUpdate,
-                    onDismiss = onDismissUpdate,
-                )
-            }
-
             HitokotoBar(
                 text = state.hitokoto,
                 onClick = onRefreshHitokoto,
@@ -366,7 +374,7 @@ private fun SearchBar(
                 value = query,
                 onValueChange = onQueryChange,
                 singleLine = true,
-                textStyle = TextStyle(color = TextPrimary, fontSize = 15.sp),
+                textStyle = TextStyle(color = Color.White, fontSize = 15.sp),
                 cursorBrush = SolidColor(Primary),
                 keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                 keyboardActions = KeyboardActions(onSearch = { onSearch() }),
@@ -427,7 +435,7 @@ private fun HitokotoBar(
             Spacer(modifier = Modifier.height(4.dp))
             Text(
                 text = text.ifBlank { "加载中…" },
-                color = TextPrimary,
+                color = GlassText,
                 fontSize = 13.sp,
                 maxLines = 3,
                 overflow = TextOverflow.Ellipsis,
@@ -438,93 +446,152 @@ private fun HitokotoBar(
 }
 
 @Composable
-private fun UpdateBanner(
+private fun UpdateDialog(
     state: MainUiState,
     onDownload: () -> Unit,
     onDismiss: () -> Unit,
 ) {
-    Box(
-        modifier = Modifier
-            .fillMaxWidth()
-            .padding(horizontal = 16.dp, vertical = 6.dp)
-            .clickable(
-                enabled = !state.updateDownloading,
-                onClick = onDismiss,
-            ),
+    AnimatedVisibility(
+        visible = state.showHomeUpdate,
+        enter = fadeIn(),
+        exit = fadeOut(),
     ) {
-        GlassPanel(
-            modifier = Modifier.fillMaxWidth(),
-            corner = 14.dp,
-            fill = GlassFill,
+        Box(
+            modifier = Modifier
+                .fillMaxSize()
+                .background(Color(0x99000000))
+                .pointerInput(Unit) {
+                    detectTapGestures {
+                        if (!state.updateDownloading) onDismiss()
+                    }
+                },
         ) {
-            Column(
-                modifier = Modifier
-                    .fillMaxWidth()
-                    .padding(horizontal = 14.dp, vertical = 12.dp),
-        ) {
-            Row(
-                modifier = Modifier.fillMaxWidth(),
-                verticalAlignment = Alignment.CenterVertically,
+            AnimatedVisibility(
+                visible = true,
+                modifier = Modifier.align(Alignment.BottomCenter),
+                enter = slideInVertically(initialOffsetY = { it }),
+                exit = slideOutVertically(targetOffsetY = { it }),
             ) {
-                Column(modifier = Modifier.weight(1f)) {
+                Column(
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .fillMaxHeight(0.45f)
+                        .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
+                        .background(Color(0xE61A1A20))
+                        .border(
+                            1.dp,
+                            Color.White.copy(alpha = 0.15f),
+                            RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
+                        )
+                        .padding(24.dp),
+                ) {
                     Text(
-                        text = "发现新版本",
-                        color = TextSecondary,
-                        fontSize = 13.sp,
-                        fontWeight = FontWeight.SemiBold,
-                    )
-                    Text(
-                        text = state.latestVersionTag ?: "",
-                        color = Primary,
-                        fontSize = 16.sp,
+                        "发现新版本",
+                        color = Color.White,
+                        fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
                     )
-                }
-                if (!state.updateDownloading && state.updateDownloadMessage == null) {
-                    Button(
-                        onClick = onDownload,
-                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
-                        shape = RoundedCornerShape(10.dp),
-                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
-                            horizontal = 18.dp,
-                            vertical = 8.dp,
-                        ),
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Text(
+                        state.latestVersionTag ?: "",
+                        color = Primary,
+                        fontSize = 20.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                    Spacer(modifier = Modifier.height(12.dp))
+
+                    Column(
+                        modifier = Modifier
+                            .weight(1f)
+                            .fillMaxWidth()
+                            .verticalScroll(rememberScrollState()),
                     ) {
-                        Text("更新", color = Color.White, fontSize = 14.sp)
+                        val body = state.latestReleaseBody
+                            ?.takeIf { it.isNotBlank() }
+                            ?: UPDATE_CHANGELOG_DEFAULT
+                        Text(
+                            body,
+                            color = Color.White.copy(alpha = 0.85f),
+                            fontSize = 13.sp,
+                            lineHeight = 20.sp,
+                        )
+                    }
+
+                    Spacer(modifier = Modifier.height(16.dp))
+
+                    if (state.updateDownloading) {
+                        LinearProgressIndicator(
+                            progress = { state.updateDownloadProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = Primary,
+                            trackColor = Color.White.copy(alpha = 0.2f),
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                        val pct = (state.updateDownloadProgress * 100).toInt()
+                        Text(
+                            state.updateDownloadMessage ?: "下载中 $pct%",
+                            color = Color.White.copy(alpha = 0.7f),
+                            fontSize = 13.sp,
+                        )
+                        Spacer(modifier = Modifier.height(8.dp))
+                    }
+
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        horizontalArrangement = Arrangement.spacedBy(12.dp),
+                    ) {
+                        Button(
+                            onClick = onDownload,
+                            enabled = !state.updateDownloading,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.buttonColors(
+                                containerColor = Primary,
+                                contentColor = Color.White,
+                                disabledContainerColor = Primary.copy(alpha = 0.5f),
+                                disabledContentColor = Color.White.copy(alpha = 0.6f),
+                            ),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                        ) {
+                            Text(
+                                if (state.updateDownloading) "下载中…" else "更新",
+                                fontSize = 15.sp,
+                                fontWeight = FontWeight.SemiBold,
+                            )
+                        }
+                        OutlinedButton(
+                            onClick = onDismiss,
+                            enabled = !state.updateDownloading,
+                            shape = RoundedCornerShape(12.dp),
+                            colors = ButtonDefaults.outlinedButtonColors(
+                                contentColor = Color.White.copy(alpha = 0.7f),
+                                disabledContentColor = Color.White.copy(alpha = 0.3f),
+                            ),
+                            border = androidx.compose.foundation.BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                            modifier = Modifier
+                                .weight(1f)
+                                .height(48.dp),
+                        ) {
+                            Text("暂不更新", fontSize = 15.sp)
+                        }
                     }
                 }
             }
-            if (state.updateDownloading) {
-                Spacer(modifier = Modifier.height(12.dp))
-                LinearProgressIndicator(
-                    progress = { state.updateDownloadProgress },
-                    modifier = Modifier
-                        .fillMaxWidth()
-                        .height(6.dp)
-                        .clip(RoundedCornerShape(3.dp)),
-                    color = Primary,
-                    trackColor = Color.White.copy(alpha = 0.3f),
-                )
-                val pct = (state.updateDownloadProgress * 100).toInt()
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = state.updateDownloadMessage ?: "下载中 $pct%",
-                    color = TextSecondary,
-                    fontSize = 12.sp,
-                )
-            }
-            if (state.updateDownloadMessage != null && !state.updateDownloading) {
-                Spacer(modifier = Modifier.height(6.dp))
-                Text(
-                    text = state.updateDownloadMessage,
-                    color = TextSecondary,
-                    fontSize = 13.sp,
-                )
-            }
-        }
         }
     }
 }
+
+private val UPDATE_CHANGELOG_DEFAULT = """
+- 首页新版本更新弹窗：检测到新版时底部弹出，含版本号与更新内容
+- 搜索框 / 设置页 / Web 全面毛玻璃化
+- 搜索框与设置页文字改为白色系，适配暗底玻璃
+- 设置新增「启动时自动检查更新」开关
+- 下载源名称优化：镜像源增加标注
+""".trim()
 
 @Composable
 private fun BookRow(book: BookSummary, onClick: () -> Unit) {

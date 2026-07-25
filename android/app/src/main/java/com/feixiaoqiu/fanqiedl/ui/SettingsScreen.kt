@@ -96,6 +96,9 @@ import com.feixiaoqiu.fanqiedl.data.ReleaseAsset
 import com.feixiaoqiu.fanqiedl.ui.theme.Accent
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
+import com.feixiaoqiu.fanqiedl.ui.theme.GlassText
+import com.feixiaoqiu.fanqiedl.ui.theme.GlassTextSecondary
+import com.feixiaoqiu.fanqiedl.ui.theme.OnDark
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
@@ -293,7 +296,7 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Text("缩放：", color = TextSecondary, fontSize = 12.sp)
+                    Text("缩放：", color = GlassTextSecondary, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(2.dp))
                     Row(
                         modifier = Modifier.selectableGroup(),
@@ -316,7 +319,7 @@ fun SettingsScreen(
                                     modifier = Modifier.size(18.dp),
                                 )
                                 Spacer(Modifier.width(4.dp))
-                                Text(scale.label, color = TextPrimary, fontSize = 13.sp)
+                                Text(scale.label, color = GlassText, fontSize = 13.sp)
                             }
                         }
                     }
@@ -343,7 +346,7 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(4.dp))
                         Text(
                             if (hasLocal) "已选择本地图片" else "尚未选择图片",
-                            color = TextSecondary,
+                            color = GlassTextSecondary,
                             fontSize = 12.sp,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -360,7 +363,7 @@ fun SettingsScreen(
                         }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("模糊：", color = TextSecondary, fontSize = 12.sp)
+                            Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
                             Spacer(Modifier.width(8.dp))
                             Slider(
                                 value = state.backgroundBlur.coerceIn(0f, 48f),
@@ -376,7 +379,7 @@ fun SettingsScreen(
                             )
                             Text(
                                 "${state.backgroundBlur.toInt()}dp",
-                                color = TextSecondary,
+                                color = GlassTextSecondary,
                                 fontSize = 12.sp,
                                 modifier = Modifier.width(36.dp),
                             )
@@ -400,14 +403,14 @@ fun SettingsScreen(
                 SectionCard(title = "下载节点") {
                     Text(
                         "尽量填写番茄小说相关 API 节点；其他小说软件的接口不保证可用。",
-                        color = TextSecondary,
+                        color = GlassTextSecondary,
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                     )
                     Spacer(modifier = Modifier.height(6.dp))
                     Text(
                         "如何找 API：打开必应 www.bing.com，搜索「番茄API状态」。若某条结果的网页标题与「番茄API状态」六字完全一致，复制该页 URL，在下方直接添加即可。",
-                        color = TextSecondary,
+                        color = GlassTextSecondary,
                         fontSize = 12.sp,
                         lineHeight = 17.sp,
                     )
@@ -434,7 +437,7 @@ fun SettingsScreen(
                     }
                     if (state.probeMessage != null) {
                         Spacer(Modifier.height(6.dp))
-                        Text(state.probeMessage, color = TextSecondary, fontSize = 12.sp)
+                        Text(state.probeMessage, color = GlassTextSecondary, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -486,7 +489,7 @@ fun SettingsScreen(
                     SectionCard(title = "省电设置") {
                         Text(
                             "建议关闭电池优化以免下载中断",
-                            color = TextSecondary,
+                            color = GlassTextSecondary,
                             fontSize = 12.sp,
                         )
                         Spacer(modifier = Modifier.height(6.dp))
@@ -508,11 +511,11 @@ fun SettingsScreen(
                 }
 
                 SectionCard(title = "关于") {
-                    Text("软件AI制作，作者不会编程", color = TextPrimary, fontSize = 14.sp)
+                    Text("软件AI制作，作者不会编程", color = GlassText, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "当前版本：${state.appVersionName.ifBlank { "—" }}",
-                        color = TextPrimary,
+                        color = GlassText,
                         fontSize = 14.sp,
                         modifier = Modifier.clickable {
                             val now = System.currentTimeMillis()
@@ -531,7 +534,7 @@ fun SettingsScreen(
                     )
                     if (state.updateMessage != null) {
                         Spacer(modifier = Modifier.height(4.dp))
-                        Text(state.updateMessage, color = TextSecondary, fontSize = 12.sp)
+                        Text(state.updateMessage, color = GlassTextSecondary, fontSize = 12.sp)
                     }
                     Spacer(modifier = Modifier.height(10.dp))
                     Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
@@ -553,8 +556,8 @@ fun SettingsScreen(
                         verticalAlignment = Alignment.CenterVertically,
                     ) {
                         Column(modifier = Modifier.weight(1f)) {
-                            Text("启动时自动检查更新", color = TextPrimary, fontSize = 13.sp)
-                            Text("打开应用时静默检测新版本", color = TextSecondary, fontSize = 11.sp)
+                            Text("启动时自动检查更新", color = GlassText, fontSize = 13.sp)
+                            Text("打开应用时静默检测新版本", color = GlassTextSecondary, fontSize = 11.sp)
                         }
                         Switch(
                             checked = state.autoUpdateCheck,
@@ -564,7 +567,7 @@ fun SettingsScreen(
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))
-                    Text("下载源（下载时自动测速选最快）", color = TextSecondary, fontSize = 12.sp)
+                    Text("下载源（下载时自动测速选最快）", color = GlassTextSecondary, fontSize = 12.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     state.downloadSources.forEach { source ->
                         Row(
@@ -575,7 +578,7 @@ fun SettingsScreen(
                         ) {
                             Text(
                                 source.name,
-                                color = TextPrimary,
+                                color = GlassText,
                                 fontSize = 13.sp,
                                 modifier = Modifier.weight(1f),
                             )
@@ -606,7 +609,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = newSrcName,
                             onValueChange = { newSrcName = it },
-                            label = { Text("名称", color = TextSecondary) },
+                            label = { Text("名称", color = GlassTextSecondary) },
                             singleLine = true,
                             colors = fieldColors(),
                             modifier = Modifier.fillMaxWidth(),
@@ -615,7 +618,7 @@ fun SettingsScreen(
                         OutlinedTextField(
                             value = newSrcTmpl,
                             onValueChange = { newSrcTmpl = it },
-                            label = { Text("URL 模板（用 {url} 占位）", color = TextSecondary) },
+                            label = { Text("URL 模板（用 {url} 占位）", color = GlassTextSecondary) },
                             singleLine = true,
                             colors = fieldColors(),
                             modifier = Modifier.fillMaxWidth(),
@@ -642,16 +645,16 @@ fun SettingsScreen(
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             "新版 ${state.latestVersionTag.orEmpty()} / ${asset.name}",
-                            color = TextSecondary,
+                            color = GlassTextSecondary,
                             fontSize = 12.sp,
                         )
-                        Text(assetNote, color = TextSecondary, fontSize = 11.sp)
+                        Text(assetNote, color = GlassTextSecondary, fontSize = 11.sp)
                         Spacer(Modifier.height(8.dp))
 
                         if (state.updateDownloadMessage != null) {
                             Text(
                                 state.updateDownloadMessage,
-                                color = if (state.updateDownloading) Accent else TextSecondary,
+                                color = if (state.updateDownloading) Accent else GlassTextSecondary,
                                 fontSize = 12.sp,
                             )
                             Spacer(Modifier.height(4.dp))
@@ -834,26 +837,26 @@ private fun Field(
         onValueChange = onValueChange,
         modifier = Modifier.fillMaxWidth(),
         singleLine = true,
-        label = { Text(label, color = TextSecondary) },
+        label = { Text(label, color = GlassTextSecondary) },
         placeholder = if (placeholder.isNotEmpty()) {
-            { Text(placeholder, color = TextSecondary.copy(alpha = 0.6f)) }
+            { Text(placeholder, color = GlassTextSecondary.copy(alpha = 0.6f)) }
         } else null,
         colors = fieldColors(),
-        textStyle = androidx.compose.ui.text.TextStyle(color = TextPrimary, fontSize = 14.sp),
+        textStyle = androidx.compose.ui.text.TextStyle(color = GlassText, fontSize = 14.sp),
     )
 }
 
 @Composable
 private fun fieldColors() = OutlinedTextFieldDefaults.colors(
-    focusedTextColor = TextPrimary,
-    unfocusedTextColor = TextPrimary,
+    focusedTextColor = GlassText,
+    unfocusedTextColor = GlassText,
     focusedBorderColor = Primary,
-    unfocusedBorderColor = TextSecondary.copy(alpha = 0.35f),
+    unfocusedBorderColor = GlassTextSecondary.copy(alpha = 0.35f),
     cursorColor = Primary,
     focusedLabelColor = Primary,
-    unfocusedLabelColor = TextSecondary,
-    focusedContainerColor = Color.White,
-    unfocusedContainerColor = Color.White,
+    unfocusedLabelColor = GlassTextSecondary,
+    focusedContainerColor = Color(0x18FFFFFF),
+    unfocusedContainerColor = Color(0x18FFFFFF),
 )
 
 @Composable
@@ -879,8 +882,8 @@ private fun BgOption(
             ),
         )
         Column(modifier = Modifier.weight(1f)) {
-            Text(title, color = TextPrimary, fontWeight = FontWeight.Medium, fontSize = 14.sp)
-            Text(subtitle, color = TextSecondary, fontSize = 11.sp, maxLines = 2)
+            Text(title, color = GlassText, fontWeight = FontWeight.Medium, fontSize = 14.sp)
+            Text(subtitle, color = GlassTextSecondary, fontSize = 11.sp, maxLines = 2)
         }
     }
 }
@@ -896,7 +899,7 @@ private fun SectionCard(
         fill = GlassFill,
     ) {
         Column(modifier = Modifier.padding(14.dp)) {
-            Text(title, color = TextPrimary, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
+            Text(title, color = GlassText, fontWeight = FontWeight.SemiBold, fontSize = 16.sp)
             Spacer(modifier = Modifier.height(8.dp))
             content()
         }

@@ -17,6 +17,7 @@ data class ReleaseInfo(
     val tagName: String,
     val htmlUrl: String,
     val name: String = "",
+    val body: String = "",
     val assets: List<ReleaseAsset> = emptyList(),
 )
 
@@ -75,6 +76,7 @@ class UpdateChecker(
                         tagName = tag,
                         htmlUrl = html,
                         name = o.optString("name"),
+                        body = o.optString("body"),
                         assets = assets,
                     ),
                 )

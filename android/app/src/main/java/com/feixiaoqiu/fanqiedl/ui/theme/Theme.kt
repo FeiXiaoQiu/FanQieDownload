@@ -14,10 +14,12 @@ val Accent = Color(0xFF222222)
 val Scrim = Color(0x99000000)
 val Primary = Color(0xFFFF4757)
 val PrimaryDark = Color(0xFFFF3838)
-val InputBg = Color(0x26FFFFFF)
+val InputBg = Color(0x18FFFFFF)
 val InputBorder = Color(0x33FFFFFF)
 val Placeholder = Color(0x66FFFFFF)
 val OnDark = Color(0xFFFFFFFF)
+val GlassText = Color(0xFFFFFFFF)
+val GlassTextSecondary = Color(0xB3FFFFFF)
 
 /** 浅色 scheme：白卡片/对话框内文字为深色，避免白底白字 */
 private val Scheme = lightColorScheme(
