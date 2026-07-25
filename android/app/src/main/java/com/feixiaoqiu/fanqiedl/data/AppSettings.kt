@@ -21,6 +21,7 @@ class AppSettings(private val context: Context) {
     private val keyBgApi = stringPreferencesKey("bg_api_url")
     private val keyBgImage = stringPreferencesKey("bg_image_url")
     private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
+    private val keyR18Accepted = stringPreferencesKey("r18_accepted")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -48,6 +49,16 @@ class AppSettings(private val context: Context) {
 
     val customBackgroundsFlow: Flow<List<CustomBackground>> = context.dataStore.data.map { prefs ->
         parseCustomBgs(prefs[keyCustomBgs])
+    }
+
+    val r18AcceptedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[keyR18Accepted] == "1"
+    }
+
+    suspend fun setR18Accepted() {
+        context.dataStore.edit { prefs ->
+            prefs[keyR18Accepted] = "1"
+        }
     }
 
     suspend fun addCustomBg(name: String, url: String): CustomBackground {

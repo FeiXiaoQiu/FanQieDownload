@@ -112,6 +112,8 @@ class MainActivity : ComponentActivity() {
                                         onUpdateCustomBg = { id, name, url -> vm.updateCustomBackground(id, name, url) },
                                         onSelectCustomBg = vm::selectCustomBackground,
                                         onCheckUpdate = { vm.checkForUpdate(silent = false) },
+                                        r18Accepted = state.r18Accepted,
+                                        onAcceptR18 = vm::acceptR18,
                                         onOpenRepo = { openUrl(UpdateChecker.REPO_URL) },
                                         onOpenLatestRelease = {
                                             val url = state.latestReleaseUrl

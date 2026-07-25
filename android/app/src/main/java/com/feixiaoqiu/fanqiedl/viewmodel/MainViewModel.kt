@@ -91,6 +91,7 @@ data class MainUiState(
     val latestReleaseUrl: String? = null,
     val latestVersionTag: String? = null,
     val updateAvailable: Boolean = false,
+    val r18Accepted: Boolean = false,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -160,6 +161,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         startHitokotoLoop()
         // 进入设置可手动检查；冷启动静默检查一次
         checkForUpdate(silent = true)
+        viewModelScope.launch {
+            container.settings.r18AcceptedFlow.collect { accepted ->
+                _ui.update { it.copy(r18Accepted = accepted) }
+            }
+        }
     }
 
     private fun resolveBackgroundUrl(
@@ -550,33 +556,78 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         _ui.update { it.copy(hitokotoUrl = url) }
     }
 
+    fun acceptR18() {
+        viewModelScope.launch {
+            container.settings.setR18Accepted()
+        }
+    }
+
     fun setBackgroundMode(mode: BackgroundMode) {
-        _ui.update {
-            it.copy(
-                backgroundMode = mode,
-                selectedCustomBgId = if (mode == BackgroundMode.CUSTOM_API) it.selectedCustomBgId else null,
+        viewModelScope.launch {
+            val s = _ui.value
+            val imagePath = when (mode) {
+                BackgroundMode.CUSTOM_IMAGE ->
+                    container.backgroundImages.localPathOrEmpty().ifBlank { s.backgroundImageUrl }
+                else -> s.backgroundImageUrl
+            }
+            container.settings.setBackground(
+                mode = mode,
+                apiUrl = s.backgroundApiUrl,
+                imageUrl = imagePath,
             )
+            _ui.update {
+                it.copy(
+                    backgroundMode = mode,
+                    selectedCustomBgId = if (mode == BackgroundMode.CUSTOM_API) it.selectedCustomBgId else null,
+                    backgroundImageUrl = imagePath,
+                    backgroundDisplayUrl = resolveBackgroundUrl(
+                        mode, s.backgroundApiUrl, imagePath, bust = true,
+                    ),
+                )
+            }
         }
     }
 
     fun selectCustomBackground(id: String) {
-        _ui.update {
-            it.copy(
-                backgroundMode = BackgroundMode.CUSTOM_API,
-                selectedCustomBgId = id,
-                backgroundApiUrl = "",
+        viewModelScope.launch {
+            val s = _ui.value
+            val bg = s.customBackgrounds.find { it.id == id }
+            val apiUrl = bg?.url?.trim().orEmpty()
+            container.settings.setBackground(
+                mode = BackgroundMode.CUSTOM_API,
+                apiUrl = apiUrl,
+                imageUrl = s.backgroundImageUrl,
             )
+            _ui.update {
+                it.copy(
+                    backgroundMode = BackgroundMode.CUSTOM_API,
+                    selectedCustomBgId = id,
+                    backgroundApiUrl = apiUrl,
+                    backgroundDisplayUrl = resolveBackgroundUrl(
+                        BackgroundMode.CUSTOM_API, apiUrl, s.backgroundImageUrl, bust = true,
+                    ),
+                )
+            }
         }
     }
 
     fun addCustomBackground(name: String, url: String) {
         viewModelScope.launch {
+            val s = _ui.value
             val bg = container.settings.addCustomBg(name, url)
+            container.settings.setBackground(
+                mode = BackgroundMode.CUSTOM_API,
+                apiUrl = bg.url.trim(),
+                imageUrl = s.backgroundImageUrl,
+            )
             _ui.update {
                 it.copy(
                     backgroundMode = BackgroundMode.CUSTOM_API,
                     selectedCustomBgId = bg.id,
-                    backgroundApiUrl = "",
+                    backgroundApiUrl = bg.url.trim(),
+                    backgroundDisplayUrl = resolveBackgroundUrl(
+                        BackgroundMode.CUSTOM_API, bg.url.trim(), s.backgroundImageUrl, bust = true,
+                    ),
                 )
             }
         }
@@ -824,8 +875,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             _ui.update {
                 it.copy(
                     probingAll = false,
-                    probeMessage = "测速完成",
-                    snackbar = "节点测速完成",
+                    probeMessage = null,
                 )
             }
         }

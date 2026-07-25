@@ -18,6 +18,7 @@ import androidx.compose.foundation.layout.fillMaxHeight
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.foundation.layout.fillMaxWidth
 import androidx.compose.foundation.layout.height
+import androidx.compose.foundation.layout.heightIn
 import androidx.compose.foundation.layout.navigationBarsPadding
 import androidx.compose.foundation.layout.offset
 import androidx.compose.foundation.layout.padding
@@ -37,6 +38,7 @@ import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
 import androidx.compose.material.icons.filled.Circle
 import androidx.compose.material3.Button
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.Card
 import androidx.compose.material3.CardDefaults
@@ -52,6 +54,7 @@ import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
+import androidx.compose.runtime.mutableIntStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -86,6 +89,7 @@ import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
 import com.feixiaoqiu.fanqiedl.viewmodel.NodeProbeInfo
 import com.feixiaoqiu.fanqiedl.viewmodel.NodeProbePhase
+import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
 import java.io.File
@@ -116,8 +120,11 @@ fun SettingsScreen(
     onOpenRepo: () -> Unit = {},
     onOpenLatestRelease: () -> Unit = {},
     onOpenLatestReleaseAccel: (String) -> Unit = {},
+    r18Accepted: Boolean = false,
+    onAcceptR18: () -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
+    var showR18Dialog by remember { mutableStateOf(false) }
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
@@ -149,7 +156,7 @@ fun SettingsScreen(
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
                 contentScale = ContentScale.Crop,
-                alignment = Alignment.TopCenter,
+                alignment = Alignment.Center,
             )
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))
@@ -189,9 +196,15 @@ fun SettingsScreen(
                         )
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.R18,
-                            title = "冷狐R18",
+                            title = "冷狐R18（慎用）",
                             subtitle = DefaultNodes.R18_BACKGROUND_API,
-                            onClick = { onBgModeChange(BackgroundMode.R18) },
+                            onClick = {
+                                if (state.r18Accepted) {
+                                    onBgModeChange(BackgroundMode.R18)
+                                } else {
+                                    showR18Dialog = true
+                                }
+                            },
                         )
 
                         // 已添加的自定义接口
@@ -251,9 +264,8 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
-                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                        Button(onClick = onSaveBackground, colors = primaryBtn()) { Text("保存") }
-                        if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
+                    if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = onRefreshBackground) {
                                 Text("换一张", color = Primary)
                             }
@@ -386,13 +398,107 @@ fun SettingsScreen(
                             }
                             TextButton(onClick = { onOpenLatestReleaseAccel(state.latestReleaseUrl ?: return@TextButton) }) {
                                 Text("加速源", color = Primary, fontSize = 13.sp)
-                            }
-                        }
                     }
                 }
             }
         }
+
+        if (showR18Dialog) {
+            R18DisclaimerDialog(
+                onAccept = {
+                    showR18Dialog = false
+                    onAcceptR18()
+                    onBgModeChange(BackgroundMode.R18)
+                },
+                onDecline = { showR18Dialog = false },
+            )
+        }
     }
+}
+    }
+}
+
+@Composable
+private fun R18DisclaimerDialog(
+    onAccept: () -> Unit,
+    onDecline: () -> Unit,
+) {
+    var countdown by remember { mutableIntStateOf(10) }
+    LaunchedEffect(Unit) {
+        while (countdown > 0) {
+            delay(1000)
+            countdown--
+        }
+    }
+
+    AlertDialog(
+        onDismissRequest = {},
+        title = {
+            Text("免责声明与注意事项", color = TextPrimary, fontSize = 18.sp)
+        },
+        text = {
+            Column(
+                modifier = Modifier.heightIn(max = 320.dp),
+            ) {
+                Text(
+                    "本图源所展示的图片内容可能包含成人向（R18）素材，请确认您已年满 18 周岁并符合当地法律法规。",
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                    lineHeight = 20.sp,
+                )
+                Spacer(Modifier.height(12.dp))
+                Column(
+                    modifier = Modifier
+                        .weight(1f, fill = false)
+                        .verticalScroll(rememberScrollState()),
+                ) {
+                    DisclaimerItem("年龄限制", "仅供 18 岁以上用户使用。如您未满 18 周岁，请立即关闭此图源。")
+                    Spacer(Modifier.height(8.dp))
+                    DisclaimerItem("内容性质", "图片由第三方接口随机提供，开发者不对图片具体内容做任何审查或干预。")
+                    Spacer(Modifier.height(8.dp))
+                    DisclaimerItem("合规使用", "请遵守您所在地区的法律法规。因使用本图源产生的任何后果由用户自行承担。")
+                    Spacer(Modifier.height(8.dp))
+                    DisclaimerItem("隐私保护", "应用仅在获取背景图片时向第三方接口发起一次请求，不会上传您的任何个人信息。")
+                    Spacer(Modifier.height(8.dp))
+                    DisclaimerItem("免责声明", "开发者不对第三方接口的可用性、内容准确性或安全性做任何保证。如遇不适内容，请切换至其他图源。")
+                }
+            }
+        },
+        confirmButton = {
+            TextButton(
+                onClick = onAccept,
+                enabled = countdown <= 0,
+            ) {
+                Text(
+                    if (countdown > 0) "同意（${countdown}s）" else "同意",
+                    color = if (countdown > 0) TextSecondary else Primary,
+                    fontSize = 14.sp,
+                )
+            }
+        },
+        dismissButton = {
+            TextButton(onClick = onDecline) {
+                Text("不同意", color = TextSecondary, fontSize = 14.sp)
+            }
+        },
+        containerColor = Color(0xFF1E1E2E),
+    )
+}
+
+@Composable
+private fun DisclaimerItem(title: String, body: String) {
+    Text(
+        title,
+        color = TextPrimary,
+        fontSize = 13.sp,
+        fontWeight = FontWeight.SemiBold,
+    )
+    Text(
+        body,
+        color = TextSecondary,
+        fontSize = 12.sp,
+        lineHeight = 18.sp,
+    )
 }
 
 @Composable
@@ -643,13 +749,7 @@ private fun ProbeLabel(info: NodeProbeInfo?) {
 }
 
 private fun formatLatencyLabel(ms: Long): String {
-    return when {
-        ms <= 100 -> "${ms}ms"
-        ms <= 200 -> "${ms}ms"
-        ms <= 500 -> "%.2fs".format(ms / 1000.0)
-        ms <= 1000 -> "${ms}ms"
-        else -> "%.1fs".format(ms / 1000.0)
-    }
+    return "${ms}ms"
 }
 
 private fun probeLatencyColor(info: NodeProbeInfo?): Color {
