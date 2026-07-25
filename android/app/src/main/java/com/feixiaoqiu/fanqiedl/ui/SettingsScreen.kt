@@ -96,6 +96,7 @@ import com.feixiaoqiu.fanqiedl.data.NodeConfig
 import com.feixiaoqiu.fanqiedl.data.ReleaseAsset
 import com.feixiaoqiu.fanqiedl.ui.theme.Accent
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
+import com.feixiaoqiu.fanqiedl.ui.GlassFill
 import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
 import com.feixiaoqiu.fanqiedl.ui.theme.GlassText
 import com.feixiaoqiu.fanqiedl.ui.theme.GlassTextSecondary
@@ -988,14 +989,14 @@ private fun NodeRow(
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color(0xFF0A0A0A)),
+                    .background(Color(0xCC12121A)),
             )
             // 玻璃上层
             Column(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .border(1.dp, Color(0x18FFFFFF), RoundedCornerShape(10.dp))
-                    .background(Color(0x18FFFFFF)),
+                    .border(1.dp, Color(0x22FFFFFF), RoundedCornerShape(10.dp))
+                    .background(GlassFill),
             ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

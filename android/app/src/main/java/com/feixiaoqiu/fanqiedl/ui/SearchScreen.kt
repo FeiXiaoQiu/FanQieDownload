@@ -68,6 +68,7 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
+import androidx.compose.ui.platform.LocalConfiguration
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
@@ -492,7 +493,7 @@ private fun UpdateDialog(
                     modifier = Modifier
                         .fillMaxWidth()
                         .wrapContentHeight()
-                        .heightIn(max = 480.dp)
+                        .heightIn(max = (LocalConfiguration.current.screenHeightDp * 0.4f).dp)
                         .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .background(Color(0xE61A1A20))
                         .border(
