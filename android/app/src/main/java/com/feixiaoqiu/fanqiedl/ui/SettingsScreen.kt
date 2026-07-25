@@ -509,8 +509,8 @@ fun SettingsScreen(
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "当前版本：${state.appVersionName.ifBlank { "—" }}",
-                        color = TextSecondary,
-                        fontSize = 13.sp,
+                        color = TextPrimary,
+                        fontSize = 14.sp,
                         modifier = Modifier.clickable {
                             val now = System.currentTimeMillis()
                             if (now - lastTapTime > 1000L) versionTapCount = 0
