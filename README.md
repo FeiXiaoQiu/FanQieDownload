@@ -2,7 +2,7 @@
 
 Web 搜索下载 + Android 客户端「观隅」。
 
-## Web `v2.6.6`
+## Web `v2.6.7`
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 
@@ -23,9 +23,9 @@ node server.js
 2. Framework 选 **Other**，直接 Deploy
 3. 国内建议绑定自有域名
 
-## Android「观隅」`v1.3.7`
+## Android「观隅」`v1.3.8`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.3.7/guanyu-1.3.7-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.3.8/guanyu-1.3.8-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 

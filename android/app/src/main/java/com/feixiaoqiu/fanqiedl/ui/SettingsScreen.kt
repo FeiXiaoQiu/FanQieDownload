@@ -8,6 +8,7 @@ import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
 import androidx.compose.foundation.background
+import androidx.compose.foundation.border
 import androidx.compose.foundation.clickable
 import androidx.compose.foundation.gestures.detectHorizontalDragGestures
 import androidx.compose.foundation.layout.Arrangement
@@ -444,10 +445,7 @@ fun SettingsScreen(
                         Button(
                             onClick = onProbeAll,
                             enabled = !state.probingAll,
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Color(0xFF4CAF50),
-                                contentColor = Color.White,
-                            ),
+                            colors = primaryBtn(),
                         ) {
                             if (state.probingAll) {
                                 CircularProgressIndicator(
@@ -985,7 +983,8 @@ private fun NodeRow(
                         },
                     )
                 }
-                .background(Color(0x18FFFFFF)),
+                .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(10.dp))
+                .background(Color(0xFF181820)),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,

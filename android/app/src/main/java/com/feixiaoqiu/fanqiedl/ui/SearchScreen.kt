@@ -486,7 +486,7 @@ private fun UpdateDialog(
                 Column(
                     modifier = Modifier
                         .fillMaxWidth()
-                        .fillMaxHeight(0.45f)
+                        .fillMaxHeight(0.25f)
                         .clip(RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp))
                         .background(Color(0xE61A1A20))
                         .border(
