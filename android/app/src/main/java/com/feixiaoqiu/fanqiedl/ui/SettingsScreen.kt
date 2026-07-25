@@ -575,9 +575,8 @@ fun SettingsScreen(
                                 if (!source.builtin) {
                                     TextButton(
                                         onClick = { onRemoveDownloadSource(source.id) },
-                                        modifier = Modifier.height(28.dp),
                                     ) {
-                                        Text("删除", color = Primary, fontSize = 11.sp)
+                                        Text("删除", color = Primary, fontSize = 13.sp)
                                     }
                                 }
                             }

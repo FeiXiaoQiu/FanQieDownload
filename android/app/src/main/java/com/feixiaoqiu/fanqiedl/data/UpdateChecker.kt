@@ -91,7 +91,8 @@ class UpdateChecker(
 
         fun detectAbi(filename: String): String {
             val known = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal")
-            return known.firstOrNull { filename.contains(it) } ?: ""
+            val abi = known.firstOrNull { filename.contains(it) } ?: ""
+            return if (abi == "universal") "" else abi
         }
 
         fun pickAssetForDevice(assets: List<ReleaseAsset>): ReleaseAsset? {
