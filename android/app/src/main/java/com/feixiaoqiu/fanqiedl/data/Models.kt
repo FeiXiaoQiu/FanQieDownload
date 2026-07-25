@@ -14,9 +14,10 @@ data class SearchPage(
     val hasMore: Boolean,
 )
 
-/** 主界面背景：三选一 */
+/** 主界面背景 */
 enum class BackgroundMode {
     DEFAULT,
+    R18,
     CUSTOM_API,
     CUSTOM_IMAGE,
     ;

@@ -50,6 +50,7 @@ import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
@@ -117,6 +118,11 @@ fun SettingsScreen(
         if (uri != null) onPickLocalBackground(uri)
     }
 
+    // 进入设置时自动测速
+    LaunchedEffect(Unit) {
+        onProbeAll()
+    }
+
     val bgModel: Any? = remember(state.backgroundDisplayUrl) {
         val p = state.backgroundDisplayUrl
         when {
@@ -171,14 +177,20 @@ fun SettingsScreen(
                     Column(Modifier.selectableGroup()) {
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.DEFAULT,
-                            title = "默认图床",
+                            title = "栗次元图床",
                             subtitle = DefaultNodes.DEFAULT_BACKGROUND_API,
                             onClick = { onBgModeChange(BackgroundMode.DEFAULT) },
                         )
                         BgOption(
+                            selected = state.backgroundMode == BackgroundMode.R18,
+                            title = "冷狐R18",
+                            subtitle = DefaultNodes.R18_BACKGROUND_API,
+                            onClick = { onBgModeChange(BackgroundMode.R18) },
+                        )
+                        BgOption(
                             selected = state.backgroundMode == BackgroundMode.CUSTOM_API,
-                            title = "自定义图床 API",
-                            subtitle = "随机图接口，每次进入会刷新",
+                            title = "新增接口",
+                            subtitle = "自定义图床接口",
                             onClick = { onBgModeChange(BackgroundMode.CUSTOM_API) },
                         )
                         if (state.backgroundMode == BackgroundMode.CUSTOM_API) {
@@ -300,7 +312,7 @@ fun SettingsScreen(
                                 )
                                 Spacer(Modifier.width(6.dp))
                             }
-                            Text(if (state.probingAll) "测活中…" else "一键测活")
+                            Text(if (state.probingAll) "测速中…" else "一键测速")
                         }
                         TextButton(onClick = onRestore) { Text("恢复默认", color = Primary) }
                     }

@@ -151,6 +151,10 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 val base = DefaultNodes.DEFAULT_BACKGROUND_API
                 if (bust) cacheBust(base) else base
             }
+            BackgroundMode.R18 -> {
+                val base = DefaultNodes.R18_BACKGROUND_API
+                if (bust) cacheBust(base) else base
+            }
             BackgroundMode.CUSTOM_API -> {
                 val base = apiUrl.trim().ifEmpty { DefaultNodes.DEFAULT_BACKGROUND_API }
                 if (bust) cacheBust(base) else base
@@ -314,6 +318,19 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 detail = null,
                 detailError = null,
                 showDownloadOptions = false,
+            )
+        }
+    }
+
+    fun clearSearch() {
+        _ui.update {
+            it.copy(
+                query = "",
+                books = emptyList(),
+                searchError = null,
+                searchHasMore = false,
+                searchNextOffset = 0,
+                lastSearchQuery = "",
             )
         }
     }
@@ -589,6 +606,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     }
                 }
                 BackgroundMode.DEFAULT -> Unit
+                BackgroundMode.R18 -> Unit
             }
             val imagePath = when (s.backgroundMode) {
                 BackgroundMode.CUSTOM_IMAGE ->
@@ -728,7 +746,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
         probeAllJob = viewModelScope.launch {
-            _ui.update { it.copy(probingAll = true, probeMessage = "一键测活中…") }
+            _ui.update { it.copy(probingAll = true, probeMessage = "一键测速中…") }
             list.forEach { node ->
                 setProbe(node.id, NodeProbeInfo(phase = NodeProbePhase.Probing))
             }
@@ -742,8 +760,8 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             _ui.update {
                 it.copy(
                     probingAll = false,
-                    probeMessage = "测活完成",
-                    snackbar = "节点测活完成",
+                    probeMessage = "测速完成",
+                    snackbar = "节点测速完成",
                 )
             }
         }

@@ -64,6 +64,7 @@ class MainActivity : ComponentActivity() {
                         state.selected != null && !state.reading -> vm.closeDetail()
                         state.reading -> vm.closeReader()
                         showSettings -> showSettings = false
+                        state.books.isNotEmpty() || state.searchError != null -> vm.clearSearch()
                         else -> finish()
                     }
                 }
