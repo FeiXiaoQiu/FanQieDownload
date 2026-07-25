@@ -33,6 +33,7 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.distinctUntilChanged
 import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
@@ -184,10 +185,12 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
         viewModelScope.launch {
             combine(
-                container.settings.backgroundModeFlow,
-                container.settings.backgroundApiUrlFlow,
-                container.settings.backgroundImageUrlFlow,
-            ) { mode, api, image -> Triple(mode, api, image) }.collect { (mode, api, image) ->
+                container.settings.backgroundModeFlow.distinctUntilChanged(),
+                container.settings.backgroundApiUrlFlow.distinctUntilChanged(),
+                container.settings.backgroundImageUrlFlow.distinctUntilChanged(),
+            ) { mode, api, image -> Triple(mode, api, image) }
+                .distinctUntilChanged()
+                .collect { (mode, api, image) ->
                 if (mode == BackgroundMode.R18) {
                     _ui.update {
                         it.copy(
@@ -213,7 +216,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         startHitokotoLoop()
         // 收集自动检查更新开关
         viewModelScope.launch {
-            container.settings.autoUpdateCheckFlow.collect { enabled ->
+            container.settings.autoUpdateCheckFlow.distinctUntilChanged().collect { enabled ->
                 _ui.update { it.copy(autoUpdateCheck = enabled) }
                 if (enabled) checkForUpdate(silent = true)
             }
