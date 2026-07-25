@@ -144,6 +144,7 @@ fun SettingsScreen(
     var showAddDownloadSource by remember { mutableStateOf(false) }
     var showHiddenFeatureQuery by remember { mutableStateOf(false) }
     var showHiddenAlreadyEnabled by remember { mutableStateOf(false) }
+    var toastTick by remember { mutableIntStateOf(0) }
     var versionTapCount by remember { mutableIntStateOf(0) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
     var cropUri by remember { mutableStateOf<Uri?>(null) }
@@ -516,9 +517,9 @@ fun SettingsScreen(
                             lastTapTime = now
                             versionTapCount++
                             if (versionTapCount >= 10) {
-                                versionTapCount = 0
                                 if (state.r18HiddenEnabled) {
                                     showHiddenAlreadyEnabled = true
+                                    toastTick++
                                 } else {
                                     showHiddenFeatureQuery = true
                                 }
@@ -664,7 +665,7 @@ fun SettingsScreen(
 
         if (showHiddenFeatureQuery) {
             AlertDialog(
-                onDismissRequest = { showHiddenFeatureQuery = false },
+                onDismissRequest = { /* 必须点按钮关闭 */ },
                 title = { Text("隐藏功能", color = Color.White, fontSize = 18.sp) },
                 text = { Text("是否启用隐藏功能？", color = Color(0xFFBBBBBB), fontSize = 14.sp) },
                 confirmButton = {
@@ -685,17 +686,27 @@ fun SettingsScreen(
         }
 
         if (showHiddenAlreadyEnabled) {
-            AlertDialog(
-                onDismissRequest = { showHiddenAlreadyEnabled = false },
-                title = { Text("提示", color = Color.White, fontSize = 18.sp) },
-                text = { Text("你已经开启功能了啊，笨蛋~", color = Color.White, fontSize = 14.sp) },
-                confirmButton = {
-                    TextButton(onClick = { showHiddenAlreadyEnabled = false }) {
-                        Text("知道了", color = Primary, fontSize = 14.sp)
-                    }
-                },
-                containerColor = Color(0xFF1E1E2E),
-            )
+            LaunchedEffect(toastTick) {
+                delay(1500)
+                showHiddenAlreadyEnabled = false
+            }
+            Box(
+                modifier = Modifier.fillMaxSize(),
+                contentAlignment = Alignment.Center,
+            ) {
+                Box(
+                    modifier = Modifier
+                        .clip(RoundedCornerShape(12.dp))
+                        .background(Color(0xCC1E1E2E))
+                        .padding(horizontal = 24.dp, vertical = 14.dp),
+                ) {
+                    Text(
+                        "你已经开启功能了啊，笨蛋~",
+                        color = Color.White,
+                        fontSize = 14.sp,
+                    )
+                }
+            }
         }
 
         if (showR18Dialog) {
