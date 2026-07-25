@@ -12,6 +12,7 @@ class AppContainer(context: Context) {
     val decoder = CharsetDecoder(appContext)
     val hitokoto = HitokotoClient()
     val updateChecker = UpdateChecker()
+    val r18Resolver = R18BackgroundResolver()
     val backgroundImages = BackgroundImageStore(appContext)
 
     val appVersionName: String = run {

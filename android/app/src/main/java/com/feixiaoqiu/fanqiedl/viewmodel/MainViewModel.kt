@@ -108,6 +108,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     private var readerJob: Job? = null
     private var updateJob: Job? = null
     private var probeAllJob: Job? = null
+    private var r18ResolveJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -148,13 +149,25 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 container.settings.backgroundApiUrlFlow,
                 container.settings.backgroundImageUrlFlow,
             ) { mode, api, image -> Triple(mode, api, image) }.collect { (mode, api, image) ->
-                _ui.update {
-                    it.copy(
-                        backgroundMode = mode,
-                        backgroundApiUrl = api,
-                        backgroundImageUrl = image,
-                        backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = true),
-                    )
+                if (mode == BackgroundMode.R18) {
+                    _ui.update {
+                        it.copy(
+                            backgroundMode = mode,
+                            backgroundApiUrl = api,
+                            backgroundImageUrl = image,
+                            backgroundDisplayUrl = cacheBust(DefaultNodes.R18_BACKGROUND_API),
+                        )
+                    }
+                    launchR18Resolve()
+                } else {
+                    _ui.update {
+                        it.copy(
+                            backgroundMode = mode,
+                            backgroundApiUrl = api,
+                            backgroundImageUrl = image,
+                            backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = true),
+                        )
+                    }
                 }
             }
         }
@@ -208,6 +221,25 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     private fun cacheBust(url: String): String {
         val sep = if (url.contains("?")) "&" else "?"
         return url + sep + "_t=" + System.currentTimeMillis()
+    }
+
+    private fun launchR18Resolve() {
+        r18ResolveJob?.cancel()
+        r18ResolveJob = viewModelScope.launch {
+            val resolved = withContext(Dispatchers.IO) {
+                container.r18Resolver.resolve()
+            }
+            val s = _ui.value
+            if (s.backgroundMode != BackgroundMode.R18) return@launch
+            val finalUrl = if (resolved != DefaultNodes.R18_BACKGROUND_API) {
+                // JSON 解析成功返回的具体图片 URL，无需 cache-bust
+                resolved
+            } else {
+                // 回退到直接出图 API
+                cacheBust(DefaultNodes.R18_BACKGROUND_API)
+            }
+            _ui.update { it.copy(backgroundDisplayUrl = finalUrl) }
+        }
     }
 
     private fun startHitokotoLoop() {
@@ -580,9 +612,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     backgroundMode = mode,
                     selectedCustomBgId = if (mode == BackgroundMode.CUSTOM_API) it.selectedCustomBgId else null,
                     backgroundImageUrl = imagePath,
-                    backgroundDisplayUrl = resolveBackgroundUrl(
-                        mode, s.backgroundApiUrl, imagePath, bust = true,
-                    ),
+                    backgroundDisplayUrl = if (mode == BackgroundMode.R18) {
+                        it.backgroundDisplayUrl
+                    } else {
+                        resolveBackgroundUrl(mode, s.backgroundApiUrl, imagePath, bust = true)
+                    },
                 )
             }
         }
@@ -752,6 +786,13 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         val s = _ui.value
         if (s.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
             _ui.update { it.copy(snackbar = "当前为本地图片，无需刷新") }
+            return
+        }
+        if (s.backgroundMode == BackgroundMode.R18) {
+            _ui.update {
+                it.copy(backgroundDisplayUrl = cacheBust(DefaultNodes.R18_BACKGROUND_API))
+            }
+            launchR18Resolve()
             return
         }
         _ui.update {
