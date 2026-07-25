@@ -168,7 +168,7 @@ fun SettingsScreen(
                 model = bgModel,
                 contentDescription = null,
                 modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.FillHeight,
+                contentScale = ContentScale.Fit,
                 alignment = Alignment.Center,
             )
         }
