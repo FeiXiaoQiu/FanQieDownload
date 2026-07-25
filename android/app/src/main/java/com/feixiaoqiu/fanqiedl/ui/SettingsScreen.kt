@@ -957,8 +957,8 @@ private fun NodeRow(
             }
         }
 
-        // 前景行
-        Column(
+        // 前景行（暗底 + 玻璃上层）
+        Box(
             modifier = Modifier
                 .fillMaxWidth()
                 .offset { IntOffset(offsetX.value.roundToInt(), 0) }
@@ -982,10 +982,21 @@ private fun NodeRow(
                             }
                         },
                     )
-                }
-                .border(1.dp, Color(0x14FFFFFF), RoundedCornerShape(10.dp))
-                .background(Color(0xFF181820)),
+                },
         ) {
+            // 暗底遮罩：挡住背后的左滑按钮，避免半透露出
+            Box(
+                modifier = Modifier
+                    .matchParentSize()
+                    .background(Color(0xFF0A0A0A)),
+            )
+            // 玻璃上层
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .border(1.dp, Color(0x18FFFFFF), RoundedCornerShape(10.dp))
+                    .background(Color(0x18FFFFFF)),
+            ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier
@@ -1042,6 +1053,7 @@ private fun NodeRow(
                     }
                 }
             }
+        }
         }
     }
 }

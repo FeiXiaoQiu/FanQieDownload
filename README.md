@@ -2,30 +2,13 @@
 
 Web 搜索下载 + Android 客户端「观隅」。
 
-## Web `v2.6.7`
+## Web `v2.6.8`
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 
-书名搜索、简介预览、ID/链接下载、章节范围、断点续传、取消下载。  
-背景图床、一言、正文节点可在设置面板配置。  
-界面采用毛玻璃风格：搜索栏、书籍简介、搜索结果均为半透明模糊背景。
+## Android「观隅」`v1.3.9`
 
-### 本机运行
-
-```bash
-node server.js
-# 浏览器打开 http://127.0.0.1:8787
-```
-
-### 在线部署（Vercel）
-
-1. [vercel.com/new](https://vercel.com/new) 导入本仓库
-2. Framework 选 **Other**，直接 Deploy
-3. 国内建议绑定自有域名
-
-## Android「观隅」`v1.3.8`
-
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.3.8/guanyu-1.3.8-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.3.9/guanyu-1.3.9-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
