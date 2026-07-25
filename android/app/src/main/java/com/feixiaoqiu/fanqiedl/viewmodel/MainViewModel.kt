@@ -1083,6 +1083,15 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         _ui.update { it.copy(showHomeUpdate = false) }
     }
 
+    fun cancelApkDownload() {
+        val intent = android.content.Intent(container.appContext, UpdateDownloadService::class.java)
+        container.appContext.stopService(intent)
+        UpdateDownloadState.reset()
+        _ui.update {
+            it.copy(updateDownloading = false, updateDownloadMessage = null)
+        }
+    }
+
     fun toggleAutoUpdateCheck() {
         viewModelScope.launch {
             val next = !_ui.value.autoUpdateCheck

@@ -97,6 +97,7 @@ fun SearchScreen(
     onOpenBook: (BookSummary) -> Unit,
     onRefreshHitokoto: () -> Unit,
     onDownloadUpdate: () -> Unit = {},
+    onCancelUpdate: () -> Unit = {},
     onDismissUpdate: () -> Unit = {},
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
@@ -310,6 +311,13 @@ fun SearchScreen(
                     .padding(horizontal = 16.dp, vertical = 10.dp),
             )
         }
+
+        UpdateDialog(
+            state = state,
+            onDownload = onDownloadUpdate,
+            onCancelDownload = onCancelUpdate,
+            onDismiss = onDismissUpdate,
+        )
     }
 }
 
@@ -449,8 +457,11 @@ private fun HitokotoBar(
 private fun UpdateDialog(
     state: MainUiState,
     onDownload: () -> Unit,
+    onCancelDownload: () -> Unit,
     onDismiss: () -> Unit,
 ) {
+    val downloading = state.updateDownloading
+
     AnimatedVisibility(
         visible = state.showHomeUpdate,
         enter = fadeIn(),
@@ -483,11 +494,11 @@ private fun UpdateDialog(
                             Color.White.copy(alpha = 0.15f),
                             RoundedCornerShape(topStart = 24.dp, topEnd = 24.dp),
                         )
-                        .pointerInput(Unit) { /* consume taps inside sheet */ }
+                        .pointerInput(Unit) { /* consume taps */ }
                         .padding(24.dp),
                 ) {
                     Text(
-                        "发现新版本",
+                        if (downloading) "正在下载" else "发现新版本",
                         color = Color.White,
                         fontSize = 18.sp,
                         fontWeight = FontWeight.Bold,
@@ -501,61 +512,109 @@ private fun UpdateDialog(
                     )
                     Spacer(modifier = Modifier.height(12.dp))
 
-                    Column(
-                        modifier = Modifier
-                            .weight(1f)
-                            .fillMaxWidth()
-                            .verticalScroll(rememberScrollState()),
-                    ) {
-                        val body = state.latestReleaseBody
-                            ?.takeIf { it.isNotBlank() }
-                            ?: UPDATE_CHANGELOG_DEFAULT
-                        Text(
-                            body,
-                            color = Color.White.copy(alpha = 0.85f),
-                            fontSize = 13.sp,
-                            lineHeight = 20.sp,
+                    if (downloading) {
+                        LinearProgressIndicator(
+                            progress = { state.updateDownloadProgress },
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(6.dp)
+                                .clip(RoundedCornerShape(3.dp)),
+                            color = Primary,
+                            trackColor = Color.White.copy(alpha = 0.2f),
                         )
-                    }
-
-                    Spacer(modifier = Modifier.height(16.dp))
-
-                    Row(
-                        modifier = Modifier.fillMaxWidth(),
-                        horizontalArrangement = Arrangement.spacedBy(12.dp),
-                    ) {
-                        Button(
-                            onClick = {
-                                onDownload()
-                                onDismiss()
-                            },
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.buttonColors(
-                                containerColor = Primary,
-                                contentColor = Color.White,
-                            ),
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text(
+                            state.updateDownloadMessage ?: "下载中…",
+                            color = Color.White.copy(alpha = 0.8f),
+                            fontSize = 14.sp,
+                        )
+                        Spacer(modifier = Modifier.height(16.dp))
+                    } else {
+                        Column(
                             modifier = Modifier
                                 .weight(1f)
-                                .height(48.dp),
+                                .fillMaxWidth()
+                                .verticalScroll(rememberScrollState()),
                         ) {
+                            val body = state.latestReleaseBody
+                                ?.takeIf { it.isNotBlank() }
+                                ?: UPDATE_CHANGELOG_DEFAULT
                             Text(
-                                "更新",
-                                fontSize = 15.sp,
-                                fontWeight = FontWeight.SemiBold,
+                                body,
+                                color = Color.White.copy(alpha = 0.85f),
+                                fontSize = 13.sp,
+                                lineHeight = 20.sp,
                             )
                         }
-                        OutlinedButton(
-                            onClick = onDismiss,
-                            shape = RoundedCornerShape(12.dp),
-                            colors = ButtonDefaults.outlinedButtonColors(
-                                contentColor = Color.White.copy(alpha = 0.7f),
-                            ),
-                            border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
-                            modifier = Modifier
-                                .weight(1f)
-                                .height(48.dp),
+                        Spacer(modifier = Modifier.height(16.dp))
+                    }
+
+                    if (!downloading) {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
                         ) {
-                            Text("暂不更新", fontSize = 15.sp)
+                            Button(
+                                onClick = onDownload,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Primary,
+                                    contentColor = Color.White,
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                            ) {
+                                Text("更新", fontSize = 15.sp, fontWeight = FontWeight.SemiBold)
+                            }
+                            OutlinedButton(
+                                onClick = onDismiss,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.White.copy(alpha = 0.7f),
+                                ),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                            ) {
+                                Text("暂不更新", fontSize = 15.sp)
+                            }
+                        }
+                    } else {
+                        Row(
+                            modifier = Modifier.fillMaxWidth(),
+                            horizontalArrangement = Arrangement.spacedBy(12.dp),
+                        ) {
+                            OutlinedButton(
+                                onClick = {
+                                    onCancelDownload()
+                                    onDismiss()
+                                },
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.outlinedButtonColors(
+                                    contentColor = Color.White.copy(alpha = 0.7f),
+                                ),
+                                border = BorderStroke(1.dp, Color.White.copy(alpha = 0.25f)),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                            ) {
+                                Text("取消", fontSize = 15.sp)
+                            }
+                            Button(
+                                onClick = onDismiss,
+                                shape = RoundedCornerShape(12.dp),
+                                colors = ButtonDefaults.buttonColors(
+                                    containerColor = Primary,
+                                    contentColor = Color.White,
+                                ),
+                                modifier = Modifier
+                                    .weight(1f)
+                                    .height(48.dp),
+                            ) {
+                                Text("后台下载", fontSize = 15.sp)
+                            }
                         }
                     }
                 }
@@ -565,8 +624,8 @@ private fun UpdateDialog(
 }
 
 private val UPDATE_CHANGELOG_DEFAULT = """
-- 更新下载改为后台通知栏进度，下载完成自动拉起安装
-- 首页更新弹窗：底部 ~40%，含版本号与更新内容
+- 更新弹窗支持后台下载 + 通知栏进度，下载完成自动安装
+- 首页底部更新弹窗，含版本号与更新内容，两阶段操作
 - 搜索框 / 设置页 / Web 全面毛玻璃化
 - 搜索框与设置页文字改为白色系
 - 设置新增「启动时自动检查更新」开关

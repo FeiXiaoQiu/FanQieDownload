@@ -136,6 +136,7 @@ class MainActivity : ComponentActivity() {
                                         onOpenBook = vm::openDetail,
                                         onRefreshHitokoto = vm::refreshHitokoto,
                                         onDownloadUpdate = vm::downloadApk,
+                                        onCancelUpdate = vm::cancelApkDownload,
                                         onDismissUpdate = vm::dismissHomeUpdate,
                                     )
                                 }
