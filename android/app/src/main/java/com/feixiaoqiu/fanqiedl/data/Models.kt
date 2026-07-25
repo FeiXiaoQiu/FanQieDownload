@@ -29,6 +29,18 @@ enum class BackgroundMode {
     }
 }
 
+enum class BackgroundScale(val label: String) {
+    FIT("完整显示"),
+    CROP("铺满屏幕"),
+    ;
+
+    companion object {
+        fun fromStorage(raw: String?): BackgroundScale {
+            return entries.find { it.name == raw } ?: FIT
+        }
+    }
+}
+
 data class CustomBackground(
     val id: String,
     val name: String = "",

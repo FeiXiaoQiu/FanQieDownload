@@ -24,6 +24,8 @@ class AppSettings(private val context: Context) {
     private val keyR18Accepted = stringPreferencesKey("r18_accepted")
     private val keyDownloadSrc = stringPreferencesKey("download_source_id")
     private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
+    private val keyBgScale = stringPreferencesKey("bg_scale")
+    private val keyBgBlur = stringPreferencesKey("bg_blur")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -57,9 +59,29 @@ class AppSettings(private val context: Context) {
         prefs[keyR18Accepted] == "1"
     }
 
+    val backgroundScaleFlow: Flow<BackgroundScale> = context.dataStore.data.map { prefs ->
+        BackgroundScale.fromStorage(prefs[keyBgScale])
+    }
+
+    val backgroundBlurFlow: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[keyBgBlur]?.toFloatOrNull() ?: 24f
+    }
+
     suspend fun setR18Accepted() {
         context.dataStore.edit { prefs ->
             prefs[keyR18Accepted] = "1"
+        }
+    }
+
+    suspend fun setBackgroundScale(scale: BackgroundScale) {
+        context.dataStore.edit { prefs ->
+            prefs[keyBgScale] = scale.name
+        }
+    }
+
+    suspend fun setBackgroundBlur(blur: Float) {
+        context.dataStore.edit { prefs ->
+            prefs[keyBgBlur] = blur.toString()
         }
     }
 

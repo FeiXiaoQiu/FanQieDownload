@@ -50,6 +50,8 @@ import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
+import androidx.compose.material3.Slider
+import androidx.compose.material3.SliderDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -78,6 +80,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
+import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.CustomBackground
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.DownloadSource
@@ -128,6 +131,8 @@ fun SettingsScreen(
     onAddDownloadSource: (String, String) -> Unit = { _, _ -> },
     onRemoveDownloadSource: (String) -> Unit = {},
     onDownloadUpdate: () -> Unit = {},
+    onBackgroundScaleChange: (BackgroundScale) -> Unit = {},
+    onBackgroundBlurChange: (Float) -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
@@ -177,18 +182,20 @@ fun SettingsScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(24.dp),
+                    .blur(state.backgroundBlur.dp),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
             )
             // 清晰前景层：Fit 完整展示，不裁剪人物
-            AsyncImage(
-                model = bgModel,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.Center,
-            )
+            if (state.backgroundScale == BackgroundScale.FIT) {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                )
+            }
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))
 
@@ -295,6 +302,59 @@ fun SettingsScreen(
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
+                    Text("缩放：", color = TextSecondary, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier.selectableGroup(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        BackgroundScale.entries.forEach { scale ->
+                            Row(
+                                modifier = Modifier
+                                    .selectable(
+                                        selected = state.backgroundScale == scale,
+                                        onClick = { onBackgroundScaleChange(scale) },
+                                        role = Role.RadioButton,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = state.backgroundScale == scale,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Primary),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(scale.label, color = TextPrimary, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                    if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("模糊：", color = TextSecondary, fontSize = 12.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Slider(
+                                value = state.backgroundBlur,
+                                onValueChange = onBackgroundBlurChange,
+                                valueRange = 0f..48f,
+                                steps = 47,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Primary,
+                                    activeTrackColor = Primary,
+                                    inactiveTrackColor = CardMuted,
+                                ),
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                "${state.backgroundBlur.toInt()}dp",
+                                color = TextSecondary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.width(36.dp),
+                            )
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(6.dp))
                     if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = onRefreshBackground) {

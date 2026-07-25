@@ -9,6 +9,7 @@ import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
 import com.feixiaoqiu.fanqiedl.data.AppContainer
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
+import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookInfo
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.data.ChapterContent
@@ -110,6 +111,8 @@ data class MainUiState(
     val updateDownloading: Boolean = false,
     val updateDownloadProgress: Float = 0f,
     val updateDownloadMessage: String? = null,
+    val backgroundScale: BackgroundScale = BackgroundScale.FIT,
+    val backgroundBlur: Float = 24f,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -212,6 +215,16 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.settings.r18AcceptedFlow.collect { accepted ->
                 _ui.update { it.copy(r18Accepted = accepted) }
+            }
+        }
+        viewModelScope.launch {
+            container.settings.backgroundScaleFlow.collect { scale ->
+                _ui.update { it.copy(backgroundScale = scale) }
+            }
+        }
+        viewModelScope.launch {
+            container.settings.backgroundBlurFlow.collect { blur ->
+                _ui.update { it.copy(backgroundBlur = blur) }
             }
         }
     }
@@ -626,6 +639,18 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun acceptR18() {
         viewModelScope.launch {
             container.settings.setR18Accepted()
+        }
+    }
+
+    fun setBackgroundScale(scale: BackgroundScale) {
+        viewModelScope.launch {
+            container.settings.setBackgroundScale(scale)
+        }
+    }
+
+    fun setBackgroundBlur(blur: Float) {
+        viewModelScope.launch {
+            container.settings.setBackgroundBlur(blur)
         }
     }
 

@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
+import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.InputBg
@@ -100,17 +101,19 @@ fun SearchScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(24.dp),
+                    .blur(state.backgroundBlur.dp),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
             )
-            AsyncImage(
-                model = bgModel,
-                contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
-                contentScale = ContentScale.Fit,
-                alignment = Alignment.Center,
-            )
+            if (state.backgroundScale == BackgroundScale.FIT) {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                )
+            }
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))
 

@@ -119,6 +119,8 @@ class MainActivity : ComponentActivity() {
                                         onAddDownloadSource = { name, tmpl -> vm.addCustomDownloadSource(name, tmpl) },
                                         onRemoveDownloadSource = vm::removeCustomDownloadSource,
                                         onDownloadUpdate = vm::downloadApk,
+                                        onBackgroundScaleChange = vm::setBackgroundScale,
+                                        onBackgroundBlurChange = vm::setBackgroundBlur,
                                     )
                                 }
                                 else -> {
