@@ -518,6 +518,15 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         loadChapterAt(index)
     }
 
+    fun retryChapter() {
+        val s = _ui.value
+        if (s.readerIndex in s.readerChapters.indices) {
+            loadChapterAt(s.readerIndex)
+        } else {
+            openReader()
+        }
+    }
+
     fun prevChapter() {
         val i = _ui.value.readerIndex
         if (i > 0) loadChapterAt(i - 1)

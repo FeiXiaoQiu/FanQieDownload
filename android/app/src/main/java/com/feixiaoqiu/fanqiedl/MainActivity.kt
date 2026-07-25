@@ -87,6 +87,7 @@ class MainActivity : ComponentActivity() {
                                         onPrev = vm::prevChapter,
                                         onNext = vm::nextChapter,
                                         onJump = vm::goChapter,
+                                        onRetry = vm::retryChapter,
                                     )
                                 }
                                 showSettings -> {
