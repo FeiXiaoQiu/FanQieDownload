@@ -25,6 +25,7 @@ class AppSettings(private val context: Context) {
     private val keyR18HiddenEnabled = stringPreferencesKey("r18_hidden_enabled")
     private val keyDownloadSrc = stringPreferencesKey("download_source_id")
     private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
+    private val keyMirrorInit = stringPreferencesKey("mirror_initialized")
     private val keyBgScale = stringPreferencesKey("bg_scale")
     private val keyBgBlur = stringPreferencesKey("bg_blur")
 
@@ -279,6 +280,22 @@ class AppSettings(private val context: Context) {
 
     suspend fun removeCustomDownloadSource(id: String) {
         setCustomDownloadSources(snapshotCustomDownloadSources().filter { it.id != id })
+    }
+
+    suspend fun ensureDefaultMirrors() {
+        val initialized = context.dataStore.data.first()[keyMirrorInit] == "1"
+        if (!initialized) {
+            context.dataStore.edit { prefs ->
+                prefs[keyCustomDownloadSrcs] = serializeDownloadSources(DefaultNodes.DEFAULT_MIRRORS)
+                prefs[keyMirrorInit] = "1"
+            }
+        }
+    }
+
+    suspend fun resetMirrors() {
+        context.dataStore.edit { prefs ->
+            prefs[keyCustomDownloadSrcs] = serializeDownloadSources(DefaultNodes.DEFAULT_MIRRORS)
+        }
     }
 
     private suspend fun snapshotCustomDownloadSources(): List<DownloadSource> {

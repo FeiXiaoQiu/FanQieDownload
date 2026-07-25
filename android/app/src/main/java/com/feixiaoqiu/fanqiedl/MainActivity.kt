@@ -121,6 +121,7 @@ class MainActivity : ComponentActivity() {
                                         onDownloadUpdate = vm::downloadApk,
                                         onBackgroundScaleChange = vm::setBackgroundScale,
                                         onBackgroundBlurChange = vm::setBackgroundBlur,
+                                        onResetMirrors = vm::resetMirrors,
                                     )
                                 }
                                 else -> {

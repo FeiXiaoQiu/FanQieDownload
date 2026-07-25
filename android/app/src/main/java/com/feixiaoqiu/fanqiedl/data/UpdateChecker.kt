@@ -106,7 +106,9 @@ class UpdateChecker(
                 }
                 assets.filter { it.abi == abi }
             }
-            return preferred.firstOrNull() ?: assets.firstOrNull { it.abi.isEmpty() } ?: assets.firstOrNull()
+            return assets.firstOrNull { it.abi.isEmpty() }
+                ?: preferred.firstOrNull()
+                ?: assets.firstOrNull()
         }
     }
 }

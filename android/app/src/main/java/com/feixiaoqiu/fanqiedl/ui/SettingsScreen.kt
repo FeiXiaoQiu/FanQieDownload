@@ -138,6 +138,7 @@ fun SettingsScreen(
     onDownloadUpdate: () -> Unit = {},
     onBackgroundScaleChange: (BackgroundScale) -> Unit = {},
     onBackgroundBlurChange: (Float) -> Unit = {},
+    onResetMirrors: () -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
@@ -600,6 +601,9 @@ fun SettingsScreen(
                                 showAddDownloadSource = true
                             }) {
                                 Text("+ 添加自定义源", color = Primary, fontSize = 12.sp)
+                            }
+                            TextButton(onClick = onResetMirrors) {
+                                Text("恢复默认镜像", color = Primary, fontSize = 12.sp)
                             }
                         }
                         if (showAddDownloadSource) {

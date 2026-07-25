@@ -135,6 +135,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     init {
         viewModelScope.launch {
+            container.settings.ensureDefaultMirrors()
+        }
+        viewModelScope.launch {
             container.settings.nodesFlow.collect { nodes ->
                 _ui.update { s ->
                     val keep = s.nodeProbes.filterKeys { id -> nodes.any { it.id == id } }
@@ -174,9 +177,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 Pair(selectedId, customSources)
             }.collect { (selectedId, customSources) ->
                 val merged = DefaultNodes.DOWNLOAD_SOURCES + customSources
+                val effectiveId = if (merged.any { it.id == selectedId }) selectedId
+                    else merged.firstOrNull()?.id ?: "direct"
                 _ui.update {
                     it.copy(
-                        selectedDownloadSourceId = selectedId,
+                        selectedDownloadSourceId = effectiveId,
                         downloadSources = merged,
                     )
                 }
@@ -1047,6 +1052,12 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun removeCustomDownloadSource(id: String) {
         viewModelScope.launch {
             container.settings.removeCustomDownloadSource(id)
+        }
+    }
+
+    fun resetMirrors() {
+        viewModelScope.launch {
+            container.settings.resetMirrors()
         }
     }
 
