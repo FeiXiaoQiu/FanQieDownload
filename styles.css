@@ -215,9 +215,9 @@
         }
         
         .container {
-            background: rgba(255, 255, 255, 0.88);
-            backdrop-filter: blur(18px) saturate(1.2);
-            -webkit-backdrop-filter: blur(18px) saturate(1.2);
+            background: rgba(255, 255, 255, 0.22);
+            backdrop-filter: blur(24px) saturate(1.2);
+            -webkit-backdrop-filter: blur(24px) saturate(1.2);
             border-radius: 14px;
             padding: var(--container-padding);
             width: 100%;
@@ -231,7 +231,7 @@
             box-shadow: 0 12px 40px rgba(0, 0, 0, 0.32);
             position: relative;
             overflow: hidden;
-            border: 1px solid rgba(255, 255, 255, 0.45);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             box-sizing: border-box;
         }
 
@@ -274,7 +274,7 @@
         .title {
             font-size: var(--title-font-size);
             font-weight: 700;
-            color: var(--dark);
+            color: #eee;
             margin: 0 0 4px;
             letter-spacing: -0.02em;
             line-height: 1.3;
@@ -285,7 +285,7 @@
         }
         
         .subtitle {
-            color: #888;
+            color: rgba(255, 255, 255, 0.6);
             font-size: var(--subtitle-font-size);
             margin: 0;
             line-height: 1.4;
@@ -320,24 +320,25 @@
             width: auto;
             padding: var(--input-padding);
             font-size: var(--input-font-size);
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.25);
             border-radius: 10px;
-            background: rgba(255, 255, 255, 0.18);
+            background: rgba(255, 255, 255, 0.12);
             backdrop-filter: blur(12px) saturate(1.2);
             -webkit-backdrop-filter: blur(12px) saturate(1.2);
             transition: border-color 0.15s, background 0.15s, box-shadow 0.15s;
             outline: none;
-            color: #1a1a2e;
+            color: #eee;
+            caret-color: var(--primary);
         }
         
         .search-bar .input-field:focus {
             border-color: var(--primary);
-            background: rgba(255, 255, 255, 0.32);
+            background: rgba(255, 255, 255, 0.22);
             box-shadow: 0 0 0 3px rgba(255, 71, 87, 0.15);
         }
         
         .search-bar .input-field::placeholder {
-            color: rgba(0, 0, 0, 0.4);
+            color: rgba(255, 255, 255, 0.4);
             font-size: 0.92rem;
         }
         
@@ -672,7 +673,7 @@
         .result-title {
             font-size: clamp(1.1rem, 1.4vw, 1.3rem);
             font-weight: 600;
-            color: var(--dark);
+            color: #eee;
             margin-bottom: clamp(10px, 1.2vw, 14px);
             display: flex;
             align-items: center;
@@ -682,7 +683,7 @@
         .result-message {
             font-size: clamp(1rem, 1.2vw, 1.1rem);
             line-height: 1.6;
-            color: var(--dark);
+            color: rgba(255, 255, 255, 0.85);
         }
         
         .result-success {
@@ -946,13 +947,13 @@
             max-height: min(85dvh, 85vh, 560px);
             min-height: 280px;
             overflow: hidden;
-            background: rgba(255, 255, 255, 0.92);
-            backdrop-filter: blur(24px) saturate(1.3);
-            -webkit-backdrop-filter: blur(24px) saturate(1.3);
+            background: rgba(255, 255, 255, 0.25);
+            backdrop-filter: blur(28px) saturate(1.3);
+            -webkit-backdrop-filter: blur(28px) saturate(1.3);
             border-radius: 16px;
             padding: 16px 18px 20px;
             box-shadow: 0 20px 50px rgba(0, 0, 0, 0.28);
-            border: 1px solid rgba(255, 255, 255, 0.5);
+            border: 1px solid rgba(255, 255, 255, 0.3);
             box-sizing: border-box;
             margin: auto;
             flex-shrink: 0;
@@ -1112,7 +1113,7 @@
             margin: 0;
             padding: 14px;
             font-size: 0.92rem;
-            color: #444;
+            color: #2d2d3a;
             line-height: 1.75;
             overflow-wrap: anywhere;
             word-break: break-word;
@@ -1120,11 +1121,11 @@
             overflow-x: hidden;
             overflow-y: auto;
             -webkit-overflow-scrolling: touch;
-            background: rgba(255, 255, 255, 0.45);
+            background: rgba(255, 255, 255, 0.18);
             backdrop-filter: blur(8px);
             -webkit-backdrop-filter: blur(8px);
             border-radius: 10px;
-            border: 1px solid rgba(255, 255, 255, 0.35);
+            border: 1px solid rgba(255, 255, 255, 0.25);
         }
 
         .book-preview-desc .abstract-p {

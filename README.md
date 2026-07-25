@@ -2,7 +2,7 @@
 
 Web 搜索下载 + Android 客户端「观隅」。
 
-## Web `v2.5.0`
+## Web `v2.6.0`
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 

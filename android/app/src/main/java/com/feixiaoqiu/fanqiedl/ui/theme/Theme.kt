@@ -14,9 +14,9 @@ val Accent = Color(0xFF222222)
 val Scrim = Color(0x99000000)
 val Primary = Color(0xFFFF4757)
 val PrimaryDark = Color(0xFFFF3838)
-val InputBg = Color(0xFFF7F8FA)
-val InputBorder = Color(0xFFE0E0E0)
-val Placeholder = Color(0xFF888888)
+val InputBg = Color(0x26FFFFFF)
+val InputBorder = Color(0x33FFFFFF)
+val Placeholder = Color(0x66FFFFFF)
 val OnDark = Color(0xFFFFFFFF)
 
 /** 浅色 scheme：白卡片/对话框内文字为深色，避免白底白字 */

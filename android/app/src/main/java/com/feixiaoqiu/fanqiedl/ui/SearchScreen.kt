@@ -378,10 +378,10 @@ private fun SearchBar(
             enabled = !searching,
             shape = corner,
             colors = ButtonDefaults.buttonColors(
-                containerColor = Primary,
+                containerColor = Primary.copy(alpha = 0.85f),
                 contentColor = Color.White,
-                disabledContainerColor = Primary.copy(alpha = 0.7f),
-                disabledContentColor = Color.White,
+                disabledContainerColor = Primary.copy(alpha = 0.5f),
+                disabledContentColor = Color.White.copy(alpha = 0.6f),
             ),
             modifier = Modifier
                 .height(48.dp)
