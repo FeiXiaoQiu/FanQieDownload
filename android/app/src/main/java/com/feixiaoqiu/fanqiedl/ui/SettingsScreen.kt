@@ -665,8 +665,8 @@ fun SettingsScreen(
         if (showHiddenFeatureQuery) {
             AlertDialog(
                 onDismissRequest = { showHiddenFeatureQuery = false },
-                title = { Text("隐藏功能", color = TextPrimary, fontSize = 18.sp) },
-                text = { Text("是否启用隐藏功能？", color = TextSecondary, fontSize = 14.sp) },
+                title = { Text("隐藏功能", color = Color.White, fontSize = 18.sp) },
+                text = { Text("是否启用隐藏功能？", color = Color(0xFFBBBBBB), fontSize = 14.sp) },
                 confirmButton = {
                     TextButton(onClick = {
                         showHiddenFeatureQuery = false
@@ -677,7 +677,7 @@ fun SettingsScreen(
                 },
                 dismissButton = {
                     TextButton(onClick = { showHiddenFeatureQuery = false }) {
-                        Text("否", color = TextSecondary, fontSize = 14.sp)
+                        Text("否", color = Color(0xFFBBBBBB), fontSize = 14.sp)
                     }
                 },
                 containerColor = Color(0xFF1E1E2E),
@@ -687,8 +687,8 @@ fun SettingsScreen(
         if (showHiddenAlreadyEnabled) {
             AlertDialog(
                 onDismissRequest = { showHiddenAlreadyEnabled = false },
-                title = { Text("提示", color = TextPrimary, fontSize = 18.sp) },
-                text = { Text("你已经开启功能了啊，笨蛋~", color = TextSecondary, fontSize = 14.sp) },
+                title = { Text("提示", color = Color.White, fontSize = 18.sp) },
+                text = { Text("你已经开启功能了啊，笨蛋~", color = Color.White, fontSize = 14.sp) },
                 confirmButton = {
                     TextButton(onClick = { showHiddenAlreadyEnabled = false }) {
                         Text("知道了", color = Primary, fontSize = 14.sp)
@@ -727,7 +727,7 @@ private fun R18DisclaimerDialog(
     AlertDialog(
         onDismissRequest = {},
         title = {
-            Text("免责声明与注意事项", color = TextPrimary, fontSize = 18.sp)
+            Text("免责声明与注意事项", color = Color.White, fontSize = 18.sp)
         },
         text = {
             Column(
@@ -735,7 +735,7 @@ private fun R18DisclaimerDialog(
             ) {
                 Text(
                     "本图源所展示的图片内容可能包含成人向（R18）素材，请确认您已年满 18 周岁并符合当地法律法规。",
-                    color = TextSecondary,
+                    color = Color(0xFFBBBBBB),
                     fontSize = 13.sp,
                     lineHeight = 20.sp,
                 )
@@ -764,14 +764,14 @@ private fun R18DisclaimerDialog(
             ) {
                 Text(
                     if (countdown > 0) "同意（${countdown}s）" else "同意",
-                    color = if (countdown > 0) TextSecondary else Primary,
+                    color = if (countdown > 0) Color(0xFF777777) else Primary,
                     fontSize = 14.sp,
                 )
             }
         },
         dismissButton = {
             TextButton(onClick = onDecline) {
-                Text("不同意", color = TextSecondary, fontSize = 14.sp)
+                Text("不同意", color = Color(0xFFBBBBBB), fontSize = 14.sp)
             }
         },
         containerColor = Color(0xFF1E1E2E),
@@ -782,13 +782,13 @@ private fun R18DisclaimerDialog(
 private fun DisclaimerItem(title: String, body: String) {
     Text(
         title,
-        color = TextPrimary,
+        color = Color.White,
         fontSize = 13.sp,
         fontWeight = FontWeight.SemiBold,
     )
     Text(
         body,
-        color = TextSecondary,
+        color = Color(0xFFBBBBBB),
         fontSize = 12.sp,
         lineHeight = 18.sp,
     )
