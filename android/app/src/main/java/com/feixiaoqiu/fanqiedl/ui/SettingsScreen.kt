@@ -132,7 +132,6 @@ fun SettingsScreen(
     onOpenRepo: () -> Unit = {},
     r18Accepted: Boolean = false,
     onAcceptR18: () -> Unit = {},
-    onSelectDownloadSource: (String) -> Unit = {},
     onAddDownloadSource: (String, String) -> Unit = { _, _ -> },
     onRemoveDownloadSource: (String) -> Unit = {},
     onDownloadUpdate: () -> Unit = {},
@@ -557,28 +556,15 @@ fun SettingsScreen(
                             Text(assetNote, color = TextSecondary, fontSize = 11.sp)
                         }
                         Spacer(modifier = Modifier.height(6.dp))
-                        Text("下载源：", color = TextSecondary, fontSize = 12.sp)
+                        Text("下载源（下载时自动测速选最快）", color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(4.dp))
                         state.downloadSources.forEach { source ->
-                            val selected = source.id == state.selectedDownloadSourceId
                             Row(
                                 modifier = Modifier
                                     .fillMaxWidth()
-                                    .selectable(
-                                        selected = selected,
-                                        onClick = { onSelectDownloadSource(source.id) },
-                                        role = Role.RadioButton,
-                                    )
                                     .padding(vertical = 3.dp),
                                 verticalAlignment = Alignment.CenterVertically,
                             ) {
-                                RadioButton(
-                                    selected = selected,
-                                    onClick = null,
-                                    colors = RadioButtonDefaults.colors(selectedColor = Primary),
-                                    modifier = Modifier.size(20.dp),
-                                )
-                                Spacer(Modifier.width(6.dp))
                                 Text(
                                     source.name,
                                     color = TextPrimary,

@@ -23,7 +23,6 @@ class AppSettings(private val context: Context) {
     private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
     private val keyR18Accepted = stringPreferencesKey("r18_accepted")
     private val keyR18HiddenEnabled = stringPreferencesKey("r18_hidden_enabled")
-    private val keyDownloadSrc = stringPreferencesKey("download_source_id")
     private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
     private val keyMirrorInit = stringPreferencesKey("mirror_initialized")
     private val keyBgScale = stringPreferencesKey("bg_scale")
@@ -255,18 +254,8 @@ class AppSettings(private val context: Context) {
 
     // ── 下载源 ──
 
-    val downloadSourceIdFlow: Flow<String> = context.dataStore.data.map { prefs ->
-        prefs[keyDownloadSrc] ?: "mirror"
-    }
-
     val customDownloadSourcesFlow: Flow<List<DownloadSource>> = context.dataStore.data.map { prefs ->
         parseDownloadSources(prefs[keyCustomDownloadSrcs])
-    }
-
-    suspend fun selectDownloadSource(id: String) {
-        context.dataStore.edit { prefs ->
-            prefs[keyDownloadSrc] = id
-        }
     }
 
     suspend fun addCustomDownloadSource(name: String, urlTemplate: String) {

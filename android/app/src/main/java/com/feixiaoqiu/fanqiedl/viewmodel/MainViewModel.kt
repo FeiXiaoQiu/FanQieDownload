@@ -107,11 +107,10 @@ data class MainUiState(
     val r18HiddenEnabled: Boolean = false,
     val releaseAssets: List<ReleaseAsset> = emptyList(),
     val matchingAsset: ReleaseAsset? = null,
-    val selectedDownloadSourceId: String = "mirror",
-    val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
     val updateDownloading: Boolean = false,
     val updateDownloadProgress: Float = 0f,
     val updateDownloadMessage: String? = null,
+    val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
     val backgroundScale: BackgroundScale = BackgroundScale.FIT,
     val backgroundBlur: Float = 10f,
 )
@@ -170,19 +169,10 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch {
-            combine(
-                container.settings.downloadSourceIdFlow,
-                container.settings.customDownloadSourcesFlow,
-            ) { selectedId, customSources ->
-                Pair(selectedId, customSources)
-            }.collect { (selectedId, customSources) ->
-                val merged = DefaultNodes.DOWNLOAD_SOURCES + customSources
-                val effectiveId = if (merged.any { it.id == selectedId }) selectedId
-                    else merged.firstOrNull()?.id ?: "direct"
+            container.settings.customDownloadSourcesFlow.collect { customSources ->
                 _ui.update {
                     it.copy(
-                        selectedDownloadSourceId = effectiveId,
-                        downloadSources = merged,
+                        downloadSources = DefaultNodes.DOWNLOAD_SOURCES + customSources,
                     )
                 }
             }
@@ -1034,12 +1024,6 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             ms <= 500L -> "${ms}ms"
             ms < 1000L -> String.format("%.2fs", ms / 1000.0)
             else -> String.format("%.1fs", ms / 1000.0)
-        }
-    }
-
-    fun selectDownloadSource(id: String) {
-        viewModelScope.launch {
-            container.settings.selectDownloadSource(id)
         }
     }
 

@@ -115,7 +115,6 @@ class MainActivity : ComponentActivity() {
                                         r18Accepted = state.r18Accepted,
                                         onAcceptR18 = vm::acceptR18,
                                         onOpenRepo = { openUrl(UpdateChecker.REPO_URL) },
-                                        onSelectDownloadSource = vm::selectDownloadSource,
                                         onAddDownloadSource = { name, tmpl -> vm.addCustomDownloadSource(name, tmpl) },
                                         onRemoveDownloadSource = vm::removeCustomDownloadSource,
                                         onDownloadUpdate = vm::downloadApk,
