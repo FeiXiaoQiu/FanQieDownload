@@ -985,7 +985,7 @@ private fun NodeRow(
                         },
                     )
                 }
-                .background(CardMuted),
+                .background(Color(0x18FFFFFF)),
         ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
@@ -997,7 +997,7 @@ private fun NodeRow(
                 Spacer(Modifier.width(8.dp))
                 Text(
                     text = url,
-                    color = TextPrimary,
+                    color = GlassText,
                     fontSize = 13.sp,
                     maxLines = 1,
                     overflow = TextOverflow.Ellipsis,
@@ -1023,7 +1023,7 @@ private fun NodeRow(
                         value = url,
                         onValueChange = { url = it },
                         singleLine = true,
-                        textStyle = TextStyle(color = TextPrimary, fontSize = 13.sp),
+                        textStyle = TextStyle(color = GlassText, fontSize = 13.sp),
                         cursorBrush = SolidColor(Primary),
                         modifier = Modifier
                             .weight(1f)
