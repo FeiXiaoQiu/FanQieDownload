@@ -104,6 +104,7 @@ data class MainUiState(
     val latestVersionTag: String? = null,
     val updateAvailable: Boolean = false,
     val r18Accepted: Boolean = false,
+    val r18HiddenEnabled: Boolean = false,
     val releaseAssets: List<ReleaseAsset> = emptyList(),
     val matchingAsset: ReleaseAsset? = null,
     val selectedDownloadSourceId: String = "mirror",
@@ -215,6 +216,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.settings.r18AcceptedFlow.collect { accepted ->
                 _ui.update { it.copy(r18Accepted = accepted) }
+            }
+        }
+        viewModelScope.launch {
+            container.settings.r18HiddenEnabledFlow.collect { enabled ->
+                _ui.update { it.copy(r18HiddenEnabled = enabled) }
             }
         }
         viewModelScope.launch {
@@ -639,6 +645,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun acceptR18() {
         viewModelScope.launch {
             container.settings.setR18Accepted()
+            container.settings.enableR18Hidden()
         }
     }
 

@@ -22,9 +22,9 @@ node server.js
 2. Framework 选 **Other**，直接 Deploy
 3. 国内建议绑定自有域名
 
-## Android「观隅」`v1.1.9`
+## Android「观隅」`v1.2.0`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.1.9/guanyu-1.1.9-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.2.0/guanyu-1.2.0-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 

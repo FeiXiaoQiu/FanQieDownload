@@ -61,6 +61,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableIntStateOf
+import androidx.compose.runtime.mutableLongStateOf
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.rememberCoroutineScope
@@ -141,6 +142,10 @@ fun SettingsScreen(
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
     var showAddDownloadSource by remember { mutableStateOf(false) }
+    var showHiddenFeatureQuery by remember { mutableStateOf(false) }
+    var showHiddenAlreadyEnabled by remember { mutableStateOf(false) }
+    var versionTapCount by remember { mutableIntStateOf(0) }
+    var lastTapTime by remember { mutableLongStateOf(0L) }
     var cropUri by remember { mutableStateOf<Uri?>(null) }
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -245,6 +250,7 @@ fun SettingsScreen(
                             subtitle = DefaultNodes.DEFAULT_BACKGROUND_API,
                             onClick = { onBgModeChange(BackgroundMode.DEFAULT) },
                         )
+                        if (state.r18HiddenEnabled) {
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.R18,
                             title = "妖狐R18（慎用）",
@@ -257,6 +263,7 @@ fun SettingsScreen(
                                 }
                             },
                         )
+                        }
                         state.customBackgrounds.forEach { cbg ->
                             CustomBgRow(
                                 cbg = cbg,
@@ -463,42 +470,60 @@ fun SettingsScreen(
                     ) { Text("添加") }
                 }
 
-                SectionCard(title = "省电设置") {
-                    val context = LocalContext.current
-                    val pm = remember { context.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager }
-                    val isIgnoring = remember { pm.isIgnoringBatteryOptimizations(context.packageName) }
-                    val batteryLauncher = rememberLauncherForActivityResult(
-                        contract = ActivityResultContracts.StartActivityForResult(),
-                    ) { }
-                    Text(
-                        if (isIgnoring) "电池优化已关闭，后台可长时间运行" else "建议关闭电池优化以免下载中断",
-                        color = TextSecondary,
-                        fontSize = 12.sp,
-                    )
-                    Spacer(modifier = Modifier.height(6.dp))
-                    TextButton(
-                        onClick = {
-                            val intent = Intent(AndroidSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
-                                data = Uri.parse("package:${context.packageName}")
-                            }
-                            batteryLauncher.launch(intent)
-                        },
-                    ) {
+                val context = LocalContext.current
+                val pm = remember { context.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager }
+                var isIgnoring by remember { mutableStateOf(pm.isIgnoringBatteryOptimizations(context.packageName)) }
+                val batteryLauncher = rememberLauncherForActivityResult(
+                    contract = ActivityResultContracts.StartActivityForResult(),
+                ) {
+                    isIgnoring = pm.isIgnoringBatteryOptimizations(context.packageName)
+                }
+                if (!isIgnoring) {
+                    SectionCard(title = "省电设置") {
                         Text(
-                            if (isIgnoring) "电池优化设置" else "关闭电池优化",
-                            color = Primary,
-                            fontSize = 13.sp,
+                            "建议关闭电池优化以免下载中断",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
                         )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        TextButton(
+                            onClick = {
+                                val intent = Intent(AndroidSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                    data = Uri.parse("package:${context.packageName}")
+                                }
+                                batteryLauncher.launch(intent)
+                            },
+                        ) {
+                            Text(
+                                "关闭电池优化",
+                                color = Primary,
+                                fontSize = 13.sp,
+                            )
+                        }
                     }
                 }
 
                 SectionCard(title = "关于") {
-                    Text("作者：非小酋", color = TextPrimary, fontSize = 14.sp)
+                    Text("软件AI制作，作者不会编程", color = TextPrimary, fontSize = 14.sp)
                     Spacer(modifier = Modifier.height(4.dp))
                     Text(
                         "当前版本：${state.appVersionName.ifBlank { "—" }}",
                         color = TextSecondary,
                         fontSize = 13.sp,
+                        modifier = Modifier.clickable {
+                            val now = System.currentTimeMillis()
+                            if (now - lastTapTime > 1000L) versionTapCount = 0
+                            lastTapTime = now
+                            versionTapCount++
+                            if (versionTapCount >= 10) {
+                                versionTapCount = 0
+                                if (state.r18HiddenEnabled) {
+                                    showHiddenAlreadyEnabled = true
+                                } else {
+                                    showHiddenFeatureQuery = true
+                                }
+                            }
+                        },
                     )
                     if (state.updateMessage != null) {
                         Spacer(modifier = Modifier.height(4.dp))
@@ -645,6 +670,42 @@ fun SettingsScreen(
                     }
                 }
             }
+        }
+
+        if (showHiddenFeatureQuery) {
+            AlertDialog(
+                onDismissRequest = { showHiddenFeatureQuery = false },
+                title = { Text("隐藏功能", color = TextPrimary, fontSize = 18.sp) },
+                text = { Text("是否启用隐藏功能？", color = TextSecondary, fontSize = 14.sp) },
+                confirmButton = {
+                    TextButton(onClick = {
+                        showHiddenFeatureQuery = false
+                        showR18Dialog = true
+                    }) {
+                        Text("是", color = Primary, fontSize = 14.sp)
+                    }
+                },
+                dismissButton = {
+                    TextButton(onClick = { showHiddenFeatureQuery = false }) {
+                        Text("否", color = TextSecondary, fontSize = 14.sp)
+                    }
+                },
+                containerColor = Color(0xFF1E1E2E),
+            )
+        }
+
+        if (showHiddenAlreadyEnabled) {
+            AlertDialog(
+                onDismissRequest = { showHiddenAlreadyEnabled = false },
+                title = { Text("提示", color = TextPrimary, fontSize = 18.sp) },
+                text = { Text("你已经开启功能了啊，笨蛋~", color = TextSecondary, fontSize = 14.sp) },
+                confirmButton = {
+                    TextButton(onClick = { showHiddenAlreadyEnabled = false }) {
+                        Text("知道了", color = Primary, fontSize = 14.sp)
+                    }
+                },
+                containerColor = Color(0xFF1E1E2E),
+            )
         }
 
         if (showR18Dialog) {

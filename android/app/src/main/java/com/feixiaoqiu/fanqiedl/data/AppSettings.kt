@@ -22,6 +22,7 @@ class AppSettings(private val context: Context) {
     private val keyBgImage = stringPreferencesKey("bg_image_url")
     private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
     private val keyR18Accepted = stringPreferencesKey("r18_accepted")
+    private val keyR18HiddenEnabled = stringPreferencesKey("r18_hidden_enabled")
     private val keyDownloadSrc = stringPreferencesKey("download_source_id")
     private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
     private val keyBgScale = stringPreferencesKey("bg_scale")
@@ -59,6 +60,10 @@ class AppSettings(private val context: Context) {
         prefs[keyR18Accepted] == "1"
     }
 
+    val r18HiddenEnabledFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[keyR18HiddenEnabled] == "1"
+    }
+
     val backgroundScaleFlow: Flow<BackgroundScale> = context.dataStore.data.map { prefs ->
         BackgroundScale.fromStorage(prefs[keyBgScale])
     }
@@ -70,6 +75,12 @@ class AppSettings(private val context: Context) {
     suspend fun setR18Accepted() {
         context.dataStore.edit { prefs ->
             prefs[keyR18Accepted] = "1"
+        }
+    }
+
+    suspend fun enableR18Hidden() {
+        context.dataStore.edit { prefs ->
+            prefs[keyR18HiddenEnabled] = "1"
         }
     }
 
