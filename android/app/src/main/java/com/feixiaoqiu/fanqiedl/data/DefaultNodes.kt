@@ -13,8 +13,6 @@ object DefaultNodes {
     val DEFAULT_MIRRORS = listOf(
         DownloadSource("mirror", "gh.xmly.dev 镜像源", "https://gh.xmly.dev/{url}"),
         DownloadSource("mirror-gh-proxy", "gh-proxy.com 镜像源", "https://gh-proxy.com/{url}"),
-        DownloadSource("mirror-moeyy", "gh.moeyy.xyz 镜像源", "https://gh.moeyy.xyz/{url}"),
-        DownloadSource("mirror-99988866", "gh.api.99988866.xyz 镜像源", "https://gh.api.99988866.xyz/{url}"),
     )
 
     fun builtin(): List<NodeConfig> = listOf(

@@ -436,7 +436,7 @@ private fun HitokotoBar(
         ) {
             Text(
                 text = "一言",
-                color = Color(0xFF666666),
+                color = Color(0xFF999999),
                 fontSize = 12.sp,
                 fontWeight = FontWeight.SemiBold,
             )

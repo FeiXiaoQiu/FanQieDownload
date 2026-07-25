@@ -1,5 +1,9 @@
 # 更新日志
 
+## v1.3.6
+- **优化**：首页「一言」标签颜色提亮（#666 → #999），玻璃底上更清晰
+- **变更**：默认下载镜像精简为 gh.xmly.dev 和 gh-proxy.com 两个
+
 ## v1.3.5
 - **修复**：DataStore 写入导致 autoUpdateCheckFlow 重复触发，静默检查被不断 cancel 后首页弹窗不出现
 - **修复**：DataStore 写入导致 backgroundFlow 重复触发，修改非背景相关设置时背景异常刷新
