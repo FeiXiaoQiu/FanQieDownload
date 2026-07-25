@@ -1045,7 +1045,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     fun downloadApk() {
         val s = _ui.value
-        val asset = s.matchingAsset ?: return
+        val asset = s.matchingAsset ?: s.releaseAssets.firstOrNull() ?: return
         val sources = s.downloadSources.ifEmpty { DefaultNodes.DOWNLOAD_SOURCES }
 
         if (updateDownloadJob?.isActive == true) return

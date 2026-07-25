@@ -22,9 +22,9 @@ node server.js
 2. Framework 选 **Other**，直接 Deploy
 3. 国内建议绑定自有域名
 
-## Android「观隅」`v1.1.8`
+## Android「观隅」`v1.1.9`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.1.8/guanyu-1.1.8-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.1.9/guanyu-1.1.9-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
@@ -51,6 +51,9 @@ cd android
 `v*` tag 自动触发 GitHub Actions 构建 `guanyu-{version}-{abi}.apk` 并挂到 Release。
 
 ## 更新日志
+
+### v1.1.9
+- 修复「检查出更新但不弹出下载选项」：`matchingAsset` 为 null 时回退到第一条 APK 资产
 
 ### v1.1.8
 - 新增「省电设置」卡片，一键关闭电池优化防后台被杀
