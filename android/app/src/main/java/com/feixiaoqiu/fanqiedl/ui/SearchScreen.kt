@@ -97,24 +97,32 @@ fun SearchScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
         if (bgModel != null) {
-            AsyncImage(
-                model = bgModel,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(
-                        if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
-                            state.backgroundBlur.dp else 24.dp
-                    ),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
-            )
             if (state.backgroundScale == BackgroundScale.FIT) {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(
+                            if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
+                                state.backgroundBlur.dp else 24.dp
+                        ),
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
+                )
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                )
+            } else {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )
             }

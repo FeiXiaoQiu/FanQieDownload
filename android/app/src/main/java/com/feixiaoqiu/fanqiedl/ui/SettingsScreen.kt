@@ -176,26 +176,32 @@ fun SettingsScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
         if (bgModel != null) {
-            // 模糊背景层：Crop 填满屏幕，避免空白
-            AsyncImage(
-                model = bgModel,
-                contentDescription = null,
-                modifier = Modifier
-                    .fillMaxSize()
-                    .blur(
-                        if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
-                            state.backgroundBlur.dp else 24.dp
-                    ),
-                contentScale = ContentScale.Crop,
-                alignment = Alignment.Center,
-            )
-            // 清晰前景层：Fit 完整展示，不裁剪人物
             if (state.backgroundScale == BackgroundScale.FIT) {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(
+                            if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
+                                state.backgroundBlur.dp else 24.dp
+                        ),
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
+                )
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
+                    alignment = Alignment.Center,
+                )
+            } else {
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
+                    modifier = Modifier.fillMaxSize(),
+                    contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )
             }
