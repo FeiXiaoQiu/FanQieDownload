@@ -90,3 +90,10 @@ data class DownloadResult(
 )
 
 class NoEnabledNodeException : Exception("请至少添加一个下载节点")
+
+data class DownloadSource(
+    val id: String,
+    val name: String,
+    val urlTemplate: String,
+    val builtin: Boolean = false,
+)

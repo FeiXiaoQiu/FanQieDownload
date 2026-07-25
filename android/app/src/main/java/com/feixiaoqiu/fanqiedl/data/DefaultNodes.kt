@@ -6,6 +6,11 @@ object DefaultNodes {
     val DEFAULT_BACKGROUND_API = "https://t.alcy.cc/ycy"
     val R18_BACKGROUND_API = "https://acg.yaohud.cn/dm/r18.php"
 
+    val DOWNLOAD_SOURCES = listOf(
+        DownloadSource("direct", "原链接", "{url}", builtin = true),
+        DownloadSource("mirror", "镜像源 (gh.xmly.dev)", "https://gh.xmly.dev/{url}", builtin = true),
+    )
+
     fun builtin(): List<NodeConfig> = listOf(
         NodeConfig("builtin-1", "节点1", "http://110.42.57.146:4018", enabled = true, builtin = true),
         NodeConfig("builtin-2", "节点2", "http://81.70.223.143:6897", enabled = true, builtin = true),

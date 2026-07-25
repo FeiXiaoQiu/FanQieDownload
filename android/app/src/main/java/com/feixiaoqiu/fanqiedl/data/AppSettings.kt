@@ -22,6 +22,8 @@ class AppSettings(private val context: Context) {
     private val keyBgImage = stringPreferencesKey("bg_image_url")
     private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
     private val keyR18Accepted = stringPreferencesKey("r18_accepted")
+    private val keyDownloadSrc = stringPreferencesKey("download_source_id")
+    private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -215,5 +217,74 @@ class AppSettings(private val context: Context) {
             }
             return arr.toString()
         }
+    }
+
+    // ── 下载源 ──
+
+    val downloadSourceIdFlow: Flow<String> = context.dataStore.data.map { prefs ->
+        prefs[keyDownloadSrc] ?: "mirror"
+    }
+
+    val customDownloadSourcesFlow: Flow<List<DownloadSource>> = context.dataStore.data.map { prefs ->
+        parseDownloadSources(prefs[keyCustomDownloadSrcs])
+    }
+
+    suspend fun selectDownloadSource(id: String) {
+        context.dataStore.edit { prefs ->
+            prefs[keyDownloadSrc] = id
+        }
+    }
+
+    suspend fun addCustomDownloadSource(name: String, urlTemplate: String) {
+        val newSrc = DownloadSource(
+            id = "dl-" + java.util.UUID.randomUUID().toString().take(8),
+            name = name.ifBlank { "自定义源" },
+            urlTemplate = urlTemplate.trim(),
+        )
+        setCustomDownloadSources(snapshotCustomDownloadSources() + newSrc)
+    }
+
+    suspend fun removeCustomDownloadSource(id: String) {
+        setCustomDownloadSources(snapshotCustomDownloadSources().filter { it.id != id })
+    }
+
+    private suspend fun snapshotCustomDownloadSources(): List<DownloadSource> {
+        return parseDownloadSources(context.dataStore.data.first()[keyCustomDownloadSrcs])
+    }
+
+    private suspend fun setCustomDownloadSources(list: List<DownloadSource>) {
+        context.dataStore.edit { prefs ->
+            prefs[keyCustomDownloadSrcs] = serializeDownloadSources(list)
+        }
+    }
+
+    private fun parseDownloadSources(raw: String?): List<DownloadSource> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            val arr = org.json.JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                DownloadSource(
+                    id = o.optString("id"),
+                    name = o.optString("name"),
+                    urlTemplate = o.optString("urlTemplate"),
+                )
+            }
+        } catch (_: Exception) {
+            emptyList()
+        }
+    }
+
+    private fun serializeDownloadSources(list: List<DownloadSource>): String {
+        val arr = org.json.JSONArray()
+        list.forEach { src ->
+            arr.put(
+                org.json.JSONObject()
+                    .put("id", src.id)
+                    .put("name", src.name)
+                    .put("urlTemplate", src.urlTemplate)
+            )
+        }
+        return arr.toString()
     }
 }

@@ -40,6 +40,7 @@ import androidx.compose.runtime.Composable
 import androidx.compose.runtime.remember
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -97,9 +98,18 @@ fun SearchScreen(
             AsyncImage(
                 model = bgModel,
                 contentDescription = null,
-                modifier = Modifier.fillMaxSize(),
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(24.dp),
                 contentScale = ContentScale.Crop,
-                alignment = Alignment.TopCenter,
+                alignment = Alignment.Center,
+            )
+            AsyncImage(
+                model = bgModel,
+                contentDescription = null,
+                modifier = Modifier.fillMaxSize(),
+                contentScale = ContentScale.Fit,
+                alignment = Alignment.Center,
             )
         }
         Box(modifier = Modifier.fillMaxSize().background(Scrim))

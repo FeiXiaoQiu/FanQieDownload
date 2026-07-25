@@ -115,14 +115,10 @@ class MainActivity : ComponentActivity() {
                                         r18Accepted = state.r18Accepted,
                                         onAcceptR18 = vm::acceptR18,
                                         onOpenRepo = { openUrl(UpdateChecker.REPO_URL) },
-                                        onOpenLatestRelease = {
-                                            val url = state.latestReleaseUrl
-                                                ?: "${UpdateChecker.REPO_URL}/releases/latest"
-                                            openUrl(url)
-                                        },
-                                        onOpenLatestReleaseAccel = { releaseUrl ->
-                                            openUrl("https://gh.xmly.dev/$releaseUrl")
-                                        },
+                                        onSelectDownloadSource = vm::selectDownloadSource,
+                                        onAddDownloadSource = { name, tmpl -> vm.addCustomDownloadSource(name, tmpl) },
+                                        onRemoveDownloadSource = vm::removeCustomDownloadSource,
+                                        onDownloadUpdate = vm::downloadApk,
                                     )
                                 }
                                 else -> {

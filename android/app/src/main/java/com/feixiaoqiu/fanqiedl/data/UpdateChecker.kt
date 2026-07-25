@@ -1,14 +1,23 @@
 package com.feixiaoqiu.fanqiedl.data
 
+import android.os.Build
 import okhttp3.OkHttpClient
 import okhttp3.Request
 import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
+data class ReleaseAsset(
+    val name: String,
+    val downloadUrl: String,
+    val size: Long = 0,
+    val abi: String = "",
+)
+
 data class ReleaseInfo(
     val tagName: String,
     val htmlUrl: String,
     val name: String = "",
+    val assets: List<ReleaseAsset> = emptyList(),
 )
 
 class UpdateChecker(
@@ -41,11 +50,32 @@ class UpdateChecker(
                 val html = o.optString("html_url").ifBlank {
                     "https://github.com/FeiXiaoQiu/FanQieDownload/releases/latest"
                 }
+                val assets = mutableListOf<ReleaseAsset>()
+                val arr = o.optJSONArray("assets")
+                if (arr != null) {
+                    for (i in 0 until arr.length()) {
+                        val ao = arr.getJSONObject(i)
+                        val assetName = ao.optString("name")
+                        val assetUrl = ao.optString("browser_download_url")
+                        val assetSize = ao.optLong("size", 0)
+                        if (assetName.endsWith(".apk") && assetUrl.isNotBlank()) {
+                            assets.add(
+                                ReleaseAsset(
+                                    name = assetName,
+                                    downloadUrl = assetUrl,
+                                    size = assetSize,
+                                    abi = detectAbi(assetName),
+                                )
+                            )
+                        }
+                    }
+                }
                 Result.success(
                     ReleaseInfo(
                         tagName = tag,
                         htmlUrl = html,
                         name = o.optString("name"),
+                        assets = assets,
                     ),
                 )
             }
@@ -58,5 +88,25 @@ class UpdateChecker(
         const val GITHUB_LATEST_API =
             "https://api.github.com/repos/FeiXiaoQiu/FanQieDownload/releases/latest"
         const val REPO_URL = "https://github.com/FeiXiaoQiu/FanQieDownload"
+
+        fun detectAbi(filename: String): String {
+            val known = listOf("arm64-v8a", "armeabi-v7a", "x86_64", "x86", "universal")
+            return known.firstOrNull { filename.contains(it) } ?: ""
+        }
+
+        fun pickAssetForDevice(assets: List<ReleaseAsset>): ReleaseAsset? {
+            if (assets.isEmpty()) return null
+            val preferred = Build.SUPPORTED_ABIS.flatMap { deviceAbi ->
+                val abi = when {
+                    deviceAbi.startsWith("arm64") -> "arm64-v8a"
+                    deviceAbi.startsWith("armeabi") -> "armeabi-v7a"
+                    deviceAbi.startsWith("x86_64") -> "x86_64"
+                    deviceAbi.startsWith("x86") -> "x86"
+                    else -> ""
+                }
+                assets.filter { it.abi == abi }
+            }
+            return preferred.firstOrNull() ?: assets.firstOrNull { it.abi.isEmpty() } ?: assets.firstOrNull()
+        }
     }
 }

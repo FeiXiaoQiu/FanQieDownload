@@ -7,18 +7,19 @@ import com.feixiaoqiu.fanqiedl.BuildConfig
 import kotlinx.coroutines.flow.first
 
 class AppContainer(context: Context) {
-    private val appContext = context.applicationContext
-    val settings = AppSettings(appContext)
-    val decoder = CharsetDecoder(appContext)
+    private val appCtx = context.applicationContext
+    val appContext get() = appCtx
+    val settings = AppSettings(appCtx)
+    val decoder = CharsetDecoder(appCtx)
     val hitokoto = HitokotoClient()
     val updateChecker = UpdateChecker()
     val r18Resolver = R18BackgroundResolver()
-    val backgroundImages = BackgroundImageStore(appContext)
+    val backgroundImages = BackgroundImageStore(appCtx)
 
     val appVersionName: String = run {
         val fromPm = try {
-            val pm = appContext.packageManager
-            val pkg = appContext.packageName
+            val pm = appCtx.packageManager
+            val pkg = appCtx.packageName
             if (Build.VERSION.SDK_INT >= 33) {
                 pm.getPackageInfo(pkg, PackageManager.PackageInfoFlags.of(0)).versionName
             } else {

@@ -1,6 +1,9 @@
 package com.feixiaoqiu.fanqiedl.viewmodel
 
+import android.content.Intent
 import android.net.Uri
+import android.os.Build
+import androidx.core.content.FileProvider
 import androidx.lifecycle.ViewModel
 import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.viewModelScope
@@ -15,8 +18,11 @@ import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.DownloadProgress
 import com.feixiaoqiu.fanqiedl.data.DownloadRequest
 import com.feixiaoqiu.fanqiedl.data.DownloadResult
+import com.feixiaoqiu.fanqiedl.data.DownloadSource
 import com.feixiaoqiu.fanqiedl.data.NoEnabledNodeException
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
+import com.feixiaoqiu.fanqiedl.data.ReleaseAsset
+import com.feixiaoqiu.fanqiedl.data.UpdateChecker
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.delay
@@ -24,10 +30,15 @@ import kotlinx.coroutines.flow.MutableStateFlow
 import kotlinx.coroutines.flow.StateFlow
 import kotlinx.coroutines.flow.asStateFlow
 import kotlinx.coroutines.flow.combine
+import kotlinx.coroutines.flow.first
 import kotlinx.coroutines.flow.update
 import kotlinx.coroutines.isActive
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
+import okhttp3.OkHttpClient
+import okhttp3.Request
+import java.io.File
+import java.util.concurrent.TimeUnit
 
 enum class NodeProbePhase {
     Idle,
@@ -92,6 +103,13 @@ data class MainUiState(
     val latestVersionTag: String? = null,
     val updateAvailable: Boolean = false,
     val r18Accepted: Boolean = false,
+    val releaseAssets: List<ReleaseAsset> = emptyList(),
+    val matchingAsset: ReleaseAsset? = null,
+    val selectedDownloadSourceId: String = "mirror",
+    val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
+    val updateDownloading: Boolean = false,
+    val updateDownloadProgress: Float = 0f,
+    val updateDownloadMessage: String? = null,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -107,6 +125,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     private var hitokotoJob: Job? = null
     private var readerJob: Job? = null
     private var updateJob: Job? = null
+    private var updateDownloadJob: Job? = null
     private var probeAllJob: Job? = null
     private var r18ResolveJob: Job? = null
 
@@ -141,6 +160,22 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         viewModelScope.launch {
             container.settings.hitokotoUrlFlow.collect { url ->
                 _ui.update { it.copy(hitokotoUrl = url) }
+            }
+        }
+        viewModelScope.launch {
+            combine(
+                container.settings.downloadSourceIdFlow,
+                container.settings.customDownloadSourcesFlow,
+            ) { selectedId, customSources ->
+                Pair(selectedId, customSources)
+            }.collect { (selectedId, customSources) ->
+                val merged = DefaultNodes.DOWNLOAD_SOURCES + customSources
+                _ui.update {
+                    it.copy(
+                        selectedDownloadSourceId = selectedId,
+                        downloadSources = merged,
+                    )
+                }
             }
         }
         viewModelScope.launch {
@@ -965,6 +1000,124 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun selectDownloadSource(id: String) {
+        viewModelScope.launch {
+            container.settings.selectDownloadSource(id)
+        }
+    }
+
+    fun addCustomDownloadSource(name: String, urlTemplate: String) {
+        viewModelScope.launch {
+            container.settings.addCustomDownloadSource(name, urlTemplate)
+        }
+    }
+
+    fun removeCustomDownloadSource(id: String) {
+        viewModelScope.launch {
+            container.settings.removeCustomDownloadSource(id)
+        }
+    }
+
+    fun downloadApk() {
+        val s = _ui.value
+        val asset = s.matchingAsset ?: return
+        val source = s.downloadSources.firstOrNull { it.id == s.selectedDownloadSourceId }
+            ?: DefaultNodes.DOWNLOAD_SOURCES.first()
+        val sourceUrl = resolveSourceUrl(source.urlTemplate, asset.downloadUrl)
+        if (sourceUrl.isBlank()) return
+
+        if (updateDownloadJob?.isActive == true) return
+        _ui.update {
+            it.copy(
+                updateDownloading = true,
+                updateDownloadProgress = 0f,
+                updateDownloadMessage = "准备下载…",
+            )
+        }
+        updateDownloadJob = viewModelScope.launch {
+            try {
+                val cacheDir = File(container.appContext.cacheDir, "update")
+                cacheDir.mkdirs()
+                val outFile = File(cacheDir, asset.name)
+                if (outFile.exists()) outFile.delete()
+
+                val client = OkHttpClient.Builder()
+                    .callTimeout(5, TimeUnit.MINUTES)
+                    .connectTimeout(15, TimeUnit.SECONDS)
+                    .build()
+                val req = Request.Builder().url(sourceUrl).get().build()
+                val resp = client.newCall(req).execute()
+                if (!resp.isSuccessful) {
+                    _ui.update {
+                        it.copy(
+                            updateDownloading = false,
+                            updateDownloadMessage = "下载失败：HTTP ${resp.code}",
+                        )
+                    }
+                    return@launch
+                }
+                val body = resp.body ?: run {
+                    _ui.update {
+                        it.copy(
+                            updateDownloading = false,
+                            updateDownloadMessage = "下载失败：空响应",
+                        )
+                    }
+                    return@launch
+                }
+                val total = body.contentLength()
+                body.byteStream().use { input ->
+                    outFile.outputStream().use { output ->
+                        val buf = ByteArray(8192)
+                        var read: Int
+                        var bytesRead = 0L
+                        while (input.read(buf).also { read = it } != -1) {
+                            output.write(buf, 0, read)
+                            bytesRead += read
+                            val pct = if (total > 0) (bytesRead.toFloat() / total)
+                                .coerceIn(0f, 1f) else 0f
+                            _ui.update {
+                                it.copy(updateDownloadProgress = pct)
+                            }
+                        }
+                    }
+                }
+                resp.close()
+
+                val uri = FileProvider.getUriForFile(
+                    container.appContext,
+                    "${container.appContext.packageName}.fileprovider",
+                    outFile,
+                )
+                val install = Intent(Intent.ACTION_VIEW).apply {
+                    setDataAndType(uri, "application/vnd.android.package-archive")
+                    addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+                    addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+                }
+                container.appContext.startActivity(install)
+
+                _ui.update {
+                    it.copy(
+                        updateDownloading = false,
+                        updateDownloadProgress = 1f,
+                        updateDownloadMessage = "下载完成，请安装",
+                    )
+                }
+            } catch (e: Exception) {
+                _ui.update {
+                    it.copy(
+                        updateDownloading = false,
+                        updateDownloadMessage = "下载失败：${e.message ?: "未知错误"}",
+                    )
+                }
+            }
+        }
+    }
+
+    private fun resolveSourceUrl(template: String, assetUrl: String): String {
+        return template.replace("{url}", assetUrl).trim()
+    }
+
     fun checkForUpdate(silent: Boolean = false) {
         if (updateJob?.isActive == true) return
         updateJob = viewModelScope.launch {
@@ -979,6 +1132,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     val current = normalizeVersion(_ui.value.appVersionName)
                     val latest = normalizeVersion(info.tagName)
                     val newer = compareVersion(latest, current) > 0
+                    val matching = UpdateChecker.pickAssetForDevice(info.assets)
                     val msg = if (newer) {
                         "发现新版本 ${info.tagName}"
                     } else {
@@ -991,6 +1145,8 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                             latestVersionTag = info.tagName,
                             latestReleaseUrl = info.htmlUrl,
                             updateMessage = msg,
+                            releaseAssets = info.assets,
+                            matchingAsset = matching,
                             snackbar = if (silent && !newer) null else msg,
                         )
                     }

@@ -45,6 +45,7 @@ import androidx.compose.material3.CardDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.OutlinedTextFieldDefaults
 import androidx.compose.material3.RadioButton
@@ -79,7 +80,9 @@ import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.CustomBackground
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
+import com.feixiaoqiu.fanqiedl.data.DownloadSource
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
+import com.feixiaoqiu.fanqiedl.data.ReleaseAsset
 import com.feixiaoqiu.fanqiedl.ui.theme.Accent
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.CardMuted
@@ -119,13 +122,16 @@ fun SettingsScreen(
     onSelectCustomBg: (String) -> Unit = {},
     onCheckUpdate: () -> Unit = {},
     onOpenRepo: () -> Unit = {},
-    onOpenLatestRelease: () -> Unit = {},
-    onOpenLatestReleaseAccel: (String) -> Unit = {},
     r18Accepted: Boolean = false,
     onAcceptR18: () -> Unit = {},
+    onSelectDownloadSource: (String) -> Unit = {},
+    onAddDownloadSource: (String, String) -> Unit = { _, _ -> },
+    onRemoveDownloadSource: (String) -> Unit = {},
+    onDownloadUpdate: () -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
+    var showAddDownloadSource by remember { mutableStateOf(false) }
     var cropUri by remember { mutableStateOf<Uri?>(null) }
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
@@ -413,16 +419,126 @@ fun SettingsScreen(
                             Text("打开仓库", color = Primary)
                         }
                     }
-                    if (state.updateAvailable && state.latestReleaseUrl != null) {
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Text("下载新版本：", color = TextSecondary, fontSize = 12.sp)
+
+                    if (state.updateAvailable && state.matchingAsset != null) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Text(
+                            "新版 ${state.latestVersionTag.orEmpty()} / ${state.matchingAsset.name}",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Text("下载源：", color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = onOpenLatestRelease) {
-                                Text("GitHub 原链", color = Primary, fontSize = 13.sp)
+                        state.downloadSources.forEach { source ->
+                            val selected = source.id == state.selectedDownloadSourceId
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = selected,
+                                        onClick = { onSelectDownloadSource(source.id) },
+                                        role = Role.RadioButton,
+                                    )
+                                    .padding(vertical = 3.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = selected,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Primary),
+                                    modifier = Modifier.size(20.dp),
+                                )
+                                Spacer(Modifier.width(6.dp))
+                                Text(
+                                    source.name,
+                                    color = TextPrimary,
+                                    fontSize = 13.sp,
+                                    modifier = Modifier.weight(1f),
+                                )
+                                if (!source.builtin) {
+                                    TextButton(
+                                        onClick = { onRemoveDownloadSource(source.id) },
+                                        modifier = Modifier.height(28.dp),
+                                    ) {
+                                        Text("删除", color = Primary, fontSize = 11.sp)
+                                    }
+                                }
                             }
-                            TextButton(onClick = { onOpenLatestReleaseAccel(state.latestReleaseUrl ?: return@TextButton) }) {
-                                Text("加速源", color = Primary, fontSize = 13.sp)
+                        }
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = {
+                                showAddDownloadSource = true
+                            }) {
+                                Text("+ 添加自定义源", color = Primary, fontSize = 12.sp)
+                            }
+                        }
+                        if (showAddDownloadSource) {
+                            Spacer(Modifier.height(4.dp))
+                            var newSrcName by remember { mutableStateOf("") }
+                            var newSrcTmpl by remember { mutableStateOf("") }
+                            OutlinedTextField(
+                                value = newSrcName,
+                                onValueChange = { newSrcName = it },
+                                label = { Text("名称", color = TextSecondary) },
+                                singleLine = true,
+                                colors = fieldColors(),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            OutlinedTextField(
+                                value = newSrcTmpl,
+                                onValueChange = { newSrcTmpl = it },
+                                label = { Text("URL 模板（用 {url} 占位）", color = TextSecondary) },
+                                singleLine = true,
+                                colors = fieldColors(),
+                                modifier = Modifier.fillMaxWidth(),
+                            )
+                            Spacer(Modifier.height(4.dp))
+                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                                TextButton(onClick = {
+                                    if (newSrcTmpl.isNotBlank()) {
+                                        onAddDownloadSource(newSrcName, newSrcTmpl)
+                                        newSrcName = ""
+                                        newSrcTmpl = ""
+                                        showAddDownloadSource = false
+                                    }
+                                }) { Text("保存", color = Primary, fontSize = 13.sp) }
+                                TextButton(onClick = {
+                                    showAddDownloadSource = false
+                                }) { Text("取消", color = TextSecondary, fontSize = 13.sp) }
+                            }
+                        }
+                        Spacer(Modifier.height(8.dp))
+
+                        if (state.updateDownloadMessage != null) {
+                            Text(
+                                state.updateDownloadMessage,
+                                color = if (state.updateDownloading) Accent else TextSecondary,
+                                fontSize = 12.sp,
+                            )
+                            Spacer(Modifier.height(4.dp))
+                        }
+                        if (state.updateDownloading) {
+                            LinearProgressIndicator(
+                                progress = { state.updateDownloadProgress },
+                                modifier = Modifier.fillMaxWidth(),
+                                color = Primary,
+                                trackColor = CardMuted,
+                            )
+                            Spacer(Modifier.height(6.dp))
+                        }
+
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = onDownloadUpdate,
+                                enabled = !state.updateDownloading,
+                                colors = primaryBtn(),
+                            ) {
+                                Text(if (state.updateDownloading) "下载中…" else "下载新版本")
+                            }
+                        }
                     }
                 }
             }
@@ -438,8 +554,6 @@ fun SettingsScreen(
                 onDecline = { showR18Dialog = false },
             )
         }
-    }
-}
     }
 }
 
