@@ -1061,53 +1061,47 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
         updateDownloadJob = viewModelScope.launch {
             try {
-                val cacheDir = File(container.appContext.cacheDir, "update")
-                cacheDir.mkdirs()
-                val outFile = File(cacheDir, asset.name)
-                if (outFile.exists()) outFile.delete()
+                val outFile = withContext(Dispatchers.IO) {
+                    val cacheDir = File(container.appContext.cacheDir, "update")
+                    cacheDir.mkdirs()
+                    val file = File(cacheDir, asset.name)
+                    if (file.exists()) file.delete()
 
-                val client = OkHttpClient.Builder()
-                    .callTimeout(5, TimeUnit.MINUTES)
-                    .connectTimeout(15, TimeUnit.SECONDS)
-                    .build()
-                val req = Request.Builder().url(sourceUrl).get().build()
-                val resp = client.newCall(req).execute()
-                if (!resp.isSuccessful) {
-                    _ui.update {
-                        it.copy(
-                            updateDownloading = false,
-                            updateDownloadMessage = "下载失败：HTTP ${resp.code}",
-                        )
+                    val client = OkHttpClient.Builder()
+                        .callTimeout(5, TimeUnit.MINUTES)
+                        .connectTimeout(15, TimeUnit.SECONDS)
+                        .build()
+                    val req = Request.Builder().url(sourceUrl).get().build()
+                    val resp = client.newCall(req).execute()
+                    if (!resp.isSuccessful) {
+                        resp.close()
+                        throw IllegalStateException("HTTP ${resp.code}")
                     }
-                    return@launch
-                }
-                val body = resp.body ?: run {
-                    _ui.update {
-                        it.copy(
-                            updateDownloading = false,
-                            updateDownloadMessage = "下载失败：空响应",
-                        )
+                    val body = resp.body
+                    if (body == null) {
+                        resp.close()
+                        throw IllegalStateException("空响应")
                     }
-                    return@launch
-                }
-                val total = body.contentLength()
-                body.byteStream().use { input ->
-                    outFile.outputStream().use { output ->
-                        val buf = ByteArray(8192)
-                        var read: Int
-                        var bytesRead = 0L
-                        while (input.read(buf).also { read = it } != -1) {
-                            output.write(buf, 0, read)
-                            bytesRead += read
-                            val pct = if (total > 0) (bytesRead.toFloat() / total)
-                                .coerceIn(0f, 1f) else 0f
-                            _ui.update {
-                                it.copy(updateDownloadProgress = pct)
+                    val total = body.contentLength()
+                    body.byteStream().use { input ->
+                        file.outputStream().use { output ->
+                            val buf = ByteArray(8192)
+                            var read: Int
+                            var bytesRead = 0L
+                            while (input.read(buf).also { read = it } != -1) {
+                                output.write(buf, 0, read)
+                                bytesRead += read
+                                val pct = if (total > 0) (bytesRead.toFloat() / total)
+                                    .coerceIn(0f, 1f) else 0f
+                                _ui.update {
+                                    it.copy(updateDownloadProgress = pct)
+                                }
                             }
                         }
                     }
+                    resp.close()
+                    file
                 }
-                resp.close()
 
                 val uri = FileProvider.getUriForFile(
                     container.appContext,
