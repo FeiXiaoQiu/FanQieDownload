@@ -39,6 +39,7 @@ import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.OpenInNew
 import androidx.compose.material.icons.filled.Settings
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Button
 import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
@@ -99,6 +100,9 @@ fun SearchScreen(
     onDownloadUpdate: () -> Unit = {},
     onCancelUpdate: () -> Unit = {},
     onDismissUpdate: () -> Unit = {},
+    onInstallCached: () -> Unit = {},
+    onForceRedownload: () -> Unit = {},
+    onDismissApkPrompt: () -> Unit = {},
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
     val corner = RoundedCornerShape(10.dp)

@@ -7,12 +7,18 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
+import androidx.compose.foundation.layout.Row
 import androidx.compose.foundation.layout.WindowInsets
 import androidx.compose.foundation.layout.fillMaxSize
+import androidx.compose.foundation.shape.RoundedCornerShape
+import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.Scaffold
 import androidx.compose.material3.SnackbarHost
 import androidx.compose.material3.SnackbarHostState
+import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -20,6 +26,10 @@ import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.text.font.FontWeight
+import androidx.compose.ui.unit.dp
+import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
 import com.feixiaoqiu.fanqiedl.data.UpdateChecker
 import com.feixiaoqiu.fanqiedl.ui.BookDetailDialog
@@ -31,6 +41,7 @@ import com.feixiaoqiu.fanqiedl.ui.SearchScreen
 import com.feixiaoqiu.fanqiedl.ui.SettingsScreen
 import com.feixiaoqiu.fanqiedl.ui.SplashScreen
 import com.feixiaoqiu.fanqiedl.ui.theme.FanqieTheme
+import com.feixiaoqiu.fanqiedl.ui.theme.Primary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainViewModel
 
 class MainActivity : ComponentActivity() {
@@ -138,6 +149,9 @@ class MainActivity : ComponentActivity() {
                                         onDownloadUpdate = vm::downloadApk,
                                         onCancelUpdate = vm::cancelApkDownload,
                                         onDismissUpdate = vm::dismissHomeUpdate,
+                                        onInstallCached = vm::installCachedApk,
+                                        onForceRedownload = vm::forceRedownloadApk,
+                                        onDismissApkPrompt = vm::dismissApkExistsPrompt,
                                     )
                                 }
                             }
@@ -175,6 +189,31 @@ class MainActivity : ComponentActivity() {
                                 DownloadResultDialog(
                                     state = state,
                                     onDismiss = vm::dismissDownloadResult,
+                                )
+                            }
+
+                            if (state.showApkExistsPrompt) {
+                                AlertDialog(
+                                    onDismissRequest = vm::dismissApkExistsPrompt,
+                                    title = { Text("已下载新版", color = Color.White, fontSize = 18.sp) },
+                                    text = { Text("本地已有下载好的更新包，是否直接安装？", color = Color.White.copy(alpha = 0.85f), fontSize = 14.sp) },
+                                    confirmButton = {
+                                        TextButton(onClick = vm::installCachedApk) {
+                                            Text("直接安装", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.SemiBold)
+                                        }
+                                    },
+                                    dismissButton = {
+                                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                                            TextButton(onClick = vm::forceRedownloadApk) {
+                                                Text("重新下载", color = Primary.copy(alpha = 0.7f), fontSize = 14.sp)
+                                            }
+                                            TextButton(onClick = vm::dismissApkExistsPrompt) {
+                                                Text("取消", color = Color.White.copy(alpha = 0.5f), fontSize = 14.sp)
+                                            }
+                                        }
+                                    },
+                                    containerColor = Color(0xE61A1A20),
+                                    shape = RoundedCornerShape(16.dp),
                                 )
                             }
                         }

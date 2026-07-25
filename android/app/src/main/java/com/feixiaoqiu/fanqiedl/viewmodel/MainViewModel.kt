@@ -119,6 +119,8 @@ data class MainUiState(
     val backgroundBlur: Float = 10f,
     val autoUpdateCheck: Boolean = true,
     val showHomeUpdate: Boolean = false,
+    val showApkExistsPrompt: Boolean = false,
+    val cachedApkFile: String? = null,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -243,7 +245,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
         viewModelScope.launch {
             UpdateDownloadState.downloading.collect { downloading ->
+                val wasDownloading = _ui.value.updateDownloading
                 _ui.update { it.copy(updateDownloading = downloading) }
+                if (wasDownloading && !downloading) {
+                    _ui.update { it.copy(showHomeUpdate = false) }
+                }
             }
         }
         viewModelScope.launch {
@@ -1102,14 +1108,29 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun downloadApk() {
+    fun downloadApk(force: Boolean = false) {
         val s = _ui.value
         val asset = s.matchingAsset ?: s.releaseAssets.firstOrNull() ?: return
         val sources = s.downloadSources.ifEmpty { DefaultNodes.DOWNLOAD_SOURCES }
 
         if (UpdateDownloadState.downloading.value) return
 
-        val candidates = sources.map { src ->
+        val cacheDir = java.io.File(container.appContext.cacheDir, "update")
+        cacheDir.mkdirs()
+
+        if (!force) {
+            val existingFile = java.io.File(cacheDir, asset.name)
+            if (existingFile.exists() && existingFile.length() > 0) {
+                _ui.update { it.copy(showApkExistsPrompt = true, cachedApkFile = existingFile.absolutePath) }
+                return
+            }
+        }
+
+        val orderedSources = sources.sortedBy { src ->
+            if (src.urlTemplate.contains("gh.xmly.dev", ignoreCase = true)) 0 else 1
+        }
+
+        val candidates = orderedSources.map { src ->
             src to resolveSourceUrl(src.urlTemplate, asset.downloadUrl)
         }.filter { it.second.isNotBlank() }
 
@@ -1118,33 +1139,44 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             return
         }
 
-        var bestUrl = candidates.first().second
+        val (firstSrc, firstUrl) = candidates.first()
+        if (firstSrc.urlTemplate.contains("gh.xmly.dev", ignoreCase = true)) {
+            viewModelScope.launch {
+                _ui.update { it.copy(updateDownloading = true, updateDownloadProgress = 0f, updateDownloadMessage = "直连 gh.xmly.dev …") }
+                val ok = withContext(Dispatchers.IO) {
+                    try {
+                        val client = OkHttpClient.Builder().connectTimeout(6, TimeUnit.SECONDS).readTimeout(6, TimeUnit.SECONDS).build()
+                        val resp = client.newCall(Request.Builder().url(firstUrl).head().build()).execute()
+                        val code = resp.code
+                        resp.close()
+                        code in 200..399
+                    } catch (_: Exception) { false }
+                }
+                if (ok) {
+                    _ui.update { it.copy(updateDownloadMessage = "最快：${firstSrc.name}，开始后台下载…") }
+                    // 清理旧版缓存 APK
+                    cacheDir.listFiles()?.filter { it.name != asset.name }?.forEach { it.delete() }
+                    UpdateDownloadService.start(container.appContext, firstUrl, asset.name)
+                } else {
+                    fallbackProbeSources(candidates.drop(1), asset, cacheDir)
+                }
+            }
+            return
+        }
 
         if (candidates.size > 1) {
             viewModelScope.launch {
-                _ui.update {
-                    it.copy(
-                        updateDownloading = true,
-                        updateDownloadProgress = 0f,
-                        updateDownloadMessage = "正在测速选择最快的下载源…",
-                    )
-                }
+                _ui.update { it.copy(updateDownloading = true, updateDownloadProgress = 0f, updateDownloadMessage = "正在测速选择最快的下载源…") }
                 val probeResults = withContext(Dispatchers.IO) {
                     candidates.map { (src, url) ->
                         val latency = try {
-                            val client = OkHttpClient.Builder()
-                                .connectTimeout(6, TimeUnit.SECONDS)
-                                .readTimeout(6, TimeUnit.SECONDS)
-                                .build()
-                            val headReq = Request.Builder().url(url).head().build()
+                            val client = OkHttpClient.Builder().connectTimeout(6, TimeUnit.SECONDS).readTimeout(6, TimeUnit.SECONDS).build()
                             val start = System.currentTimeMillis()
-                            val resp = client.newCall(headReq).execute()
+                            val resp = client.newCall(Request.Builder().url(url).head().build()).execute()
                             val elapsed = System.currentTimeMillis() - start
                             resp.close()
                             elapsed
-                        } catch (_: Exception) {
-                            Long.MAX_VALUE
-                        }
+                        } catch (_: Exception) { Long.MAX_VALUE }
                         Triple(src, url, latency)
                     }
                 }
@@ -1152,25 +1184,85 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 val finalUrl = if (best != null && best.third < Long.MAX_VALUE) {
                     val failCount = probeResults.count { it.third == Long.MAX_VALUE }
                     val suffix = if (failCount > 0) "（${failCount} 个源超时）" else ""
-                    _ui.update {
-                        it.copy(updateDownloadMessage = "最快：${best.first.name}${suffix}，开始后台下载…")
-                    }
+                    _ui.update { it.copy(updateDownloadMessage = "最快：${best.first.name}${suffix}，开始后台下载…") }
                     best.second
                 } else {
-                    _ui.update {
-                        it.copy(updateDownloadMessage = "测速失败，使用默认源")
-                    }
+                    _ui.update { it.copy(updateDownloadMessage = "测速失败，使用默认源") }
                     candidates.first().second
                 }
+                cacheDir.listFiles()?.filter { it.name != asset.name }?.forEach { it.delete() }
                 UpdateDownloadService.start(container.appContext, finalUrl, asset.name)
             }
             return
         }
 
-        _ui.update {
-            it.copy(updateDownloadMessage = "开始后台下载…")
+        _ui.update { it.copy(updateDownloadMessage = "开始后台下载…") }
+        cacheDir.listFiles()?.filter { it.name != asset.name }?.forEach { it.delete() }
+        UpdateDownloadService.start(container.appContext, candidates.first().second, asset.name)
+    }
+
+    private suspend fun fallbackProbeSources(
+        fallbackCandidates: List<Pair<DownloadSource, String>>,
+        asset: ReleaseAsset,
+        cacheDir: java.io.File,
+    ) {
+        if (fallbackCandidates.isEmpty()) {
+            _ui.update { it.copy(updateDownloadMessage = "所有源不可用，请稍后重试", updateDownloading = false) }
+            return
         }
-        UpdateDownloadService.start(container.appContext, bestUrl, asset.name)
+        _ui.update { it.copy(updateDownloadMessage = "gh.xmly.dev 不可用，测速其他源…") }
+        val probeResults = withContext(Dispatchers.IO) {
+            fallbackCandidates.map { (src, url) ->
+                val latency = try {
+                    val client = OkHttpClient.Builder().connectTimeout(6, TimeUnit.SECONDS).readTimeout(6, TimeUnit.SECONDS).build()
+                    val start = System.currentTimeMillis()
+                    val resp = client.newCall(Request.Builder().url(url).head().build()).execute()
+                    val elapsed = System.currentTimeMillis() - start
+                    resp.close()
+                    elapsed
+                } catch (_: Exception) { Long.MAX_VALUE }
+                Triple(src, url, latency)
+            }
+        }
+        val best = probeResults.minByOrNull { it.third }
+        val finalUrl = if (best != null && best.third < Long.MAX_VALUE) {
+            val failCount = probeResults.count { it.third == Long.MAX_VALUE }
+            val suffix = if (failCount > 0) "（${failCount} 个源超时）" else ""
+            _ui.update { it.copy(updateDownloadMessage = "最快：${best.first.name}${suffix}，开始后台下载…") }
+            best.second
+        } else {
+            _ui.update { it.copy(updateDownloadMessage = "所有源测速失败，使用默认源") }
+            fallbackCandidates.first().second
+        }
+        cacheDir.listFiles()?.filter { it.name != asset.name }?.forEach { it.delete() }
+        UpdateDownloadService.start(container.appContext, finalUrl, asset.name)
+    }
+
+    fun installCachedApk() {
+        val path = _ui.value.cachedApkFile ?: return
+        val file = java.io.File(path)
+        if (!file.exists()) {
+            _ui.update { it.copy(showApkExistsPrompt = false, cachedApkFile = null) }
+            downloadApk(force = true)
+            return
+        }
+        val uri = FileProvider.getUriForFile(container.appContext, "${container.appContext.packageName}.fileprovider", file)
+        val intent = Intent(Intent.ACTION_VIEW).apply {
+            setDataAndType(uri, "application/vnd.android.package-archive")
+            addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
+            addFlags(Intent.FLAG_ACTIVITY_NEW_TASK)
+        }
+        container.appContext.startActivity(intent)
+        _ui.update { it.copy(showApkExistsPrompt = false, cachedApkFile = null) }
+    }
+
+    fun forceRedownloadApk() {
+        _ui.update { it.copy(showApkExistsPrompt = false, cachedApkFile = null) }
+        downloadApk(force = true)
+    }
+
+    fun dismissApkExistsPrompt() {
+        _ui.update { it.copy(showApkExistsPrompt = false, cachedApkFile = null) }
     }
 
     private fun resolveSourceUrl(template: String, assetUrl: String): String {
