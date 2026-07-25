@@ -21,7 +21,7 @@ android {
         minSdk = 26
         targetSdk = 34
         // 固定签名密钥勿动
-        versionCode = 12
+        versionCode = 13
         versionName = "1.1.0"
         ndk {
             // 常见手机架构

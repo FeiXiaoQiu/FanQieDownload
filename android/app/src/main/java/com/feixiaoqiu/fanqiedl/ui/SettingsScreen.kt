@@ -61,6 +61,7 @@ import androidx.compose.runtime.rememberCoroutineScope
 import androidx.compose.runtime.setValue
 import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
@@ -164,6 +165,17 @@ fun SettingsScreen(
 
     Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
         if (bgModel != null) {
+            // 模糊背景层：Crop 填满屏幕，避免空白
+            AsyncImage(
+                model = bgModel,
+                contentDescription = null,
+                modifier = Modifier
+                    .fillMaxSize()
+                    .blur(24.dp),
+                contentScale = ContentScale.Crop,
+                alignment = Alignment.Center,
+            )
+            // 清晰前景层：Fit 完整展示，不裁剪人物
             AsyncImage(
                 model = bgModel,
                 contentDescription = null,
