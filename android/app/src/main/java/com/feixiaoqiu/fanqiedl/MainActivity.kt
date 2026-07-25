@@ -114,6 +114,9 @@ class MainActivity : ComponentActivity() {
                                                 ?: "${UpdateChecker.REPO_URL}/releases/latest"
                                             openUrl(url)
                                         },
+                                        onOpenLatestReleaseAccel = { releaseUrl ->
+                                            openUrl("https://gh.xmly.dev/$releaseUrl")
+                                        },
                                     )
                                 }
                                 else -> {

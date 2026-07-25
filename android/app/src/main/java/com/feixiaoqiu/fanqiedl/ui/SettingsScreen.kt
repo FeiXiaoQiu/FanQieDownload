@@ -110,6 +110,7 @@ fun SettingsScreen(
     onCheckUpdate: () -> Unit = {},
     onOpenRepo: () -> Unit = {},
     onOpenLatestRelease: () -> Unit = {},
+    onOpenLatestReleaseAccel: (String) -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
     val pickImage = rememberLauncherForActivityResult(
@@ -358,9 +359,16 @@ fun SettingsScreen(
                         }
                     }
                     if (state.updateAvailable && state.latestReleaseUrl != null) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Text("下载新版本：", color = TextSecondary, fontSize = 12.sp)
                         Spacer(modifier = Modifier.height(4.dp))
-                        TextButton(onClick = onOpenLatestRelease) {
-                            Text("前往最新 Release", color = Primary)
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = onOpenLatestRelease) {
+                                Text("GitHub 原链", color = Primary, fontSize = 13.sp)
+                            }
+                            TextButton(onClick = { onOpenLatestReleaseAccel(state.latestReleaseUrl ?: return@TextButton) }) {
+                                Text("加速源", color = Primary, fontSize = 13.sp)
+                            }
                         }
                     }
                 }
