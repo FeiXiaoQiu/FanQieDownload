@@ -544,6 +544,79 @@ fun SettingsScreen(
                         }
                     }
 
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Text("下载源（下载时自动测速选最快）", color = TextSecondary, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(4.dp))
+                    state.downloadSources.forEach { source ->
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .padding(vertical = 3.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text(
+                                source.name,
+                                color = TextPrimary,
+                                fontSize = 13.sp,
+                                modifier = Modifier.weight(1f),
+                            )
+                            if (!source.builtin) {
+                                TextButton(
+                                    onClick = { onRemoveDownloadSource(source.id) },
+                                ) {
+                                    Text("删除", color = Primary, fontSize = 13.sp)
+                                }
+                            }
+                        }
+                    }
+                    Spacer(Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = {
+                            showAddDownloadSource = true
+                        }) {
+                            Text("+ 添加自定义源", color = Primary, fontSize = 12.sp)
+                        }
+                        TextButton(onClick = onResetMirrors) {
+                            Text("恢复默认镜像", color = Primary, fontSize = 12.sp)
+                        }
+                    }
+                    if (showAddDownloadSource) {
+                        Spacer(Modifier.height(4.dp))
+                        var newSrcName by remember { mutableStateOf("") }
+                        var newSrcTmpl by remember { mutableStateOf("") }
+                        OutlinedTextField(
+                            value = newSrcName,
+                            onValueChange = { newSrcName = it },
+                            label = { Text("名称", color = TextSecondary) },
+                            singleLine = true,
+                            colors = fieldColors(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        OutlinedTextField(
+                            value = newSrcTmpl,
+                            onValueChange = { newSrcTmpl = it },
+                            label = { Text("URL 模板（用 {url} 占位）", color = TextSecondary) },
+                            singleLine = true,
+                            colors = fieldColors(),
+                            modifier = Modifier.fillMaxWidth(),
+                        )
+                        Spacer(Modifier.height(4.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                            TextButton(onClick = {
+                                if (newSrcTmpl.isNotBlank()) {
+                                    onAddDownloadSource(newSrcName, newSrcTmpl)
+                                    newSrcName = ""
+                                    newSrcTmpl = ""
+                                    showAddDownloadSource = false
+                                }
+                            }) { Text("保存", color = Primary, fontSize = 13.sp) }
+                            TextButton(onClick = {
+                                showAddDownloadSource = false
+                            }) { Text("取消", color = TextSecondary, fontSize = 13.sp) }
+                        }
+                    }
+
                     if (state.updateAvailable && state.releaseAssets.isNotEmpty()) {
                         val asset = state.matchingAsset ?: state.releaseAssets.firstOrNull() ?: return@SectionCard
                         val assetNote = if (asset.abi.isEmpty()) "已匹配 universal" else "已匹配 ${asset.abi}"
@@ -553,81 +626,7 @@ fun SettingsScreen(
                             color = TextSecondary,
                             fontSize = 12.sp,
                         )
-                        if (assetNote.isNotEmpty()) {
-                            Text(assetNote, color = TextSecondary, fontSize = 11.sp)
-                        }
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Text("下载源（下载时自动测速选最快）", color = TextSecondary, fontSize = 12.sp)
-                        Spacer(modifier = Modifier.height(4.dp))
-                        state.downloadSources.forEach { source ->
-                            Row(
-                                modifier = Modifier
-                                    .fillMaxWidth()
-                                    .padding(vertical = 3.dp),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                Text(
-                                    source.name,
-                                    color = TextPrimary,
-                                    fontSize = 13.sp,
-                                    modifier = Modifier.weight(1f),
-                                )
-                                if (!source.builtin) {
-                                    TextButton(
-                                        onClick = { onRemoveDownloadSource(source.id) },
-                                    ) {
-                                        Text("删除", color = Primary, fontSize = 13.sp)
-                                    }
-                                }
-                            }
-                        }
-                        Spacer(Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = {
-                                showAddDownloadSource = true
-                            }) {
-                                Text("+ 添加自定义源", color = Primary, fontSize = 12.sp)
-                            }
-                            TextButton(onClick = onResetMirrors) {
-                                Text("恢复默认镜像", color = Primary, fontSize = 12.sp)
-                            }
-                        }
-                        if (showAddDownloadSource) {
-                            Spacer(Modifier.height(4.dp))
-                            var newSrcName by remember { mutableStateOf("") }
-                            var newSrcTmpl by remember { mutableStateOf("") }
-                            OutlinedTextField(
-                                value = newSrcName,
-                                onValueChange = { newSrcName = it },
-                                label = { Text("名称", color = TextSecondary) },
-                                singleLine = true,
-                                colors = fieldColors(),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            OutlinedTextField(
-                                value = newSrcTmpl,
-                                onValueChange = { newSrcTmpl = it },
-                                label = { Text("URL 模板（用 {url} 占位）", color = TextSecondary) },
-                                singleLine = true,
-                                colors = fieldColors(),
-                                modifier = Modifier.fillMaxWidth(),
-                            )
-                            Spacer(Modifier.height(4.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-                                TextButton(onClick = {
-                                    if (newSrcTmpl.isNotBlank()) {
-                                        onAddDownloadSource(newSrcName, newSrcTmpl)
-                                        newSrcName = ""
-                                        newSrcTmpl = ""
-                                        showAddDownloadSource = false
-                                    }
-                                }) { Text("保存", color = Primary, fontSize = 13.sp) }
-                                TextButton(onClick = {
-                                    showAddDownloadSource = false
-                                }) { Text("取消", color = TextSecondary, fontSize = 13.sp) }
-                            }
-                        }
+                        Text(assetNote, color = TextSecondary, fontSize = 11.sp)
                         Spacer(Modifier.height(8.dp))
 
                         if (state.updateDownloadMessage != null) {
