@@ -2,12 +2,13 @@
 
 Web 搜索下载 + Android 客户端「观隅」。
 
-## Web `v2.4.0`
+## Web `v2.5.0`
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 
 书名搜索、简介预览、ID/链接下载、章节范围、断点续传、取消下载。  
-背景图床、一言、正文节点可在设置面板配置。
+背景图床、一言、正文节点可在设置面板配置。  
+界面采用毛玻璃风格：搜索栏、书籍简介、搜索结果均为半透明模糊背景。
 
 ### 本机运行
 
@@ -22,9 +23,9 @@ node server.js
 2. Framework 选 **Other**，直接 Deploy
 3. 国内建议绑定自有域名
 
-## Android「观隅」`v1.2.5`
+## Android「观隅」`v1.3.0`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.2.5/guanyu-1.2.5-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.3.0/guanyu-1.3.0-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
@@ -44,7 +45,10 @@ cd android
 - 背景缩放模式（完整显示 / 铺满屏幕），本地图片支持模糊调节
 - 一言 Hitokoto 外接 API
 - **应用内检查更新 + 直接下载安装**（自动测速选最快下载源）
+- **首页新版本更新横幅**，检测到新版本时直接在首页提示下载
+- 设置可开关「启动时自动检查更新」
 - 电池优化白名单，防止后台下载被系统杀死
+- 隐藏功能彩蛋：连续点击「当前版本」10 次解锁妖狐 R18 图源
 
 ### 发版
 
@@ -52,44 +56,21 @@ cd android
 
 ## 更新日志
 
-### v1.1.9
-- 修复「检查出更新但不弹出下载选项」：`matchingAsset` 为 null 时回退到第一条 APK 资产
+详见 [CHANGELOG.md](CHANGELOG.md)。
 
-### v1.1.8
-- 新增「省电设置」卡片，一键关闭电池优化防后台被杀
-- 下载前对所有源 HEAD 测速，自动选最快的下载
-- 修复下载「未知错误」（NetworkOnMainThreadException → withContext(IO)）
-- 修复铺满屏幕模式下背景仍然模糊的问题
+### v1.2.9
+- 下载源管理列表始终可见，无新版时也可增删镜像
+- 新版信息 + 下载按钮仅在有可用更新时展示
 
-### v1.1.7
-- 修复下载 API 跑在主线程导致「未知错误」
-- 下载全部移入 `withContext(Dispatchers.IO)`
+### v1.2.8
+- 在线阅读优化：目录自动定位当前章节 + 章节编号 + 重试按钮
+- 底栏页码改为「第 X / Y 章」格式
 
-### v1.1.6
-- 铺满屏幕 (CROP) 模式下只显示清晰 Crop 层，不再叠加模糊
+### v1.2.7
+- 修复 detectAbi 对 universal 返回空串的匹配 bug
 
-### v1.1.5
-- 背景设置拆为「接口背景」「本地图片」两张卡片
-- 模糊滑块仅在本地图片模式下生效，默认 10dp
-- 修复检查更新静默模式阻塞手动点击
-- 网页下载链改用 GitHub 直链
-
-### v1.1.4
-- 新增背景缩放模式（完整显示 / 铺满屏幕），双页面同步
-- 自定义图片背景可调节模糊程度 (0~48dp)
-
-### v1.1.3
-- 应用内检查更新 + 直接下载安装 APK
-- 下载源配置（原链 / 镜像源 / 自定义模板）
-- 设备 ABI 自动匹配
-- SearchScreen 背景同步为双层渲染
-
-### v1.1.2 及更早
-- 栗次元图床 / 妖狐 R18 背景
-- 本地图片裁剪上传
-- 节点测速（延迟分色）
-- 在线阅读器
-- 一言 Hitokoto
+### v1.2.6
+- 下载源排序镜像优先，匹配消息优化
 
 ## 目录
 

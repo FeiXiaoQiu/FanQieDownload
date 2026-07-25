@@ -113,6 +113,8 @@ data class MainUiState(
     val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
     val backgroundScale: BackgroundScale = BackgroundScale.FIT,
     val backgroundBlur: Float = 10f,
+    val autoUpdateCheck: Boolean = true,
+    val showHomeUpdate: Boolean = false,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -206,8 +208,13 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         startHitokotoLoop()
-        // 进入设置可手动检查；冷启动静默检查一次
-        checkForUpdate(silent = true)
+        // 收集自动检查更新开关
+        viewModelScope.launch {
+            container.settings.autoUpdateCheckFlow.collect { enabled ->
+                _ui.update { it.copy(autoUpdateCheck = enabled) }
+                if (enabled) checkForUpdate(silent = true)
+            }
+        }
         viewModelScope.launch {
             container.settings.r18AcceptedFlow.collect { accepted ->
                 _ui.update { it.copy(r18Accepted = accepted) }
@@ -1054,6 +1061,17 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun dismissHomeUpdate() {
+        _ui.update { it.copy(showHomeUpdate = false) }
+    }
+
+    fun toggleAutoUpdateCheck() {
+        viewModelScope.launch {
+            val next = !_ui.value.autoUpdateCheck
+            container.settings.setAutoUpdateCheck(next)
+        }
+    }
+
     fun downloadApk() {
         val s = _ui.value
         val asset = s.matchingAsset ?: s.releaseAssets.firstOrNull() ?: return
@@ -1209,7 +1227,8 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                             updateMessage = msg,
                             releaseAssets = info.assets,
                             matchingAsset = matching,
-                            snackbar = if (silent && !newer) null else msg,
+                            showHomeUpdate = silent && newer,
+                            snackbar = if (silent) null else msg,
                         )
                     }
                 },

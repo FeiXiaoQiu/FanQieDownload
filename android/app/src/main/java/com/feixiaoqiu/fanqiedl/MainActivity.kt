@@ -122,6 +122,7 @@ class MainActivity : ComponentActivity() {
                                         onBackgroundScaleChange = vm::setBackgroundScale,
                                         onBackgroundBlurChange = vm::setBackgroundBlur,
                                         onResetMirrors = vm::resetMirrors,
+                                        onToggleAutoUpdateCheck = vm::toggleAutoUpdateCheck,
                                     )
                                 }
                                 else -> {
@@ -134,6 +135,8 @@ class MainActivity : ComponentActivity() {
                                         onOpenWeb = { openUrl(MainViewModel.WEB_HOME_URL) },
                                         onOpenBook = vm::openDetail,
                                         onRefreshHitokoto = vm::refreshHitokoto,
+                                        onDownloadUpdate = vm::downloadApk,
+                                        onDismissUpdate = vm::dismissHomeUpdate,
                                     )
                                 }
                             }

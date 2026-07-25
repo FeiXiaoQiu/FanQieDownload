@@ -55,6 +55,8 @@ import androidx.compose.material3.RadioButton
 import androidx.compose.material3.RadioButtonDefaults
 import androidx.compose.material3.Slider
 import androidx.compose.material3.SliderDefaults
+import androidx.compose.material3.Switch
+import androidx.compose.material3.SwitchDefaults
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -138,6 +140,7 @@ fun SettingsScreen(
     onBackgroundScaleChange: (BackgroundScale) -> Unit = {},
     onBackgroundBlurChange: (Float) -> Unit = {},
     onResetMirrors: () -> Unit = {},
+    onToggleAutoUpdateCheck: () -> Unit = {},
 ) {
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
@@ -542,6 +545,22 @@ fun SettingsScreen(
                         TextButton(onClick = onOpenRepo) {
                             Text("打开仓库", color = Primary)
                         }
+                    }
+
+                    Spacer(modifier = Modifier.height(10.dp))
+                    Row(
+                        modifier = Modifier.fillMaxWidth(),
+                        verticalAlignment = Alignment.CenterVertically,
+                    ) {
+                        Column(modifier = Modifier.weight(1f)) {
+                            Text("启动时自动检查更新", color = TextPrimary, fontSize = 13.sp)
+                            Text("打开应用时静默检测新版本", color = TextSecondary, fontSize = 11.sp)
+                        }
+                        Switch(
+                            checked = state.autoUpdateCheck,
+                            onCheckedChange = { onToggleAutoUpdateCheck() },
+                            colors = SwitchDefaults.colors(checkedThumbColor = Primary, checkedTrackColor = Primary.copy(alpha = 0.4f)),
+                        )
                     }
 
                     Spacer(modifier = Modifier.height(10.dp))

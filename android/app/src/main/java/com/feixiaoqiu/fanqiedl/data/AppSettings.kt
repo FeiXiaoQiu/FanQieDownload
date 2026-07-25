@@ -27,6 +27,7 @@ class AppSettings(private val context: Context) {
     private val keyMirrorInit = stringPreferencesKey("mirror_initialized")
     private val keyBgScale = stringPreferencesKey("bg_scale")
     private val keyBgBlur = stringPreferencesKey("bg_blur")
+    private val keyAutoUpdateCheck = stringPreferencesKey("auto_update_check")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -72,6 +73,10 @@ class AppSettings(private val context: Context) {
         prefs[keyBgBlur]?.toFloatOrNull() ?: 10f
     }
 
+    val autoUpdateCheckFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
+        prefs[keyAutoUpdateCheck] != "0"
+    }
+
     suspend fun setR18Accepted() {
         context.dataStore.edit { prefs ->
             prefs[keyR18Accepted] = "1"
@@ -93,6 +98,12 @@ class AppSettings(private val context: Context) {
     suspend fun setBackgroundBlur(blur: Float) {
         context.dataStore.edit { prefs ->
             prefs[keyBgBlur] = blur.toString()
+        }
+    }
+
+    suspend fun setAutoUpdateCheck(enabled: Boolean) {
+        context.dataStore.edit { prefs ->
+            prefs[keyAutoUpdateCheck] = if (enabled) "1" else "0"
         }
     }
 

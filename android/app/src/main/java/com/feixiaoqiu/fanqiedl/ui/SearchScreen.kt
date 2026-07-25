@@ -34,6 +34,7 @@ import androidx.compose.material3.ButtonDefaults
 import androidx.compose.material3.CircularProgressIndicator
 import androidx.compose.material3.Icon
 import androidx.compose.material3.IconButton
+import androidx.compose.material3.LinearProgressIndicator
 import androidx.compose.material3.Text
 import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
@@ -79,6 +80,8 @@ fun SearchScreen(
     onOpenWeb: () -> Unit,
     onOpenBook: (BookSummary) -> Unit,
     onRefreshHitokoto: () -> Unit,
+    onDownloadUpdate: () -> Unit = {},
+    onDismissUpdate: () -> Unit = {},
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
     val corner = RoundedCornerShape(10.dp)
@@ -283,6 +286,14 @@ fun SearchScreen(
                 }
             }
 
+            if (state.showHomeUpdate) {
+                UpdateBanner(
+                    state = state,
+                    onDownload = onDownloadUpdate,
+                    onDismiss = onDismissUpdate,
+                )
+            }
+
             HitokotoBar(
                 text = state.hitokoto,
                 onClick = onRefreshHitokoto,
@@ -422,6 +433,95 @@ private fun HitokotoBar(
                 overflow = TextOverflow.Ellipsis,
                 lineHeight = 18.sp,
             )
+        }
+    }
+}
+
+@Composable
+private fun UpdateBanner(
+    state: MainUiState,
+    onDownload: () -> Unit,
+    onDismiss: () -> Unit,
+) {
+    Box(
+        modifier = Modifier
+            .fillMaxWidth()
+            .padding(horizontal = 16.dp, vertical = 6.dp)
+            .clickable(
+                enabled = !state.updateDownloading,
+                onClick = onDismiss,
+            ),
+    ) {
+        GlassPanel(
+            modifier = Modifier.fillMaxWidth(),
+            corner = 14.dp,
+            fill = GlassFill,
+        ) {
+            Column(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 14.dp, vertical = 12.dp),
+        ) {
+            Row(
+                modifier = Modifier.fillMaxWidth(),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Column(modifier = Modifier.weight(1f)) {
+                    Text(
+                        text = "发现新版本",
+                        color = TextSecondary,
+                        fontSize = 13.sp,
+                        fontWeight = FontWeight.SemiBold,
+                    )
+                    Text(
+                        text = state.latestVersionTag ?: "",
+                        color = Primary,
+                        fontSize = 16.sp,
+                        fontWeight = FontWeight.Bold,
+                    )
+                }
+                if (!state.updateDownloading && state.updateDownloadMessage == null) {
+                    Button(
+                        onClick = onDownload,
+                        colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                        shape = RoundedCornerShape(10.dp),
+                        contentPadding = androidx.compose.foundation.layout.PaddingValues(
+                            horizontal = 18.dp,
+                            vertical = 8.dp,
+                        ),
+                    ) {
+                        Text("更新", color = Color.White, fontSize = 14.sp)
+                    }
+                }
+            }
+            if (state.updateDownloading) {
+                Spacer(modifier = Modifier.height(12.dp))
+                LinearProgressIndicator(
+                    progress = { state.updateDownloadProgress },
+                    modifier = Modifier
+                        .fillMaxWidth()
+                        .height(6.dp)
+                        .clip(RoundedCornerShape(3.dp)),
+                    color = Primary,
+                    trackColor = Color.White.copy(alpha = 0.3f),
+                )
+                val pct = (state.updateDownloadProgress * 100).toInt()
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = state.updateDownloadMessage ?: "下载中 $pct%",
+                    color = TextSecondary,
+                    fontSize = 12.sp,
+                )
+            }
+            if (state.updateDownloadMessage != null && !state.updateDownloading) {
+                Spacer(modifier = Modifier.height(6.dp))
+                Text(
+                    text = state.updateDownloadMessage,
+                    color = TextSecondary,
+                    fontSize = 13.sp,
+                )
+            }
+        }
         }
     }
 }
