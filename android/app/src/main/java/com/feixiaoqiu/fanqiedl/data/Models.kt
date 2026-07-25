@@ -29,6 +29,12 @@ enum class BackgroundMode {
     }
 }
 
+data class CustomBackground(
+    val id: String,
+    val name: String = "",
+    val url: String = "",
+)
+
 data class BookSummary(
     val bookId: String,
     val title: String,

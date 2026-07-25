@@ -20,6 +20,7 @@ class AppSettings(private val context: Context) {
     private val keyBgMode = stringPreferencesKey("bg_mode")
     private val keyBgApi = stringPreferencesKey("bg_api_url")
     private val keyBgImage = stringPreferencesKey("bg_image_url")
+    private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
         parseNodes(prefs[keyNodes])
@@ -43,6 +44,63 @@ class AppSettings(private val context: Context) {
 
     val backgroundImageUrlFlow: Flow<String> = context.dataStore.data.map { prefs ->
         prefs[keyBgImage].orEmpty()
+    }
+
+    val customBackgroundsFlow: Flow<List<CustomBackground>> = context.dataStore.data.map { prefs ->
+        parseCustomBgs(prefs[keyCustomBgs])
+    }
+
+    suspend fun addCustomBg(name: String, url: String): CustomBackground {
+        val bg = CustomBackground(
+            id = "cbg-" + UUID.randomUUID().toString().take(8),
+            name = name.ifBlank { "自定义接口" },
+            url = url.trim(),
+        )
+        setCustomBgs(snapshotCustomBgs() + bg)
+        return bg
+    }
+
+    suspend fun removeCustomBg(id: String) {
+        setCustomBgs(snapshotCustomBgs().filter { it.id != id })
+    }
+
+    suspend fun updateCustomBg(id: String, name: String, url: String) {
+        setCustomBgs(snapshotCustomBgs().map {
+            if (it.id == id) it.copy(name = name, url = url.trim()) else it
+        })
+    }
+
+    suspend fun snapshotCustomBgs(): List<CustomBackground> {
+        return parseCustomBgs(context.dataStore.data.first()[keyCustomBgs])
+    }
+
+    private suspend fun setCustomBgs(list: List<CustomBackground>) {
+        context.dataStore.edit { prefs ->
+            prefs[keyCustomBgs] = serializeCustomBgs(list)
+        }
+    }
+
+    private fun parseCustomBgs(raw: String?): List<CustomBackground> {
+        if (raw.isNullOrBlank()) return emptyList()
+        return try {
+            val arr = JSONArray(raw)
+            (0 until arr.length()).map { i ->
+                val o = arr.getJSONObject(i)
+                CustomBackground(
+                    id = o.optString("id"),
+                    name = o.optString("name"),
+                    url = o.optString("url"),
+                )
+            }
+        } catch (_: Exception) { emptyList() }
+    }
+
+    private fun serializeCustomBgs(list: List<CustomBackground>): String {
+        val arr = JSONArray()
+        list.forEach { bg ->
+            arr.put(JSONObject().put("id", bg.id).put("name", bg.name).put("url", bg.url))
+        }
+        return arr.toString()
     }
 
     suspend fun setNodes(nodes: List<NodeConfig>) {

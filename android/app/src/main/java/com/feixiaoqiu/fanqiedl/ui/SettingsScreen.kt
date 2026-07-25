@@ -73,6 +73,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
+import com.feixiaoqiu.fanqiedl.data.CustomBackground
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.NodeConfig
 import com.feixiaoqiu.fanqiedl.ui.theme.Accent
@@ -107,6 +108,10 @@ fun SettingsScreen(
     onRefreshBackground: () -> Unit,
     onPickLocalBackground: (Uri) -> Unit,
     onClearLocalBackground: () -> Unit,
+    onAddCustomBg: (String, String) -> Unit = { _, _ -> },
+    onRemoveCustomBg: (String) -> Unit = {},
+    onUpdateCustomBg: (String, String, String) -> Unit = { _, _, _ -> },
+    onSelectCustomBg: (String) -> Unit = {},
     onCheckUpdate: () -> Unit = {},
     onOpenRepo: () -> Unit = {},
     onOpenLatestRelease: () -> Unit = {},
@@ -188,21 +193,34 @@ fun SettingsScreen(
                             subtitle = DefaultNodes.R18_BACKGROUND_API,
                             onClick = { onBgModeChange(BackgroundMode.R18) },
                         )
-                        BgOption(
-                            selected = state.backgroundMode == BackgroundMode.CUSTOM_API,
-                            title = "新增接口",
-                            subtitle = "自定义图床接口",
-                            onClick = { onBgModeChange(BackgroundMode.CUSTOM_API) },
-                        )
-                        if (state.backgroundMode == BackgroundMode.CUSTOM_API) {
-                            Field(
-                                value = state.backgroundApiUrl,
-                                onValueChange = onBgApiChange,
-                                label = "API 地址",
-                                placeholder = DefaultNodes.DEFAULT_BACKGROUND_API,
+
+                        // 已添加的自定义接口
+                        state.customBackgrounds.forEach { cbg ->
+                            CustomBgRow(
+                                cbg = cbg,
+                                selected = state.backgroundMode == BackgroundMode.CUSTOM_API &&
+                                    state.selectedCustomBgId == cbg.id,
+                                onSelect = { onSelectCustomBg(cbg.id) },
+                                onUpdate = { name, url -> onUpdateCustomBg(cbg.id, name, url) },
+                                onRemove = { onRemoveCustomBg(cbg.id) },
                             )
-                            Spacer(modifier = Modifier.height(4.dp))
                         }
+
+                        // 新增接口按钮
+                        Row(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .selectable(
+                                    selected = false,
+                                    onClick = { onAddCustomBg("", "") },
+                                    role = Role.Button,
+                                )
+                                .padding(vertical = 4.dp),
+                            verticalAlignment = Alignment.CenterVertically,
+                        ) {
+                            Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                        }
+
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.CUSTOM_IMAGE,
                             title = "本地图片",
@@ -651,6 +669,49 @@ private fun probeLatencyColor(info: NodeProbeInfo?): Color {
         }
         NodeProbePhase.Timeout -> Color(0xFFD32F2F)
         NodeProbePhase.Fail -> Color(0xFFD32F2F)
+    }
+}
+
+@Composable
+private fun CustomBgRow(
+    cbg: CustomBackground,
+    selected: Boolean,
+    onSelect: () -> Unit,
+    onUpdate: (String, String) -> Unit,
+    onRemove: () -> Unit,
+) {
+    var editUrl by remember(cbg.id, cbg.url) { mutableStateOf(cbg.url) }
+    var editName by remember(cbg.id, cbg.name) { mutableStateOf(cbg.name) }
+    var editing by remember { mutableStateOf(false) }
+
+    BgOption(
+        selected = selected,
+        title = editName.ifBlank { "自定义接口" },
+        subtitle = editUrl,
+        onClick = {
+            if (selected) editing = !editing
+            else onSelect()
+        },
+    )
+    if (editing) {
+        Field(value = editName, onValueChange = { editName = it }, label = "名称")
+        Spacer(Modifier.height(4.dp))
+        Field(value = editUrl, onValueChange = { editUrl = it }, label = "API 地址")
+        Spacer(Modifier.height(4.dp))
+        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+            TextButton(onClick = {
+                onUpdate(editName, editUrl)
+                editing = false
+            }) { Text("保存", color = Primary, fontSize = 13.sp) }
+            TextButton(onClick = {
+                onRemove()
+                editing = false
+            }) { Text("删除", color = Primary, fontSize = 13.sp) }
+            TextButton(onClick = { editing = false }) {
+                Text("取消", color = TextSecondary, fontSize = 13.sp)
+            }
+        }
+        Spacer(Modifier.height(4.dp))
     }
 }
 

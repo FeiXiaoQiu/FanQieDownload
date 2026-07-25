@@ -107,6 +107,10 @@ class MainActivity : ComponentActivity() {
                                         onRefreshBackground = vm::refreshBackground,
                                         onPickLocalBackground = vm::importLocalBackground,
                                         onClearLocalBackground = vm::clearLocalBackground,
+                                        onAddCustomBg = { name, url -> vm.addCustomBackground(name, url) },
+                                        onRemoveCustomBg = vm::removeCustomBackground,
+                                        onUpdateCustomBg = { id, name, url -> vm.updateCustomBackground(id, name, url) },
+                                        onSelectCustomBg = vm::selectCustomBackground,
                                         onCheckUpdate = { vm.checkForUpdate(silent = false) },
                                         onOpenRepo = { openUrl(UpdateChecker.REPO_URL) },
                                         onOpenLatestRelease = {

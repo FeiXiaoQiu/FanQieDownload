@@ -10,6 +10,7 @@ import com.feixiaoqiu.fanqiedl.data.BookInfo
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.data.ChapterContent
 import com.feixiaoqiu.fanqiedl.data.ChapterRef
+import com.feixiaoqiu.fanqiedl.data.CustomBackground
 import com.feixiaoqiu.fanqiedl.data.DefaultNodes
 import com.feixiaoqiu.fanqiedl.data.DownloadProgress
 import com.feixiaoqiu.fanqiedl.data.DownloadRequest
@@ -73,6 +74,8 @@ data class MainUiState(
     val backgroundApiUrl: String = "",
     val backgroundImageUrl: String = "",
     val backgroundDisplayUrl: String = DefaultNodes.DEFAULT_BACKGROUND_API,
+    val customBackgrounds: List<CustomBackground> = emptyList(),
+    val selectedCustomBgId: String? = null,
     val reading: Boolean = false,
     val readerTitle: String = "",
     val readerChapters: List<ChapterRef> = emptyList(),
@@ -111,6 +114,25 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 _ui.update { s ->
                     val keep = s.nodeProbes.filterKeys { id -> nodes.any { it.id == id } }
                     s.copy(nodes = nodes, nodeProbes = keep)
+                }
+            }
+        }
+        viewModelScope.launch {
+            container.settings.customBackgroundsFlow.collect { bgs ->
+                _ui.update { s ->
+                    val selId = s.selectedCustomBgId
+                    if (selId != null && bgs.none { it.id == selId }) {
+                        // 已选中的自定义背景被删了，回退默认
+                        container.settings.setBackground(BackgroundMode.DEFAULT, "", "")
+                        s.copy(
+                            customBackgrounds = bgs,
+                            backgroundMode = BackgroundMode.DEFAULT,
+                            selectedCustomBgId = null,
+                            backgroundDisplayUrl = DefaultNodes.DEFAULT_BACKGROUND_API,
+                        )
+                    } else {
+                        s.copy(customBackgrounds = bgs)
+                    }
                 }
             }
         }
@@ -156,7 +178,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 if (bust) cacheBust(base) else base
             }
             BackgroundMode.CUSTOM_API -> {
-                val base = apiUrl.trim().ifEmpty { DefaultNodes.DEFAULT_BACKGROUND_API }
+                val id = _ui.value.selectedCustomBgId
+                val bg = if (id != null) _ui.value.customBackgrounds.find { it.id == id } else null
+                val base = bg?.url?.trim().orEmpty().ifEmpty { DefaultNodes.DEFAULT_BACKGROUND_API }
                 if (bust) cacheBust(base) else base
             }
             BackgroundMode.CUSTOM_IMAGE -> {
@@ -527,7 +551,47 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun setBackgroundMode(mode: BackgroundMode) {
-        _ui.update { it.copy(backgroundMode = mode) }
+        _ui.update {
+            it.copy(
+                backgroundMode = mode,
+                selectedCustomBgId = if (mode == BackgroundMode.CUSTOM_API) it.selectedCustomBgId else null,
+            )
+        }
+    }
+
+    fun selectCustomBackground(id: String) {
+        _ui.update {
+            it.copy(
+                backgroundMode = BackgroundMode.CUSTOM_API,
+                selectedCustomBgId = id,
+                backgroundApiUrl = "",
+            )
+        }
+    }
+
+    fun addCustomBackground(name: String, url: String) {
+        viewModelScope.launch {
+            val bg = container.settings.addCustomBg(name, url)
+            _ui.update {
+                it.copy(
+                    backgroundMode = BackgroundMode.CUSTOM_API,
+                    selectedCustomBgId = bg.id,
+                    backgroundApiUrl = "",
+                )
+            }
+        }
+    }
+
+    fun removeCustomBackground(id: String) {
+        viewModelScope.launch {
+            container.settings.removeCustomBg(id)
+        }
+    }
+
+    fun updateCustomBackground(id: String, name: String, url: String) {
+        viewModelScope.launch {
+            container.settings.updateCustomBg(id, name, url)
+        }
     }
 
     fun setBackgroundApiUrl(url: String) {
