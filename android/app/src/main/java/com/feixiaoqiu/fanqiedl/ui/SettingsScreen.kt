@@ -125,10 +125,23 @@ fun SettingsScreen(
 ) {
     var newUrl by remember { mutableStateOf("") }
     var showR18Dialog by remember { mutableStateOf(false) }
+    var cropUri by remember { mutableStateOf<Uri?>(null) }
     val pickImage = rememberLauncherForActivityResult(
         contract = ActivityResultContracts.GetContent(),
     ) { uri: Uri? ->
-        if (uri != null) onPickLocalBackground(uri)
+        if (uri != null) cropUri = uri
+    }
+
+    // 裁剪对话框
+    if (cropUri != null) {
+        ImageCropDialog(
+            imageUri = cropUri!!,
+            onConfirm = { croppedUri ->
+                cropUri = null
+                onPickLocalBackground(croppedUri)
+            },
+            onCancel = { cropUri = null },
+        )
     }
 
     // 进入设置时自动测速
@@ -196,7 +209,7 @@ fun SettingsScreen(
                         )
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.R18,
-                            title = "冷狐R18（慎用）",
+                            title = "妖狐R18（慎用）",
                             subtitle = DefaultNodes.R18_BACKGROUND_API,
                             onClick = {
                                 if (state.r18Accepted) {
