@@ -112,7 +112,7 @@ data class MainUiState(
     val updateDownloadProgress: Float = 0f,
     val updateDownloadMessage: String? = null,
     val backgroundScale: BackgroundScale = BackgroundScale.FIT,
-    val backgroundBlur: Float = 24f,
+    val backgroundBlur: Float = 10f,
 )
 
 class MainViewModel(private val container: AppContainer) : ViewModel() {
@@ -1144,11 +1144,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     }
 
     fun checkForUpdate(silent: Boolean = false) {
-        if (updateJob?.isActive == true) return
+        updateJob?.cancel()
         updateJob = viewModelScope.launch {
-            if (!silent) {
-                _ui.update { it.copy(updateChecking = true, updateMessage = "正在检查更新…") }
-            }
+            _ui.update { it.copy(updateChecking = true, updateMessage = if (silent) null else "正在检查更新…") }
             val result = withContext(Dispatchers.IO) {
                 container.updateChecker.checkLatest()
             }

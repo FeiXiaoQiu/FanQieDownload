@@ -64,7 +64,7 @@ class AppSettings(private val context: Context) {
     }
 
     val backgroundBlurFlow: Flow<Float> = context.dataStore.data.map { prefs ->
-        prefs[keyBgBlur]?.toFloatOrNull() ?: 24f
+        prefs[keyBgBlur]?.toFloatOrNull() ?: 10f
     }
 
     suspend fun setR18Accepted() {

@@ -182,7 +182,10 @@ fun SettingsScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(state.backgroundBlur.dp),
+                    .blur(
+                        if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
+                            state.backgroundBlur.dp else 24.dp
+                    ),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
             )
@@ -224,7 +227,7 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                SectionCard(title = "背景") {
+                SectionCard(title = "接口背景") {
                     Column(Modifier.selectableGroup()) {
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.DEFAULT,
@@ -244,8 +247,6 @@ fun SettingsScreen(
                                 }
                             },
                         )
-
-                        // 已添加的自定义接口
                         state.customBackgrounds.forEach { cbg ->
                             CustomBgRow(
                                 cbg = cbg,
@@ -256,8 +257,6 @@ fun SettingsScreen(
                                 onRemove = { onRemoveCustomBg(cbg.id) },
                             )
                         }
-
-                        // 新增接口按钮
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
@@ -270,35 +269,6 @@ fun SettingsScreen(
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
                             Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
-                        }
-
-                        BgOption(
-                            selected = state.backgroundMode == BackgroundMode.CUSTOM_IMAGE,
-                            title = "本地图片",
-                            subtitle = "从相册选择，保存在应用内",
-                            onClick = { onBgModeChange(BackgroundMode.CUSTOM_IMAGE) },
-                        )
-                        if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
-                            val hasLocal = state.backgroundImageUrl.isNotBlank() ||
-                                state.backgroundDisplayUrl.isNotBlank()
-                            Text(
-                                if (hasLocal) "已选择本地图片" else "尚未选择图片",
-                                color = TextSecondary,
-                                fontSize = 12.sp,
-                            )
-                            Spacer(modifier = Modifier.height(6.dp))
-                            Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                                Button(
-                                    onClick = { pickImage.launch("image/*") },
-                                    colors = primaryBtn(),
-                                ) { Text("选择图片") }
-                                if (hasLocal) {
-                                    TextButton(onClick = onClearLocalBackground) {
-                                        Text("清除", color = Primary)
-                                    }
-                                }
-                            }
-                            Spacer(modifier = Modifier.height(4.dp))
                         }
                     }
                     Spacer(modifier = Modifier.height(8.dp))
@@ -329,13 +299,50 @@ fun SettingsScreen(
                             }
                         }
                     }
+                    if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
+                        Spacer(modifier = Modifier.height(8.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            TextButton(onClick = onRefreshBackground) {
+                                Text("换一张", color = Primary)
+                            }
+                        }
+                    }
+                }
+
+                SectionCard(title = "本地图片") {
+                    BgOption(
+                        selected = state.backgroundMode == BackgroundMode.CUSTOM_IMAGE,
+                        title = "本地图片",
+                        subtitle = "从相册选择，自动裁剪适配",
+                        onClick = { onBgModeChange(BackgroundMode.CUSTOM_IMAGE) },
+                    )
                     if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
+                        val hasLocal = state.backgroundImageUrl.isNotBlank() ||
+                            state.backgroundDisplayUrl.isNotBlank()
+                        Spacer(modifier = Modifier.height(4.dp))
+                        Text(
+                            if (hasLocal) "已选择本地图片" else "尚未选择图片",
+                            color = TextSecondary,
+                            fontSize = 12.sp,
+                        )
+                        Spacer(modifier = Modifier.height(6.dp))
+                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                            Button(
+                                onClick = { pickImage.launch("image/*") },
+                                colors = primaryBtn(),
+                            ) { Text("选择图片") }
+                            if (hasLocal) {
+                                TextButton(onClick = onClearLocalBackground) {
+                                    Text("清除", color = Primary)
+                                }
+                            }
+                        }
                         Spacer(modifier = Modifier.height(8.dp))
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("模糊：", color = TextSecondary, fontSize = 12.sp)
                             Spacer(Modifier.width(8.dp))
                             Slider(
-                                value = state.backgroundBlur,
+                                value = state.backgroundBlur.coerceIn(0f, 48f),
                                 onValueChange = onBackgroundBlurChange,
                                 valueRange = 0f..48f,
                                 steps = 47,
@@ -352,14 +359,6 @@ fun SettingsScreen(
                                 fontSize = 12.sp,
                                 modifier = Modifier.width(36.dp),
                             )
-                        }
-                    }
-                    Spacer(modifier = Modifier.height(6.dp))
-                    if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = onRefreshBackground) {
-                                Text("换一张", color = Primary)
-                            }
                         }
                     }
                 }

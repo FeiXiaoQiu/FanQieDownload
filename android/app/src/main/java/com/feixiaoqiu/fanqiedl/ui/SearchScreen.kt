@@ -55,6 +55,7 @@ import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
+import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
@@ -101,7 +102,10 @@ fun SearchScreen(
                 contentDescription = null,
                 modifier = Modifier
                     .fillMaxSize()
-                    .blur(state.backgroundBlur.dp),
+                    .blur(
+                        if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
+                            state.backgroundBlur.dp else 24.dp
+                    ),
                 contentScale = ContentScale.Crop,
                 alignment = Alignment.Center,
             )
