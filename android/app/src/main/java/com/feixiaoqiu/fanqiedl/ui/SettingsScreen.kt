@@ -1,6 +1,9 @@
 package com.feixiaoqiu.fanqiedl.ui
 
+import android.content.Intent
 import android.net.Uri
+import android.os.PowerManager
+import android.provider.Settings as AndroidSettings
 import androidx.activity.compose.rememberLauncherForActivityResult
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.compose.animation.core.Animatable
@@ -70,6 +73,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
 import androidx.compose.ui.text.TextStyle
@@ -457,6 +461,35 @@ fun SettingsScreen(
                         },
                         colors = primaryBtn(),
                     ) { Text("添加") }
+                }
+
+                SectionCard(title = "省电设置") {
+                    val context = LocalContext.current
+                    val pm = remember { context.getSystemService(android.content.Context.POWER_SERVICE) as PowerManager }
+                    val isIgnoring = remember { pm.isIgnoringBatteryOptimizations(context.packageName) }
+                    val batteryLauncher = rememberLauncherForActivityResult(
+                        contract = ActivityResultContracts.StartActivityForResult(),
+                    ) { }
+                    Text(
+                        if (isIgnoring) "电池优化已关闭，后台可长时间运行" else "建议关闭电池优化以免下载中断",
+                        color = TextSecondary,
+                        fontSize = 12.sp,
+                    )
+                    Spacer(modifier = Modifier.height(6.dp))
+                    TextButton(
+                        onClick = {
+                            val intent = Intent(AndroidSettings.ACTION_REQUEST_IGNORE_BATTERY_OPTIMIZATIONS).apply {
+                                data = Uri.parse("package:${context.packageName}")
+                            }
+                            batteryLauncher.launch(intent)
+                        },
+                    ) {
+                        Text(
+                            if (isIgnoring) "电池优化设置" else "关闭电池优化",
+                            color = Primary,
+                            fontSize = 13.sp,
+                        )
+                    }
                 }
 
                 SectionCard(title = "关于") {

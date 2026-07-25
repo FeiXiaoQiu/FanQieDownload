@@ -22,16 +22,16 @@ node server.js
 2. Framework 选 **Other**，直接 Deploy
 3. 国内建议绑定自有域名
 
-## Android「观隅」`v1.0.4`
+## Android「观隅」`v1.1.8`
 
-[下载移动端（universal）](https://gh.xmly.dev/https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.0.4/guanyu-1.0.4-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.1.8/guanyu-1.1.8-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
 ```bash
 cd android
 ./gradlew :app:assembleRelease
-# 产物：app/build/outputs/apk/release/app-*-release.apk
+# 产物：app/build/outputs/apk/release/
 ```
 
 ### 功能
@@ -39,14 +39,54 @@ cd android
 - 书名搜索、结果分页、书籍简介弹层
 - 在线阅读（章节跳转、上一章/下一章）
 - TXT 下载（章节范围、断点续传）
-- 番茄节点增删改查 + 一键测活（延迟分色）
-- 背景切换（默认图床 / 自定义 API / 本地相册）
+- 番茄节点增删改查 + 一键测速（延迟分色）
+- 背景切换：栗次元图床 / 妖狐 R18 / 自定义 API / 本地相册
+- 背景缩放模式（完整显示 / 铺满屏幕），本地图片支持模糊调节
 - 一言 Hitokoto 外接 API
-- 检查更新、打开仓库
+- **应用内检查更新 + 直接下载安装**（自动测速选最快下载源）
+- 电池优化白名单，防止后台下载被系统杀死
 
 ### 发版
 
 `v*` tag 自动触发 GitHub Actions 构建 `guanyu-{version}-{abi}.apk` 并挂到 Release。
+
+## 更新日志
+
+### v1.1.8
+- 新增「省电设置」卡片，一键关闭电池优化防后台被杀
+- 下载前对所有源 HEAD 测速，自动选最快的下载
+- 修复下载「未知错误」（NetworkOnMainThreadException → withContext(IO)）
+- 修复铺满屏幕模式下背景仍然模糊的问题
+
+### v1.1.7
+- 修复下载 API 跑在主线程导致「未知错误」
+- 下载全部移入 `withContext(Dispatchers.IO)`
+
+### v1.1.6
+- 铺满屏幕 (CROP) 模式下只显示清晰 Crop 层，不再叠加模糊
+
+### v1.1.5
+- 背景设置拆为「接口背景」「本地图片」两张卡片
+- 模糊滑块仅在本地图片模式下生效，默认 10dp
+- 修复检查更新静默模式阻塞手动点击
+- 网页下载链改用 GitHub 直链
+
+### v1.1.4
+- 新增背景缩放模式（完整显示 / 铺满屏幕），双页面同步
+- 自定义图片背景可调节模糊程度 (0~48dp)
+
+### v1.1.3
+- 应用内检查更新 + 直接下载安装 APK
+- 下载源配置（原链 / 镜像源 / 自定义模板）
+- 设备 ABI 自动匹配
+- SearchScreen 背景同步为双层渲染
+
+### v1.1.2 及更早
+- 栗次元图床 / 妖狐 R18 背景
+- 本地图片裁剪上传
+- 节点测速（延迟分色）
+- 在线阅读器
+- 一言 Hitokoto
 
 ## 目录
 

@@ -1046,21 +1046,58 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     fun downloadApk() {
         val s = _ui.value
         val asset = s.matchingAsset ?: return
-        val source = s.downloadSources.firstOrNull { it.id == s.selectedDownloadSourceId }
-            ?: DefaultNodes.DOWNLOAD_SOURCES.first()
-        val sourceUrl = resolveSourceUrl(source.urlTemplate, asset.downloadUrl)
-        if (sourceUrl.isBlank()) return
+        val sources = s.downloadSources.ifEmpty { DefaultNodes.DOWNLOAD_SOURCES }
 
         if (updateDownloadJob?.isActive == true) return
         _ui.update {
             it.copy(
                 updateDownloading = true,
                 updateDownloadProgress = 0f,
-                updateDownloadMessage = "准备下载…",
+                updateDownloadMessage = "正在测速选择最快的下载源…",
             )
         }
         updateDownloadJob = viewModelScope.launch {
             try {
+                val candidates = sources.map { src ->
+                    src to resolveSourceUrl(src.urlTemplate, asset.downloadUrl)
+                }.filter { it.second.isNotBlank() }
+
+                var bestUrl = candidates.firstOrNull()?.second ?: return@launch
+
+                if (candidates.size > 1) {
+                    val probeResults = withContext(Dispatchers.IO) {
+                        candidates.map { (src, url) ->
+                            val latency = try {
+                                val client = OkHttpClient.Builder()
+                                    .connectTimeout(6, TimeUnit.SECONDS)
+                                    .readTimeout(6, TimeUnit.SECONDS)
+                                    .build()
+                                val headReq = Request.Builder().url(url).head().build()
+                                val start = java.lang.System.currentTimeMillis()
+                                val resp = client.newCall(headReq).execute()
+                                val elapsed = java.lang.System.currentTimeMillis() - start
+                                resp.close()
+                                elapsed
+                            } catch (_: Exception) {
+                                Long.MAX_VALUE
+                            }
+                            Triple(src, url, latency)
+                        }
+                    }
+                    val best = probeResults.minByOrNull { it.third }
+                    if (best != null && best.third < Long.MAX_VALUE) {
+                        bestUrl = best.second
+                        _ui.update {
+                            it.copy(updateDownloadMessage = "已选最快源：${best.first.name}，开始下载…")
+                        }
+                    }
+                    probeResults.filter { it.third == Long.MAX_VALUE }.forEach { fail ->
+                        _ui.update {
+                            it.copy(updateDownloadMessage = "${fail.first.name} 不可达，已跳过")
+                        }
+                    }
+                }
+
                 val outFile = withContext(Dispatchers.IO) {
                     val cacheDir = File(container.appContext.cacheDir, "update")
                     cacheDir.mkdirs()
@@ -1071,7 +1108,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                         .callTimeout(5, TimeUnit.MINUTES)
                         .connectTimeout(15, TimeUnit.SECONDS)
                         .build()
-                    val req = Request.Builder().url(sourceUrl).get().build()
+                    val req = Request.Builder().url(bestUrl).get().build()
                     val resp = client.newCall(req).execute()
                     if (!resp.isSuccessful) {
                         resp.close()
