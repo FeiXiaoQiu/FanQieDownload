@@ -546,7 +546,7 @@ fun SettingsScreen(
 
                     if (state.updateAvailable && state.releaseAssets.isNotEmpty()) {
                         val asset = state.matchingAsset ?: state.releaseAssets.firstOrNull() ?: return@SectionCard
-                        val assetNote = if (state.matchingAsset == null) "（未匹配设备架构，已选第一个 APK）" else ""
+                        val assetNote = if (asset.abi.isEmpty()) "已匹配 universal" else "已匹配 ${asset.abi}"
                         Spacer(modifier = Modifier.height(10.dp))
                         Text(
                             "新版 ${state.latestVersionTag.orEmpty()} / ${asset.name}",

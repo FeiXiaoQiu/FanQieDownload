@@ -172,7 +172,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             container.settings.customDownloadSourcesFlow.collect { customSources ->
                 _ui.update {
                     it.copy(
-                        downloadSources = DefaultNodes.DOWNLOAD_SOURCES + customSources,
+                        downloadSources = customSources + DefaultNodes.DOWNLOAD_SOURCES,
                     )
                 }
             }
@@ -1089,13 +1089,10 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     val best = probeResults.minByOrNull { it.third }
                     if (best != null && best.third < Long.MAX_VALUE) {
                         bestUrl = best.second
+                        val failCount = probeResults.count { it.third == Long.MAX_VALUE }
+                        val suffix = if (failCount > 0) "（${failCount} 个源超时）" else ""
                         _ui.update {
-                            it.copy(updateDownloadMessage = "已选最快源：${best.first.name}，开始下载…")
-                        }
-                    }
-                    probeResults.filter { it.third == Long.MAX_VALUE }.forEach { fail ->
-                        _ui.update {
-                            it.copy(updateDownloadMessage = "${fail.first.name} 不可达，已跳过")
+                            it.copy(updateDownloadMessage = "最快：${best.first.name}${suffix}，开始下载…")
                         }
                     }
                 }
