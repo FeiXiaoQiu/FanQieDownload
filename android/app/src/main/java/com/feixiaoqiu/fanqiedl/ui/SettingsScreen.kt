@@ -178,15 +178,6 @@ fun SettingsScreen(
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(state.backgroundBlur.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                     alignment = Alignment.Center,
@@ -195,7 +186,9 @@ fun SettingsScreen(
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(state.backgroundBlur.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )
@@ -318,36 +311,38 @@ fun SettingsScreen(
                             Text("换一张", color = Primary)
                         }
                     }
-                    Spacer(modifier = Modifier.height(10.dp))
-                    // 分割线
-                    Box(
-                        modifier = Modifier
-                            .fillMaxWidth()
-                            .height(0.5.dp)
-                            .background(Color.White.copy(alpha = 0.08f)),
-                    )
-                    Spacer(modifier = Modifier.height(10.dp))
-                    Row(verticalAlignment = Alignment.CenterVertically) {
-                        Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
-                        Spacer(Modifier.width(8.dp))
-                        Slider(
-                            value = state.backgroundBlur.coerceIn(0f, 48f),
-                            onValueChange = onBackgroundBlurChange,
-                            valueRange = 0f..48f,
-                            steps = 47,
-                            colors = SliderDefaults.colors(
-                                thumbColor = Primary,
-                                activeTrackColor = Primary,
-                                inactiveTrackColor = CardMuted,
-                            ),
-                            modifier = Modifier.weight(1f),
+                    if (state.backgroundScale == BackgroundScale.CROP) {
+                        Spacer(modifier = Modifier.height(10.dp))
+                        // 分割线
+                        Box(
+                            modifier = Modifier
+                                .fillMaxWidth()
+                                .height(0.5.dp)
+                                .background(Color.White.copy(alpha = 0.08f)),
                         )
-                        Text(
-                            "${state.backgroundBlur.toInt()}dp",
-                            color = GlassTextSecondary,
-                            fontSize = 12.sp,
-                            modifier = Modifier.width(36.dp),
-                        )
+                        Spacer(modifier = Modifier.height(10.dp))
+                        Row(verticalAlignment = Alignment.CenterVertically) {
+                            Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
+                            Spacer(Modifier.width(8.dp))
+                            Slider(
+                                value = state.backgroundBlur.coerceIn(0f, 48f),
+                                onValueChange = onBackgroundBlurChange,
+                                valueRange = 0f..48f,
+                                steps = 47,
+                                colors = SliderDefaults.colors(
+                                    thumbColor = Primary,
+                                    activeTrackColor = Primary,
+                                    inactiveTrackColor = CardMuted,
+                                ),
+                                modifier = Modifier.weight(1f),
+                            )
+                            Text(
+                                "${state.backgroundBlur.toInt()}dp",
+                                color = GlassTextSecondary,
+                                fontSize = 12.sp,
+                                modifier = Modifier.width(36.dp),
+                            )
+                        }
                     }
                 }
 
