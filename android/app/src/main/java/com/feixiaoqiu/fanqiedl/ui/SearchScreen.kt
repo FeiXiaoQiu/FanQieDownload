@@ -69,6 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
+import android.net.Uri
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
@@ -114,7 +115,10 @@ fun SearchScreen(
             p.isBlank() -> null
             p.startsWith("http://") || p.startsWith("https://") ||
                 p.startsWith("file://") || p.startsWith("content://") -> p
-            else -> null
+            else -> {
+                val f = java.io.File(p)
+                if (f.isFile) Uri.fromFile(f) else null
+            }
         }
     }
 

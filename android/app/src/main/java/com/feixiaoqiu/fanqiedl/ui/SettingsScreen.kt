@@ -185,7 +185,10 @@ fun SettingsScreen(
             p.isBlank() -> null
             p.startsWith("http://") || p.startsWith("https://") ||
                 p.startsWith("file://") || p.startsWith("content://") -> p
-            else -> null
+            else -> {
+                val f = java.io.File(p)
+                if (f.isFile) Uri.fromFile(f) else null
+            }
         }
     }
 
@@ -248,7 +251,45 @@ fun SettingsScreen(
                     .verticalScroll(rememberScrollState()),
                 verticalArrangement = Arrangement.spacedBy(12.dp),
             ) {
-                SectionCard(title = "接口背景") {
+                SectionCard(title = "背景") {
+                    // 第1行：缩放（同时作用于接口和本地）
+                    Text("缩放：", color = GlassTextSecondary, fontSize = 12.sp)
+                    Spacer(modifier = Modifier.height(2.dp))
+                    Row(
+                        modifier = Modifier.selectableGroup(),
+                        horizontalArrangement = Arrangement.spacedBy(16.dp),
+                    ) {
+                        BackgroundScale.entries.forEach { scale ->
+                            Row(
+                                modifier = Modifier
+                                    .selectable(
+                                        selected = state.backgroundScale == scale,
+                                        onClick = { onBackgroundScaleChange(scale) },
+                                        role = Role.RadioButton,
+                                    ),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                RadioButton(
+                                    selected = state.backgroundScale == scale,
+                                    onClick = null,
+                                    colors = RadioButtonDefaults.colors(selectedColor = Primary),
+                                    modifier = Modifier.size(18.dp),
+                                )
+                                Spacer(Modifier.width(4.dp))
+                                Text(scale.label, color = GlassText, fontSize = 13.sp)
+                            }
+                        }
+                    }
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // 分割线
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .background(Color.White.copy(alpha = 0.08f)),
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // 接口背景区域
                     Column(Modifier.selectableGroup()) {
                         BgOption(
                             selected = state.backgroundMode == BackgroundMode.DEFAULT,
@@ -294,45 +335,24 @@ fun SettingsScreen(
                             Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         }
                     }
-                    Spacer(modifier = Modifier.height(8.dp))
-                    Text("缩放：", color = GlassTextSecondary, fontSize = 12.sp)
-                    Spacer(modifier = Modifier.height(2.dp))
-                    Row(
-                        modifier = Modifier.selectableGroup(),
-                        horizontalArrangement = Arrangement.spacedBy(16.dp),
-                    ) {
-                        BackgroundScale.entries.forEach { scale ->
-                            Row(
-                                modifier = Modifier
-                                    .selectable(
-                                        selected = state.backgroundScale == scale,
-                                        onClick = { onBackgroundScaleChange(scale) },
-                                        role = Role.RadioButton,
-                                    ),
-                                verticalAlignment = Alignment.CenterVertically,
-                            ) {
-                                RadioButton(
-                                    selected = state.backgroundScale == scale,
-                                    onClick = null,
-                                    colors = RadioButtonDefaults.colors(selectedColor = Primary),
-                                    modifier = Modifier.size(18.dp),
-                                )
-                                Spacer(Modifier.width(4.dp))
-                                Text(scale.label, color = GlassText, fontSize = 13.sp)
-                            }
-                        }
-                    }
                     if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
-                        Spacer(modifier = Modifier.height(8.dp))
+                        Spacer(modifier = Modifier.height(4.dp))
                         Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
                             TextButton(onClick = onRefreshBackground) {
                                 Text("换一张", color = Primary)
                             }
                         }
                     }
-                }
-
-                SectionCard(title = "本地图片") {
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // 分割线
+                    Box(
+                        modifier = Modifier
+                            .fillMaxWidth()
+                            .height(0.5.dp)
+                            .background(Color.White.copy(alpha = 0.08f)),
+                    )
+                    Spacer(modifier = Modifier.height(10.dp))
+                    // 本地图片区域
                     BgOption(
                         selected = state.backgroundMode == BackgroundMode.CUSTOM_IMAGE,
                         title = "本地图片",

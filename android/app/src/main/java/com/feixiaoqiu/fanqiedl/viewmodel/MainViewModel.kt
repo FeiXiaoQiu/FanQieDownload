@@ -289,7 +289,11 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 val local = container.backgroundImages.localPathOrEmpty()
                 when {
                     local.isNotBlank() -> "file://$local"
-                    imageUrl.isNotBlank() -> imageUrl.trim()
+                    imageUrl.isNotBlank() -> {
+                        val p = imageUrl.trim()
+                        if (p.startsWith("file://") || p.startsWith("http")) p
+                        else "file://$p"
+                    }
                     else -> ""
                 }
             }
