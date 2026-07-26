@@ -7,7 +7,6 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
-import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -37,7 +36,7 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.rememberAsyncImagePainter
+import coil.compose.AsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
@@ -90,11 +89,6 @@ class MainActivity : ComponentActivity() {
                             .build()
                     }
                 }
-                val bgPainter = rememberAsyncImagePainter(
-                    model = bgModel,
-                    contentScale = ContentScale.Crop,
-                )
-
                 LaunchedEffect(state.snackbar) {
                     val msg = state.snackbar
                     if (msg != null) {
@@ -121,25 +115,29 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
                     if (bgModel != null) {
                         if (state.backgroundScale == BackgroundScale.FIT) {
-                            Image(
-                                painter = bgPainter,
+                            AsyncImage(
+                                model = bgModel,
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize().blur(10.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .blur(10.dp),
                                 contentScale = ContentScale.Crop,
                                 alignment = Alignment.Center,
                             )
-                            Image(
-                                painter = bgPainter,
+                            AsyncImage(
+                                model = bgModel,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
                                 contentScale = ContentScale.Fit,
                                 alignment = Alignment.Center,
                             )
                         } else {
-                            Image(
-                                painter = bgPainter,
+                            AsyncImage(
+                                model = bgModel,
                                 contentDescription = null,
-                                modifier = Modifier.fillMaxSize().blur(state.backgroundCropBlur.dp),
+                                modifier = Modifier
+                                    .fillMaxSize()
+                                    .blur(state.backgroundCropBlur.dp),
                                 contentScale = ContentScale.Crop,
                                 alignment = Alignment.Center,
                             )

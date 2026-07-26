@@ -1,5 +1,9 @@
 # 更新日志
 
+## v1.5.1
+- **修复**：FIT 模式底图有时不显示，改用独立的 `AsyncImage` 分别渲染模糊底图与清晰主图
+- **修复**：设置页切换背景后返回首页/再次进入设置时底图不一致的问题
+
 ## v1.5.0
 - **重构**：背景渲染上提到 `MainActivity`，Search/Settings 共享同一 `rememberAsyncImagePainter`
 - **修复**：FIT 模式底层模糊图有时不加载的问题
