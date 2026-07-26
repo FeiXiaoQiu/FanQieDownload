@@ -1,5 +1,10 @@
 # 更新日志
 
+## v1.5.0
+- **重构**：背景渲染上提到 `MainActivity`，Search/Settings 共享同一 `rememberAsyncImagePainter`
+- **修复**：FIT 模式底层模糊图有时不加载的问题
+- **修复**：进入设置页不再强制更换背景图
+
 ## v1.4.9
 - **修复**：背景 URL 在应用 session 内保持稳定，操作不再频繁换图
 - **修复**：恢复 Coil 内存缓存、仅禁用磁盘缓存，FIT 模式底层模糊图即时显示

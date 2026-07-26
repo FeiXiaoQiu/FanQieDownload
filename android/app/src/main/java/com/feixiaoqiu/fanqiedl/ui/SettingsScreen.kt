@@ -76,7 +76,6 @@ import androidx.compose.ui.draw.clip
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
-import androidx.compose.ui.layout.ContentScale
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -86,9 +85,6 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
-import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.CustomBackground
@@ -104,7 +100,6 @@ import com.feixiaoqiu.fanqiedl.ui.theme.GlassText
 import com.feixiaoqiu.fanqiedl.ui.theme.GlassTextSecondary
 import com.feixiaoqiu.fanqiedl.ui.theme.OnDark
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
-import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
@@ -113,7 +108,6 @@ import com.feixiaoqiu.fanqiedl.viewmodel.NodeProbePhase
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 import kotlin.math.roundToInt
-import java.io.File
 
 @Composable
 fun SettingsScreen(
@@ -161,66 +155,12 @@ fun SettingsScreen(
         onProbeAll()
     }
 
-    val imageContext = LocalContext.current
-    val bgModel: ImageRequest? = remember(state.backgroundDisplayUrl) {
-        val p = state.backgroundDisplayUrl
-        val data = when {
-            p.isBlank() -> null
-            p.startsWith("http://") || p.startsWith("https://") ||
-                p.startsWith("file://") || p.startsWith("content://") -> p
-            else -> {
-                val f = File(p)
-                if (f.isFile) Uri.fromFile(f) else null
-            }
-        }
-        data?.let {
-            ImageRequest.Builder(imageContext)
-                .data(it)
-                .diskCachePolicy(CachePolicy.DISABLED)
-                .crossfade(false)
-                .build()
-        }
-    }
-
-    Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
-        if (bgModel != null) {
-            if (state.backgroundScale == BackgroundScale.FIT) {
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(10.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                )
-            } else {
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(state.backgroundCropBlur.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize().background(Scrim))
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding()
-                .padding(horizontal = 16.dp, vertical = 8.dp),
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding()
+            .padding(horizontal = 16.dp, vertical = 8.dp),
+    ) {
             Row(
                 verticalAlignment = Alignment.CenterVertically,
                 modifier = Modifier.windowInsetsPadding(WindowInsets.statusBars).padding(top = 8.dp),
@@ -704,16 +644,15 @@ fun SettingsScreen(
             }
         }
 
-        if (showR18Dialog) {
-            R18DisclaimerDialog(
-                onAccept = {
-                    showR18Dialog = false
-                    onAcceptR18()
-                    onBgModeChange(BackgroundMode.R18)
-                },
-                onDecline = { showR18Dialog = false },
-            )
-        }
+    if (showR18Dialog) {
+        R18DisclaimerDialog(
+            onAccept = {
+                showR18Dialog = false
+                onAcceptR18()
+                onBgModeChange(BackgroundMode.R18)
+            },
+            onDecline = { showR18Dialog = false },
+        )
     }
 }
 

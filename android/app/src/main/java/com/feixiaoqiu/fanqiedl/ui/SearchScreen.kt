@@ -69,11 +69,7 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
-import androidx.compose.ui.platform.LocalContext
-import android.net.Uri
 import coil.compose.AsyncImage
-import coil.request.CachePolicy
-import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.R
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
@@ -90,7 +86,6 @@ import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextPrimary
 import com.feixiaoqiu.fanqiedl.ui.theme.TextSecondary
 import com.feixiaoqiu.fanqiedl.viewmodel.MainUiState
-import java.io.File
 
 @Composable
 fun SearchScreen(
@@ -111,65 +106,12 @@ fun SearchScreen(
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
     val corner = RoundedCornerShape(10.dp)
-    val context = LocalContext.current
-    val bgModel: ImageRequest? = remember(state.backgroundDisplayUrl) {
-        val p = state.backgroundDisplayUrl
-        val data = when {
-            p.isBlank() -> null
-            p.startsWith("http://") || p.startsWith("https://") ||
-                p.startsWith("file://") || p.startsWith("content://") -> p
-            else -> {
-                val f = File(p)
-                if (f.isFile) Uri.fromFile(f) else null
-            }
-        }
-        data?.let {
-            ImageRequest.Builder(context)
-                .data(it)
-                .diskCachePolicy(CachePolicy.DISABLED)
-                .crossfade(false)
-                .build()
-        }
-    }
 
-    Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
-        if (bgModel != null) {
-            if (state.backgroundScale == BackgroundScale.FIT) {
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(10.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier.fillMaxSize(),
-                    contentScale = ContentScale.Fit,
-                    alignment = Alignment.Center,
-                )
-            } else {
-                AsyncImage(
-                    model = bgModel,
-                    contentDescription = null,
-                    modifier = Modifier
-                        .fillMaxSize()
-                        .blur(state.backgroundCropBlur.dp),
-                    contentScale = ContentScale.Crop,
-                    alignment = Alignment.Center,
-                )
-            }
-        }
-        Box(modifier = Modifier.fillMaxSize().background(Scrim))
-
-        Column(
-            modifier = Modifier
-                .fillMaxSize()
-                .navigationBarsPadding(),
-        ) {
+    Column(
+        modifier = Modifier
+            .fillMaxSize()
+            .navigationBarsPadding(),
+    ) {
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
@@ -335,7 +277,6 @@ fun SearchScreen(
             onDismiss = onDismissUpdate,
         )
     }
-}
 
 @Composable
 private fun SearchHeader(title: String, subtitle: String, compact: Boolean) {

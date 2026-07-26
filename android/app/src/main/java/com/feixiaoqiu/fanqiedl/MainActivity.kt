@@ -7,6 +7,8 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
+import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.Row
@@ -25,12 +27,20 @@ import androidx.compose.runtime.getValue
 import androidx.compose.runtime.mutableStateOf
 import androidx.compose.runtime.remember
 import androidx.compose.runtime.setValue
+import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
+import androidx.compose.ui.draw.blur
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
+import coil.compose.rememberAsyncImagePainter
+import coil.request.CachePolicy
+import coil.request.ImageRequest
+import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.UpdateChecker
 import com.feixiaoqiu.fanqiedl.ui.BookDetailDialog
 import com.feixiaoqiu.fanqiedl.ui.DownloadOptionsDialog
@@ -40,9 +50,12 @@ import com.feixiaoqiu.fanqiedl.ui.ReaderScreen
 import com.feixiaoqiu.fanqiedl.ui.SearchScreen
 import com.feixiaoqiu.fanqiedl.ui.SettingsScreen
 import com.feixiaoqiu.fanqiedl.ui.SplashScreen
+import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
 import com.feixiaoqiu.fanqiedl.ui.theme.FanqieTheme
 import com.feixiaoqiu.fanqiedl.ui.theme.Primary
+import com.feixiaoqiu.fanqiedl.ui.theme.Scrim
 import com.feixiaoqiu.fanqiedl.viewmodel.MainViewModel
+import java.io.File
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -56,6 +69,31 @@ class MainActivity : ComponentActivity() {
                 val snackbarHostState = remember { SnackbarHostState() }
                 var showSettings by remember { mutableStateOf(false) }
                 var showSplash by remember { mutableStateOf(true) }
+
+                val context = LocalContext.current
+                val bgModel: ImageRequest? = remember(state.backgroundDisplayUrl) {
+                    val p = state.backgroundDisplayUrl
+                    val data = when {
+                        p.isBlank() -> null
+                        p.startsWith("http://") || p.startsWith("https://") ||
+                            p.startsWith("file://") || p.startsWith("content://") -> p
+                        else -> {
+                            val f = File(p)
+                            if (f.isFile) Uri.fromFile(f) else null
+                        }
+                    }
+                    data?.let {
+                        ImageRequest.Builder(context)
+                            .data(it)
+                            .diskCachePolicy(CachePolicy.DISABLED)
+                            .crossfade(false)
+                            .build()
+                    }
+                }
+                val bgPainter = rememberAsyncImagePainter(
+                    model = bgModel,
+                    contentScale = ContentScale.Crop,
+                )
 
                 LaunchedEffect(state.snackbar) {
                     val msg = state.snackbar
@@ -80,7 +118,35 @@ class MainActivity : ComponentActivity() {
                     }
                 }
 
-                Box(modifier = Modifier.fillMaxSize()) {
+                Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
+                    if (bgModel != null) {
+                        if (state.backgroundScale == BackgroundScale.FIT) {
+                            Image(
+                                painter = bgPainter,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().blur(10.dp),
+                                contentScale = ContentScale.Crop,
+                                alignment = Alignment.Center,
+                            )
+                            Image(
+                                painter = bgPainter,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize(),
+                                contentScale = ContentScale.Fit,
+                                alignment = Alignment.Center,
+                            )
+                        } else {
+                            Image(
+                                painter = bgPainter,
+                                contentDescription = null,
+                                modifier = Modifier.fillMaxSize().blur(state.backgroundCropBlur.dp),
+                                contentScale = ContentScale.Crop,
+                                alignment = Alignment.Center,
+                            )
+                        }
+                    }
+                    Box(modifier = Modifier.fillMaxSize().background(Scrim))
+
                     // 背景铺满全屏（含刘海/挖孔区域），避免顶部黑条
                     Scaffold(
                         modifier = Modifier.fillMaxSize(),
