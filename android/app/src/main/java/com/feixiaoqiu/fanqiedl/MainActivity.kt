@@ -7,6 +7,7 @@ import androidx.activity.ComponentActivity
 import androidx.activity.compose.BackHandler
 import androidx.activity.compose.setContent
 import androidx.activity.enableEdgeToEdge
+import androidx.compose.foundation.Image
 import androidx.compose.foundation.background
 import androidx.compose.foundation.layout.Arrangement
 import androidx.compose.foundation.layout.Box
@@ -36,7 +37,8 @@ import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.lifecycle.viewmodel.compose.viewModel
-import coil.compose.AsyncImage
+import coil.compose.AsyncImagePainter
+import coil.compose.SubcomposeAsyncImage
 import coil.request.CachePolicy
 import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
@@ -115,24 +117,34 @@ class MainActivity : ComponentActivity() {
                 Box(modifier = Modifier.fillMaxSize().background(BgBlack)) {
                     if (bgModel != null) {
                         if (state.backgroundScale == BackgroundScale.FIT) {
-                            AsyncImage(
-                                model = bgModel,
-                                contentDescription = null,
-                                modifier = Modifier
-                                    .fillMaxSize()
-                                    .blur(10.dp),
-                                contentScale = ContentScale.Crop,
-                                alignment = Alignment.Center,
-                            )
-                            AsyncImage(
+                            SubcomposeAsyncImage(
                                 model = bgModel,
                                 contentDescription = null,
                                 modifier = Modifier.fillMaxSize(),
-                                contentScale = ContentScale.Fit,
-                                alignment = Alignment.Center,
+                                contentScale = ContentScale.Crop,
+                                success = { successState ->
+                                    Box(modifier = Modifier.fillMaxSize()) {
+                                        Image(
+                                            painter = successState.painter,
+                                            contentDescription = null,
+                                            modifier = Modifier
+                                                .fillMaxSize()
+                                                .blur(10.dp),
+                                            contentScale = ContentScale.Crop,
+                                            alignment = Alignment.Center,
+                                        )
+                                        Image(
+                                            painter = successState.painter,
+                                            contentDescription = null,
+                                            modifier = Modifier.fillMaxSize(),
+                                            contentScale = ContentScale.Fit,
+                                            alignment = Alignment.Center,
+                                        )
+                                    }
+                                },
                             )
                         } else {
-                            AsyncImage(
+                            SubcomposeAsyncImage(
                                 model = bgModel,
                                 contentDescription = null,
                                 modifier = Modifier
