@@ -129,7 +129,7 @@ class MainActivity : ComponentActivity() {
                                         onRemoveDownloadSource = vm::removeCustomDownloadSource,
                                         onDownloadUpdate = vm::downloadApk,
                                         onBackgroundScaleChange = vm::setBackgroundScale,
-                                        onBackgroundBlurChange = vm::setBackgroundBlur,
+                                        onBackgroundBlurChange = vm::setBackgroundCropBlur,
                                         onResetMirrors = vm::resetMirrors,
                                         onToggleAutoUpdateCheck = vm::toggleAutoUpdateCheck,
                                     )

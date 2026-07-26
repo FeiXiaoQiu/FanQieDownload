@@ -127,6 +127,15 @@ fun SearchScreen(
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(10.dp),
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
+                )
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                     alignment = Alignment.Center,
@@ -137,7 +146,7 @@ fun SearchScreen(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(state.backgroundBlur.dp),
+                        .blur(state.backgroundCropBlur.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )

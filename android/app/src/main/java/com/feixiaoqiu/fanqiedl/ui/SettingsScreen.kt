@@ -178,6 +178,15 @@ fun SettingsScreen(
                 AsyncImage(
                     model = bgModel,
                     contentDescription = null,
+                    modifier = Modifier
+                        .fillMaxSize()
+                        .blur(10.dp),
+                    contentScale = ContentScale.Crop,
+                    alignment = Alignment.Center,
+                )
+                AsyncImage(
+                    model = bgModel,
+                    contentDescription = null,
                     modifier = Modifier.fillMaxSize(),
                     contentScale = ContentScale.Fit,
                     alignment = Alignment.Center,
@@ -188,7 +197,7 @@ fun SettingsScreen(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(state.backgroundBlur.dp),
+                        .blur(state.backgroundCropBlur.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )
@@ -324,20 +333,20 @@ fun SettingsScreen(
                         Row(verticalAlignment = Alignment.CenterVertically) {
                             Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
                             Spacer(Modifier.width(8.dp))
-                            Slider(
-                                value = state.backgroundBlur.coerceIn(0f, 48f),
-                                onValueChange = onBackgroundBlurChange,
-                                valueRange = 0f..48f,
-                                steps = 47,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Primary,
-                                    activeTrackColor = Primary,
-                                    inactiveTrackColor = CardMuted,
-                                ),
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                "${state.backgroundBlur.toInt()}dp",
+                        Slider(
+                            value = state.backgroundCropBlur.coerceIn(0f, 48f),
+                            onValueChange = onBackgroundBlurChange,
+                            valueRange = 0f..48f,
+                            steps = 47,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Primary,
+                                activeTrackColor = Primary,
+                                inactiveTrackColor = CardMuted,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
+                        Text(
+                            "${state.backgroundCropBlur.toInt()}dp",
                                 color = GlassTextSecondary,
                                 fontSize = 12.sp,
                                 modifier = Modifier.width(36.dp),

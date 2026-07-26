@@ -26,7 +26,7 @@ class AppSettings(private val context: Context) {
     private val keyCustomDownloadSrcs = stringPreferencesKey("custom_download_sources_json")
     private val keyMirrorInit = stringPreferencesKey("mirror_initialized")
     private val keyBgScale = stringPreferencesKey("bg_scale")
-    private val keyBgBlur = stringPreferencesKey("bg_blur")
+    private val keyBgCropBlur = stringPreferencesKey("bg_crop_blur")
     private val keyAutoUpdateCheck = stringPreferencesKey("auto_update_check")
 
     val nodesFlow: Flow<List<NodeConfig>> = context.dataStore.data.map { prefs ->
@@ -69,8 +69,8 @@ class AppSettings(private val context: Context) {
         BackgroundScale.fromStorage(prefs[keyBgScale])
     }
 
-    val backgroundBlurFlow: Flow<Float> = context.dataStore.data.map { prefs ->
-        prefs[keyBgBlur]?.toFloatOrNull() ?: 10f
+    val backgroundCropBlurFlow: Flow<Float> = context.dataStore.data.map { prefs ->
+        prefs[keyBgCropBlur]?.toFloatOrNull() ?: 0f
     }
 
     val autoUpdateCheckFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -95,9 +95,9 @@ class AppSettings(private val context: Context) {
         }
     }
 
-    suspend fun setBackgroundBlur(blur: Float) {
+    suspend fun setBackgroundCropBlur(blur: Float) {
         context.dataStore.edit { prefs ->
-            prefs[keyBgBlur] = blur.toString()
+            prefs[keyBgCropBlur] = blur.toString()
         }
     }
 

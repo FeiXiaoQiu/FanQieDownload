@@ -116,7 +116,7 @@ data class MainUiState(
     val updateDownloadMessage: String? = null,
     val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
     val backgroundScale: BackgroundScale = BackgroundScale.FIT,
-    val backgroundBlur: Float = 0f,
+    val backgroundCropBlur: Float = 0f,
     val autoUpdateCheck: Boolean = true,
     val showHomeUpdate: Boolean = false,
     val showApkExistsPrompt: Boolean = false,
@@ -239,8 +239,8 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch {
-            container.settings.backgroundBlurFlow.collect { blur ->
-                _ui.update { it.copy(backgroundBlur = blur) }
+            container.settings.backgroundCropBlurFlow.collect { blur ->
+                _ui.update { it.copy(backgroundCropBlur = blur) }
             }
         }
         viewModelScope.launch {
@@ -697,9 +697,9 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
-    fun setBackgroundBlur(blur: Float) {
+    fun setBackgroundCropBlur(blur: Float) {
         viewModelScope.launch {
-            container.settings.setBackgroundBlur(blur)
+            container.settings.setBackgroundCropBlur(blur)
         }
     }
 
