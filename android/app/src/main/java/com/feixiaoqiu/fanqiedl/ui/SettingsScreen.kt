@@ -87,6 +87,8 @@ import androidx.compose.ui.unit.IntOffset
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.CustomBackground
@@ -159,16 +161,25 @@ fun SettingsScreen(
         onProbeAll()
     }
 
-    val bgModel: Any? = remember(state.backgroundDisplayUrl) {
+    val imageContext = LocalContext.current
+    val bgModel: ImageRequest? = remember(state.backgroundDisplayUrl) {
         val p = state.backgroundDisplayUrl
-        when {
+        val data = when {
             p.isBlank() -> null
             p.startsWith("http://") || p.startsWith("https://") ||
                 p.startsWith("file://") || p.startsWith("content://") -> p
             else -> {
-                val f = java.io.File(p)
+                val f = File(p)
                 if (f.isFile) Uri.fromFile(f) else null
             }
+        }
+        data?.let {
+            ImageRequest.Builder(imageContext)
+                .data(it)
+                .memoryCachePolicy(CachePolicy.DISABLED)
+                .diskCachePolicy(CachePolicy.DISABLED)
+                .crossfade(false)
+                .build()
         }
     }
 

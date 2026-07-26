@@ -69,8 +69,11 @@ import androidx.compose.ui.text.style.TextOverflow
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import androidx.compose.ui.platform.LocalConfiguration
+import androidx.compose.ui.platform.LocalContext
 import android.net.Uri
 import coil.compose.AsyncImage
+import coil.request.CachePolicy
+import coil.request.ImageRequest
 import com.feixiaoqiu.fanqiedl.R
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
@@ -108,16 +111,25 @@ fun SearchScreen(
 ) {
     val hasResults = state.books.isNotEmpty() || state.searching || state.searchError != null
     val corner = RoundedCornerShape(10.dp)
-    val bgModel: Any? = remember(state.backgroundDisplayUrl) {
+    val context = LocalContext.current
+    val bgModel: ImageRequest? = remember(state.backgroundDisplayUrl) {
         val p = state.backgroundDisplayUrl
-        when {
+        val data = when {
             p.isBlank() -> null
             p.startsWith("http://") || p.startsWith("https://") ||
                 p.startsWith("file://") || p.startsWith("content://") -> p
             else -> {
-                val f = java.io.File(p)
+                val f = File(p)
                 if (f.isFile) Uri.fromFile(f) else null
             }
+        }
+        data?.let {
+            ImageRequest.Builder(context)
+                .data(it)
+                .memoryCachePolicy(CachePolicy.DISABLED)
+                .diskCachePolicy(CachePolicy.DISABLED)
+                .crossfade(false)
+                .build()
         }
     }
 

@@ -209,7 +209,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                             backgroundMode = mode,
                             backgroundApiUrl = api,
                             backgroundImageUrl = image,
-                            backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = false),
+                            backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = true),
                         )
                     }
                 }
