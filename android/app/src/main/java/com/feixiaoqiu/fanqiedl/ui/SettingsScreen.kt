@@ -985,11 +985,11 @@ private fun NodeRow(
                     )
                 },
         ) {
-            // 暗底遮罩：挡住背后的左滑按钮，避免半透露出
+            // 暗底遮罩：挡住背后的左滑按钮，避免透出
             Box(
                 modifier = Modifier
                     .matchParentSize()
-                    .background(Color(0xCC12121A)),
+                    .background(Color(0xFF12121A)),
             )
             // 玻璃上层
             Column(

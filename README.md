@@ -6,9 +6,9 @@ Web 搜索下载 + Android 客户端「观隅」。
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 
-## Android「观隅」`v1.4.0`
+## Android「观隅」`v1.4.1`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.4.0/guanyu-1.4.0-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.4.1/guanyu-1.4.1-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
