@@ -3,7 +3,10 @@ package com.feixiaoqiu.fanqiedl.ui.theme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
+import androidx.compose.ui.platform.LocalDensity
+import androidx.compose.ui.unit.Density
 
 val BgBlack = Color(0xFF0A0A0A)
 val CardWhite = Color(0xFFFFFFFF)
@@ -38,8 +41,17 @@ private val Scheme = lightColorScheme(
 
 @Composable
 fun FanqieTheme(content: @Composable () -> Unit) {
+    // 禁用系统字体缩放：简易模式、大字体下仍按设计尺寸渲染，避免换行/溢出
+    val density = LocalDensity.current
+    val fixedDensity = if (density.fontScale != 1.0f)
+        Density(density = density.density, fontScale = 1.0f)
+    else density
     MaterialTheme(
         colorScheme = Scheme,
-        content = content,
+        content = {
+            CompositionLocalProvider(LocalDensity provides fixedDensity) {
+                content()
+            }
+        },
     )
 }
