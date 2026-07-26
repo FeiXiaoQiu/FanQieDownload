@@ -176,7 +176,6 @@ fun SettingsScreen(
         data?.let {
             ImageRequest.Builder(imageContext)
                 .data(it)
-                .memoryCachePolicy(CachePolicy.DISABLED)
                 .diskCachePolicy(CachePolicy.DISABLED)
                 .crossfade(false)
                 .build()

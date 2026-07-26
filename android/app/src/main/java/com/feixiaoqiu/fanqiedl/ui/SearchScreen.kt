@@ -126,7 +126,6 @@ fun SearchScreen(
         data?.let {
             ImageRequest.Builder(context)
                 .data(it)
-                .memoryCachePolicy(CachePolicy.DISABLED)
                 .diskCachePolicy(CachePolicy.DISABLED)
                 .crossfade(false)
                 .build()
