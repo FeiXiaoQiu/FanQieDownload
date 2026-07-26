@@ -288,7 +288,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             BackgroundMode.CUSTOM_IMAGE -> {
                 val local = container.backgroundImages.localPathOrEmpty()
                 when {
-                    local.isNotBlank() -> local
+                    local.isNotBlank() -> "file://$local"
                     imageUrl.isNotBlank() -> imageUrl.trim()
                     else -> ""
                 }
@@ -807,7 +807,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                     it.copy(
                         backgroundMode = BackgroundMode.CUSTOM_IMAGE,
                         backgroundImageUrl = path,
-                        backgroundDisplayUrl = path,
+                        backgroundDisplayUrl = "file://$path",
                         snackbar = "本地背景已保存",
                     )
                 }

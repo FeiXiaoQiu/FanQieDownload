@@ -114,10 +114,7 @@ fun SearchScreen(
             p.isBlank() -> null
             p.startsWith("http://") || p.startsWith("https://") ||
                 p.startsWith("file://") || p.startsWith("content://") -> p
-            else -> {
-                val f = File(p)
-                if (f.isFile) f else null
-            }
+            else -> null
         }
     }
 
