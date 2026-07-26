@@ -129,8 +129,6 @@ fun SettingsScreen(
     onBgApiChange: (String) -> Unit,
     onSaveBackground: () -> Unit,
     onRefreshBackground: () -> Unit,
-    onPickLocalBackground: (Uri) -> Unit,
-    onClearLocalBackground: () -> Unit,
     onAddCustomBg: (String, String) -> Unit = { _, _ -> },
     onRemoveCustomBg: (String) -> Unit = {},
     onUpdateCustomBg: (String, String, String) -> Unit = { _, _, _ -> },
@@ -155,24 +153,6 @@ fun SettingsScreen(
     var toastTick by remember { mutableIntStateOf(0) }
     var versionTapCount by remember { mutableIntStateOf(0) }
     var lastTapTime by remember { mutableLongStateOf(0L) }
-    var cropUri by remember { mutableStateOf<Uri?>(null) }
-    val pickImage = rememberLauncherForActivityResult(
-        contract = ActivityResultContracts.GetContent(),
-    ) { uri: Uri? ->
-        if (uri != null) cropUri = uri
-    }
-
-    // 裁剪对话框
-    if (cropUri != null) {
-        ImageCropDialog(
-            imageUri = cropUri!!,
-            onConfirm = { croppedUri ->
-                cropUri = null
-                onPickLocalBackground(croppedUri)
-            },
-            onCancel = { cropUri = null },
-        )
-    }
 
     // 进入设置时自动测速
     LaunchedEffect(Unit) {
@@ -200,10 +180,7 @@ fun SettingsScreen(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(
-                            if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
-                                state.backgroundBlur.dp else 24.dp
-                        ),
+                        .blur(state.backgroundBlur.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )
@@ -335,12 +312,10 @@ fun SettingsScreen(
                             Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
                         }
                     }
-                    if (state.backgroundMode != BackgroundMode.CUSTOM_IMAGE) {
-                        Spacer(modifier = Modifier.height(4.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            TextButton(onClick = onRefreshBackground) {
-                                Text("换一张", color = Primary)
-                            }
+                    Spacer(modifier = Modifier.height(4.dp))
+                    Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
+                        TextButton(onClick = onRefreshBackground) {
+                            Text("换一张", color = Primary)
                         }
                     }
                     Spacer(modifier = Modifier.height(10.dp))
@@ -352,57 +327,27 @@ fun SettingsScreen(
                             .background(Color.White.copy(alpha = 0.08f)),
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    // 本地图片区域
-                    BgOption(
-                        selected = state.backgroundMode == BackgroundMode.CUSTOM_IMAGE,
-                        title = "本地图片",
-                        subtitle = "从相册选择，自动裁剪适配",
-                        onClick = { onBgModeChange(BackgroundMode.CUSTOM_IMAGE) },
-                    )
-                    if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
-                        val hasLocal = state.backgroundImageUrl.isNotBlank() ||
-                            state.backgroundDisplayUrl.isNotBlank()
-                        Spacer(modifier = Modifier.height(4.dp))
+                    Row(verticalAlignment = Alignment.CenterVertically) {
+                        Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
+                        Spacer(Modifier.width(8.dp))
+                        Slider(
+                            value = state.backgroundBlur.coerceIn(0f, 48f),
+                            onValueChange = onBackgroundBlurChange,
+                            valueRange = 0f..48f,
+                            steps = 47,
+                            colors = SliderDefaults.colors(
+                                thumbColor = Primary,
+                                activeTrackColor = Primary,
+                                inactiveTrackColor = CardMuted,
+                            ),
+                            modifier = Modifier.weight(1f),
+                        )
                         Text(
-                            if (hasLocal) "已选择本地图片" else "尚未选择图片",
+                            "${state.backgroundBlur.toInt()}dp",
                             color = GlassTextSecondary,
                             fontSize = 12.sp,
+                            modifier = Modifier.width(36.dp),
                         )
-                        Spacer(modifier = Modifier.height(6.dp))
-                        Row(horizontalArrangement = Arrangement.spacedBy(8.dp)) {
-                            Button(
-                                onClick = { pickImage.launch("image/*") },
-                                colors = primaryBtn(),
-                            ) { Text("选择图片") }
-                            if (hasLocal) {
-                                TextButton(onClick = onClearLocalBackground) {
-                                    Text("清除", color = Primary)
-                                }
-                            }
-                        }
-                        Spacer(modifier = Modifier.height(8.dp))
-                        Row(verticalAlignment = Alignment.CenterVertically) {
-                            Text("模糊：", color = GlassTextSecondary, fontSize = 12.sp)
-                            Spacer(Modifier.width(8.dp))
-                            Slider(
-                                value = state.backgroundBlur.coerceIn(0f, 48f),
-                                onValueChange = onBackgroundBlurChange,
-                                valueRange = 0f..48f,
-                                steps = 47,
-                                colors = SliderDefaults.colors(
-                                    thumbColor = Primary,
-                                    activeTrackColor = Primary,
-                                    inactiveTrackColor = CardMuted,
-                                ),
-                                modifier = Modifier.weight(1f),
-                            )
-                            Text(
-                                "${state.backgroundBlur.toInt()}dp",
-                                color = GlassTextSecondary,
-                                fontSize = 12.sp,
-                                modifier = Modifier.width(36.dp),
-                            )
-                        }
                     }
                 }
 

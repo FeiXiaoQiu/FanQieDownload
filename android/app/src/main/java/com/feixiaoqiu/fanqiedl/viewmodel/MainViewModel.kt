@@ -116,7 +116,7 @@ data class MainUiState(
     val updateDownloadMessage: String? = null,
     val downloadSources: List<DownloadSource> = DefaultNodes.DOWNLOAD_SOURCES,
     val backgroundScale: BackgroundScale = BackgroundScale.FIT,
-    val backgroundBlur: Float = 10f,
+    val backgroundBlur: Float = 0f,
     val autoUpdateCheck: Boolean = true,
     val showHomeUpdate: Boolean = false,
     val showApkExistsPrompt: Boolean = false,
@@ -209,7 +209,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                             backgroundMode = mode,
                             backgroundApiUrl = api,
                             backgroundImageUrl = image,
-                            backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = true),
+                            backgroundDisplayUrl = resolveBackgroundUrl(mode, api, image, bust = false),
                         )
                     }
                 }
@@ -893,10 +893,6 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     fun refreshBackground() {
         val s = _ui.value
-        if (s.backgroundMode == BackgroundMode.CUSTOM_IMAGE) {
-            _ui.update { it.copy(snackbar = "当前为本地图片，无需刷新") }
-            return
-        }
         if (s.backgroundMode == BackgroundMode.R18) {
             _ui.update {
                 it.copy(backgroundDisplayUrl = cacheBust(DefaultNodes.R18_BACKGROUND_API))

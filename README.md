@@ -6,9 +6,9 @@ Web 搜索下载 + Android 客户端「观隅」。
 
 在线：https://fanqie-dl.feixiaoqiu.top/
 
-## Android「观隅」`v1.4.4`
+## Android「观隅」`v1.4.5`
 
-[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.4.4/guanyu-1.4.4-universal.apk)
+[下载移动端（universal）](https://github.com/FeiXiaoQiu/FanQieDownload/releases/download/v1.4.5/guanyu-1.4.5-universal.apk)
 
 源码 `android/`（Kotlin + Jetpack Compose）。
 
@@ -24,8 +24,8 @@ cd android
 - 在线阅读（章节跳转、上一章/下一章）
 - TXT 下载（章节范围、断点续传）
 - 番茄节点增删改查 + 一键测速（延迟分色）
-- 背景切换：栗次元图床 / 妖狐 R18 / 自定义 API / 本地相册
-- 背景缩放模式（完整显示 / 铺满屏幕），本地图片支持模糊调节
+- 背景切换：栗次元图床 / 妖狐 R18 / 自定义 API
+- 背景缩放模式（完整显示 / 铺满屏幕），支持模糊调节
 - 一言 Hitokoto 外接 API
 - **应用内检查更新 + 直接下载安装**（自动测速选最快下载源）
 - **首页新版本更新横幅**，检测到新版本时直接在首页提示下载

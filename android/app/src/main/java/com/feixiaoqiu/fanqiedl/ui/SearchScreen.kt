@@ -72,7 +72,6 @@ import androidx.compose.ui.platform.LocalConfiguration
 import android.net.Uri
 import coil.compose.AsyncImage
 import com.feixiaoqiu.fanqiedl.R
-import com.feixiaoqiu.fanqiedl.data.BackgroundMode
 import com.feixiaoqiu.fanqiedl.data.BackgroundScale
 import com.feixiaoqiu.fanqiedl.data.BookSummary
 import com.feixiaoqiu.fanqiedl.ui.theme.BgBlack
@@ -130,10 +129,7 @@ fun SearchScreen(
                     contentDescription = null,
                     modifier = Modifier
                         .fillMaxSize()
-                        .blur(
-                            if (state.backgroundMode == BackgroundMode.CUSTOM_IMAGE)
-                                state.backgroundBlur.dp else 24.dp
-                        ),
+                        .blur(state.backgroundBlur.dp),
                     contentScale = ContentScale.Crop,
                     alignment = Alignment.Center,
                 )

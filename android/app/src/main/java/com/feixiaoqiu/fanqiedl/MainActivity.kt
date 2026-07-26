@@ -117,8 +117,6 @@ class MainActivity : ComponentActivity() {
                                         onBgApiChange = vm::setBackgroundApiUrl,
                                         onSaveBackground = vm::saveBackground,
                                         onRefreshBackground = vm::refreshBackground,
-                                        onPickLocalBackground = vm::importLocalBackground,
-                                        onClearLocalBackground = vm::clearLocalBackground,
                                         onAddCustomBg = { name, url -> vm.addCustomBackground(name, url) },
                                         onRemoveCustomBg = vm::removeCustomBackground,
                                         onUpdateCustomBg = { id, name, url -> vm.updateCustomBackground(id, name, url) },
