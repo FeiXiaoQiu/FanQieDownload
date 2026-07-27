@@ -32,6 +32,7 @@ import androidx.compose.foundation.text.KeyboardActions
 import androidx.compose.foundation.text.KeyboardOptions
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.filled.Close
+import androidx.compose.material.icons.filled.ContentPaste
 import androidx.compose.material.icons.filled.SaveAlt
 import androidx.compose.material.icons.filled.Search
 import androidx.compose.material3.Button
@@ -59,6 +60,7 @@ import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.graphicsLayer
 import androidx.compose.ui.input.pointer.pointerInput
 import androidx.compose.ui.layout.ContentScale
+import androidx.compose.ui.platform.LocalClipboardManager
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontWeight
@@ -67,9 +69,9 @@ import androidx.compose.ui.text.style.TextAlign
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.unit.sp
 import coil.compose.AsyncImage
+import coil.compose.SubcomposeAsyncImage
 import coil.request.ImageRequest
 import com.feixiaoqiu.lookapp.data.Resolver
-import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.async
 import kotlinx.coroutines.awaitAll
@@ -78,7 +80,12 @@ import kotlinx.coroutines.withContext
 import okhttp3.Request
 
 private val BgBlack = Color(0xFF0A0A0A)
+private val Surface = Color(0xFF151515)
 private val Primary = Color(0xFFC08860)
+private val TextMuted = Color(0xFF999999)
+private val TextDim = Color(0xFF666666)
+private val Placeholder = Color(0xFF1E1E1E)
+private val ErrorRed = Color(0xFFFF5252)
 
 @OptIn(ExperimentalFoundationApi::class)
 @Composable
@@ -87,6 +94,7 @@ fun InspectorScreen(
     onSaveBytes: (String, ByteArray) -> Unit,
 ) {
     val context = LocalContext.current
+    val clipboard = LocalClipboardManager.current
     val scope = rememberCoroutineScope()
     var url by remember { mutableStateOf("") }
     var urls by remember { mutableStateOf<List<String>>(emptyList()) }
@@ -121,12 +129,12 @@ fun InspectorScreen(
             Row(
                 modifier = Modifier
                     .fillMaxWidth()
-                    .padding(horizontal = 16.dp, vertical = 8.dp),
+                    .padding(horizontal = 16.dp, vertical = 12.dp),
                 verticalAlignment = Alignment.CenterVertically,
             ) {
-                Text("观察", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
-                Spacer(Modifier.width(6.dp))
-                Text("v2607271900", color = Color(0xFF666666), fontSize = 12.sp)
+                Text("观察", color = Color.White, fontSize = 22.sp, fontWeight = FontWeight.Bold)
+                Spacer(Modifier.width(8.dp))
+                Text("v2607271940", color = TextDim, fontSize = 12.sp)
                 Spacer(Modifier.weight(1f))
                 if (urls.isNotEmpty() && !saving) {
                     TextButton(onClick = {
@@ -160,16 +168,27 @@ fun InspectorScreen(
                             Toast.makeText(context, "已保存 $saveDone/$saveTotal 张到 Download/Look", Toast.LENGTH_SHORT).show()
                         }
                     }) {
-                        Icon(Icons.Default.SaveAlt, null, tint = Primary, modifier = Modifier.size(16.dp))
+                        Icon(Icons.Default.SaveAlt, null, tint = Primary, modifier = Modifier.size(18.dp))
                         Spacer(Modifier.width(4.dp))
-                        Text("批量保存", color = Primary, fontSize = 13.sp)
+                        Text("全部保存", color = Primary, fontSize = 13.sp)
                     }
                 }
             }
 
             if (saving) {
-                LinearProgressIndicator(progress = { saveProgress }, modifier = Modifier.fillMaxWidth().height(2.dp), color = Primary, trackColor = Color(0xFF333333))
-                Text("保存中 $saveDone/$saveTotal", color = Color(0xFF999999), fontSize = 11.sp, modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 1.dp), textAlign = TextAlign.Center)
+                LinearProgressIndicator(
+                    progress = { saveProgress },
+                    modifier = Modifier.fillMaxWidth().height(2.dp),
+                    color = Primary,
+                    trackColor = Color(0xFF333333),
+                )
+                Text(
+                    "保存中 $saveDone/$saveTotal",
+                    color = TextMuted,
+                    fontSize = 11.sp,
+                    modifier = Modifier.fillMaxWidth().padding(horizontal = 16.dp, vertical = 2.dp),
+                    textAlign = TextAlign.Center,
+                )
             }
 
             // 输入行
@@ -184,12 +203,37 @@ fun InspectorScreen(
                     placeholder = { Text("输入 JSON 图源地址", color = Color(0xFF555555), fontSize = 13.sp) },
                     singleLine = true,
                     textStyle = TextStyle(color = Color.White, fontSize = 13.sp),
-                    colors = OutlinedTextFieldDefaults.colors(focusedBorderColor = Primary, unfocusedBorderColor = Color(0xFF333333), cursorColor = Primary),
+                    colors = OutlinedTextFieldDefaults.colors(
+                        focusedBorderColor = Primary,
+                        unfocusedBorderColor = Color(0xFF333333),
+                        cursorColor = Primary,
+                    ),
                     keyboardOptions = KeyboardOptions(imeAction = ImeAction.Search),
                     keyboardActions = KeyboardActions { doParse() },
+                    trailingIcon = {
+                        if (url.isNotBlank()) {
+                            IconButton(onClick = { url = "" }, modifier = Modifier.size(20.dp)) {
+                                Icon(Icons.Default.Close, "清空", tint = TextDim)
+                            }
+                        }
+                    },
                 )
-                Spacer(Modifier.width(8.dp))
-                Button(onClick = { doParse() }, enabled = url.isNotBlank() && !loading, colors = ButtonDefaults.buttonColors(containerColor = Primary), shape = RoundedCornerShape(8.dp)) {
+                Spacer(Modifier.width(6.dp))
+                IconButton(
+                    onClick = {
+                        clipboard.getText()?.let { url = it.toString(); error = null }
+                    },
+                    modifier = Modifier.size(42.dp),
+                ) {
+                    Icon(Icons.Default.ContentPaste, "粘贴", tint = TextMuted, modifier = Modifier.size(20.dp))
+                }
+                Spacer(Modifier.width(4.dp))
+                Button(
+                    onClick = { doParse() },
+                    enabled = url.isNotBlank() && !loading,
+                    colors = ButtonDefaults.buttonColors(containerColor = Primary),
+                    shape = RoundedCornerShape(10.dp),
+                ) {
                     if (loading) CircularProgressIndicator(color = Color.White, modifier = Modifier.size(16.dp), strokeWidth = 2.dp)
                     else Icon(Icons.Default.Search, "解析", tint = Color.White, modifier = Modifier.size(18.dp))
                     Spacer(Modifier.width(4.dp))
@@ -197,13 +241,33 @@ fun InspectorScreen(
                 }
             }
 
-            if (error != null) Text(error!!, color = Color(0xFFFF5252), fontSize = 13.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp))
-            if (urls.isNotEmpty()) Text("共 ${urls.size} 张", color = Color(0xFF999999), fontSize = 12.sp, modifier = Modifier.padding(horizontal = 16.dp, vertical = 2.dp))
+            if (error != null) {
+                Text(
+                    error!!,
+                    color = ErrorRed,
+                    fontSize = 13.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+
+            if (urls.isNotEmpty()) {
+                Text(
+                    "共 ${urls.size} 张",
+                    color = TextMuted,
+                    fontSize = 12.sp,
+                    modifier = Modifier.padding(horizontal = 16.dp, vertical = 4.dp),
+                )
+            }
+
             if (loading) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) { CircularProgressIndicator(color = Primary) }
             } else if (urls.isEmpty() && !loading && error == null) {
                 Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                    Text("输入 JSON 图源链接，点击解析", color = Color(0xFF444444), fontSize = 14.sp)
+                    Column(horizontalAlignment = Alignment.CenterHorizontally) {
+                        Icon(Icons.Default.Search, null, tint = Color(0xFF333333), modifier = Modifier.size(48.dp))
+                        Spacer(Modifier.height(12.dp))
+                        Text("输入 JSON 图源链接，点击解析", color = Color(0xFF444444), fontSize = 14.sp)
+                    }
                 }
             } else {
                 LazyVerticalGrid(
@@ -213,16 +277,16 @@ fun InspectorScreen(
                     horizontalArrangement = Arrangement.spacedBy(4.dp),
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
-                    itemsIndexed(urls) { index, imgUrl ->
+                    itemsIndexed(urls, key = { _, imgUrl -> imgUrl }) { index, imgUrl ->
                         val req = remember(imgUrl) {
                             ImageRequest.Builder(context)
                                 .data(imgUrl)
-                                .crossfade(true)
-                                .size(400)
+                                .crossfade(false)
+                                .size(320)
                                 .memoryCacheKey(imgUrl)
                                 .build()
                         }
-                        AsyncImage(
+                        SubcomposeAsyncImage(
                             model = req,
                             contentDescription = null,
                             modifier = Modifier
@@ -244,6 +308,16 @@ fun InspectorScreen(
                                     },
                                 ),
                             contentScale = ContentScale.Crop,
+                            loading = {
+                                Box(Modifier.fillMaxSize().background(Placeholder), contentAlignment = Alignment.Center) {
+                                    CircularProgressIndicator(color = TextDim, modifier = Modifier.size(18.dp), strokeWidth = 2.dp)
+                                }
+                            },
+                            error = {
+                                Box(Modifier.fillMaxSize().background(Placeholder), contentAlignment = Alignment.Center) {
+                                    Text("失败", color = TextDim, fontSize = 10.sp)
+                                }
+                            },
                         )
                     }
                 }
@@ -255,6 +329,8 @@ fun InspectorScreen(
             if (fullscreenIndex in urls.indices) {
                 FullscreenView(
                     imageUrl = urls[fullscreenIndex],
+                    index = fullscreenIndex,
+                    total = urls.size,
                     onClose = { fullscreenIndex = -1 },
                     onSave = {
                         scope.launch {
@@ -275,7 +351,13 @@ fun InspectorScreen(
 }
 
 @Composable
-private fun FullscreenView(imageUrl: String, onClose: () -> Unit, onSave: () -> Unit) {
+private fun FullscreenView(
+    imageUrl: String,
+    index: Int,
+    total: Int,
+    onClose: () -> Unit,
+    onSave: () -> Unit,
+) {
     var scale by remember { mutableFloatStateOf(1f) }
     var offsetX by remember { mutableFloatStateOf(0f) }
     var offsetY by remember { mutableFloatStateOf(0f) }
@@ -283,7 +365,7 @@ private fun FullscreenView(imageUrl: String, onClose: () -> Unit, onSave: () -> 
     Box(
         modifier = Modifier
             .fillMaxSize()
-            .background(Color.Black.copy(alpha = 0.97f))
+            .background(Color.Black.copy(alpha = 0.98f))
             .pointerInput(Unit) {
                 detectTransformGestures { _, pan, zoom, _ ->
                     scale = (scale * zoom).coerceIn(0.5f, 5f)
@@ -294,16 +376,20 @@ private fun FullscreenView(imageUrl: String, onClose: () -> Unit, onSave: () -> 
             .clickable { onClose() },
     ) {
         AsyncImage(
-            model = ImageRequest.Builder(LocalContext.current).data(imageUrl).crossfade(true).build(),
+            model = ImageRequest.Builder(LocalContext.current).data(imageUrl).crossfade(false).build(),
             contentDescription = null,
-            modifier = Modifier.fillMaxSize().graphicsLayer(scaleX = scale, scaleY = scale, translationX = offsetX, translationY = offsetY),
+            modifier = Modifier
+                .fillMaxSize()
+                .graphicsLayer(scaleX = scale, scaleY = scale, translationX = offsetX, translationY = offsetY),
             contentScale = ContentScale.Fit,
         )
         Row(
-            modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(4.dp),
+            modifier = Modifier.fillMaxWidth().statusBarsPadding().padding(horizontal = 4.dp, vertical = 4.dp),
             verticalAlignment = Alignment.CenterVertically,
         ) {
             IconButton(onClick = onClose) { Icon(Icons.Default.Close, "关闭", tint = Color.White) }
+            Spacer(Modifier.weight(1f))
+            Text("${index + 1} / $total", color = TextMuted, fontSize = 14.sp)
             Spacer(Modifier.weight(1f))
             IconButton(onClick = onSave) { Icon(Icons.Default.SaveAlt, "保存", tint = Primary) }
         }

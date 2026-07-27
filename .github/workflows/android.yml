@@ -65,7 +65,7 @@ jobs:
           mkdir -p dist-apk
           OUT="lookapp/build/outputs/apk/release"
           for f in "$OUT"/*.apk; do
-            dest="dist-apk/lookapp-v2607271900.apk"
+            dest="dist-apk/lookapp-v2607271940.apk"
             cp -f "$f" "$dest"
             echo "packed: $dest"
           done
