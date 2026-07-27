@@ -661,7 +661,7 @@ private fun R18DisclaimerDialog(
     onAccept: () -> Unit,
     onDecline: () -> Unit,
 ) {
-    var countdown by remember { mutableIntStateOf(30) }
+    var countdown by remember { mutableIntStateOf(5) }
     LaunchedEffect(Unit) {
         while (countdown > 0) {
             delay(1000)
@@ -672,51 +672,33 @@ private fun R18DisclaimerDialog(
     AlertDialog(
         onDismissRequest = {},
         title = {
-            Text("免责声明与注意事项", color = Color.White, fontSize = 18.sp)
+            Text("是否启用内置隐藏R18图源", color = Color.White, fontSize = 18.sp)
         },
         text = {
-            Column(
-                modifier = Modifier.heightIn(max = 320.dp),
-            ) {
-                Text(
-                    "本图源所展示的图片内容可能包含成人向（R18）素材，请确认您已年满 18 周岁并符合当地法律法规。",
-                    color = Color(0xFFBBBBBB),
-                    fontSize = 13.sp,
-                    lineHeight = 20.sp,
-                )
-                Spacer(Modifier.height(12.dp))
-                Column(
-                    modifier = Modifier
-                        .weight(1f, fill = false)
-                        .verticalScroll(rememberScrollState()),
-                ) {
-                    DisclaimerItem("年龄限制", "仅供 18 岁以上用户使用。如您未满 18 周岁，请立即关闭此图源。")
-                    Spacer(Modifier.height(8.dp))
-                    DisclaimerItem("内容性质", "图片由第三方接口随机提供，开发者不对图片具体内容做任何审查或干预。")
-                    Spacer(Modifier.height(8.dp))
-                    DisclaimerItem("合规使用", "请遵守您所在地区的法律法规。因使用本图源产生的任何后果由用户自行承担。")
-                    Spacer(Modifier.height(8.dp))
-                    DisclaimerItem("隐私保护", "应用仅在获取背景图片时向第三方接口发起一次请求，不会上传您的任何个人信息。")
-                    Spacer(Modifier.height(8.dp))
-                    DisclaimerItem("免责声明", "开发者不对第三方接口的可用性、内容准确性或安全性做任何保证。如遇不适内容，请切换至其他图源。")
-                }
-            }
+            Text(
+                "启用后将解锁隐藏 R18 图源，请确认您已年满 18 周岁并符合当地法律法规。",
+                color = Color(0xFFBBBBBB),
+                fontSize = 14.sp,
+                lineHeight = 20.sp,
+            )
         },
         confirmButton = {
+            // 右手边：高亮取消，吸引点击
+            TextButton(onClick = onDecline) {
+                Text("取消", color = Primary, fontSize = 14.sp)
+            }
+        },
+        dismissButton = {
+            // 左手边：灰色确定，5 秒后才能点
             TextButton(
                 onClick = onAccept,
                 enabled = countdown <= 0,
             ) {
                 Text(
-                    if (countdown > 0) "同意（${countdown}s）" else "同意",
-                    color = if (countdown > 0) Color(0xFF777777) else Primary,
+                    if (countdown > 0) "确定（${countdown}s）" else "确定",
+                    color = if (countdown > 0) Color(0xFF777777) else Color(0xFFBBBBBB),
                     fontSize = 14.sp,
                 )
-            }
-        },
-        dismissButton = {
-            TextButton(onClick = onDecline) {
-                Text("不同意", color = Color(0xFFBBBBBB), fontSize = 14.sp)
             }
         },
         containerColor = Color(0xFF1E1E2E),

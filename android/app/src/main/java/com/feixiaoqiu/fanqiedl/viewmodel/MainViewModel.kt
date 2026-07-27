@@ -154,12 +154,18 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
             }
         }
         viewModelScope.launch {
+            container.settings.selectedCustomBgFlow.collect { id ->
+                _ui.update { it.copy(selectedCustomBgId = id) }
+            }
+        }
+        viewModelScope.launch {
             container.settings.customBackgroundsFlow.collect { bgs ->
                 _ui.update { s ->
                     val selId = s.selectedCustomBgId
                     if (selId != null && bgs.none { it.id == selId }) {
                         // 已选中的自定义背景被删了，回退默认
                         container.settings.setBackground(BackgroundMode.DEFAULT, "", "")
+                        container.settings.setSelectedCustomBg(null)
                         s.copy(
                             customBackgrounds = bgs,
                             backgroundMode = BackgroundMode.DEFAULT,
@@ -768,6 +774,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 apiUrl = apiUrl,
                 imageUrl = s.backgroundImageUrl,
             )
+            container.settings.setSelectedCustomBg(id)
             _ui.update {
                 it.copy(
                     backgroundMode = BackgroundMode.CUSTOM_API,
@@ -790,6 +797,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 apiUrl = bg.url.trim(),
                 imageUrl = s.backgroundImageUrl,
             )
+            container.settings.setSelectedCustomBg(bg.id)
             _ui.update {
                 it.copy(
                     backgroundMode = BackgroundMode.CUSTOM_API,

@@ -20,6 +20,7 @@ class AppSettings(private val context: Context) {
     private val keyBgMode = stringPreferencesKey("bg_mode")
     private val keyBgApi = stringPreferencesKey("bg_api_url")
     private val keyBgImage = stringPreferencesKey("bg_image_url")
+    private val keySelectedCustomBg = stringPreferencesKey("selected_custom_bg_id")
     private val keyCustomBgs = stringPreferencesKey("custom_bgs_json")
     private val keyR18Accepted = stringPreferencesKey("r18_accepted")
     private val keyR18HiddenEnabled = stringPreferencesKey("r18_hidden_enabled")
@@ -55,6 +56,10 @@ class AppSettings(private val context: Context) {
 
     val customBackgroundsFlow: Flow<List<CustomBackground>> = context.dataStore.data.map { prefs ->
         parseCustomBgs(prefs[keyCustomBgs])
+    }
+
+    val selectedCustomBgFlow: Flow<String?> = context.dataStore.data.map { prefs ->
+        prefs[keySelectedCustomBg]
     }
 
     val r18AcceptedFlow: Flow<Boolean> = context.dataStore.data.map { prefs ->
@@ -104,6 +109,13 @@ class AppSettings(private val context: Context) {
     suspend fun setAutoUpdateCheck(enabled: Boolean) {
         context.dataStore.edit { prefs ->
             prefs[keyAutoUpdateCheck] = if (enabled) "1" else "0"
+        }
+    }
+
+    suspend fun setSelectedCustomBg(id: String?) {
+        context.dataStore.edit { prefs ->
+            if (id.isNullOrBlank()) prefs.remove(keySelectedCustomBg)
+            else prefs[keySelectedCustomBg] = id
         }
     }
 
