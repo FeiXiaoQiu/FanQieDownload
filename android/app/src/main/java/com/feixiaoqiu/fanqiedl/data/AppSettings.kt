@@ -119,6 +119,17 @@ class AppSettings(private val context: Context) {
         }
     }
 
+    suspend fun moveCustomBg(id: String, delta: Int) {
+        val list = snapshotCustomBgs().toMutableList()
+        val index = list.indexOfFirst { it.id == id }
+        if (index < 0) return
+        val newIndex = (index + delta).coerceIn(0, list.lastIndex)
+        if (newIndex == index) return
+        val item = list.removeAt(index)
+        list.add(newIndex, item)
+        setCustomBgs(list)
+    }
+
     suspend fun addCustomBg(name: String, url: String): CustomBackground {
         val bg = CustomBackground(
             id = "cbg-" + UUID.randomUUID().toString().take(8),

@@ -811,6 +811,12 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
         }
     }
 
+    fun moveCustomBackground(id: String, delta: Int) {
+        viewModelScope.launch {
+            container.settings.moveCustomBg(id, delta)
+        }
+    }
+
     fun removeCustomBackground(id: String) {
         viewModelScope.launch {
             container.settings.removeCustomBg(id)

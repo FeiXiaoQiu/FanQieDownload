@@ -197,6 +197,7 @@ class MainActivity : ComponentActivity() {
                                         onRemoveCustomBg = vm::removeCustomBackground,
                                         onUpdateCustomBg = { id, name, url -> vm.updateCustomBackground(id, name, url) },
                                         onSelectCustomBg = vm::selectCustomBackground,
+                                        onMoveCustomBg = { id, delta -> vm.moveCustomBackground(id, delta) },
                                         onCheckUpdate = { vm.checkForUpdate(silent = false) },
                                         r18Accepted = state.r18Accepted,
                                         onAcceptR18 = vm::acceptR18,

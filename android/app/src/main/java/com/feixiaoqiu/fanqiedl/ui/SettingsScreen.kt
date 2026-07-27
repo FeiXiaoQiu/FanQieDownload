@@ -40,7 +40,10 @@ import androidx.compose.foundation.text.BasicTextField
 import androidx.compose.foundation.verticalScroll
 import androidx.compose.material.icons.Icons
 import androidx.compose.material.icons.automirrored.filled.ArrowBack
+import androidx.compose.material.icons.automirrored.filled.KeyboardArrowRight
 import androidx.compose.material.icons.filled.Circle
+import androidx.compose.material.icons.filled.ExpandLess
+import androidx.compose.material.icons.filled.ExpandMore
 import androidx.compose.material3.Button
 import androidx.compose.material3.AlertDialog
 import androidx.compose.material3.ButtonDefaults
@@ -73,9 +76,11 @@ import androidx.compose.ui.Alignment
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.blur
 import androidx.compose.ui.draw.clip
+import androidx.compose.ui.draw.rotate
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.graphics.SolidColor
 import androidx.compose.ui.input.pointer.pointerInput
+import androidx.compose.foundation.gestures.detectTapGestures
 import androidx.compose.ui.platform.LocalContext
 import androidx.compose.ui.platform.LocalDensity
 import androidx.compose.ui.semantics.Role
@@ -129,6 +134,7 @@ fun SettingsScreen(
     onRemoveCustomBg: (String) -> Unit = {},
     onUpdateCustomBg: (String, String, String) -> Unit = { _, _, _ -> },
     onSelectCustomBg: (String) -> Unit = {},
+    onMoveCustomBg: (String, Int) -> Unit = { _, _ -> },
     onCheckUpdate: () -> Unit = {},
     onOpenRepo: () -> Unit = {},
     r18Accepted: Boolean = false,
@@ -218,50 +224,104 @@ fun SettingsScreen(
                             .background(Color.White.copy(alpha = 0.08f)),
                     )
                     Spacer(modifier = Modifier.height(10.dp))
-                    // 接口背景区域
+                    // 接口背景区域（默认折叠，只显示启用的图源）
+                    var bgListExpanded by remember { mutableStateOf(false) }
+                    val activeTitle: String
+                    val activeSubtitle: String
+                    when {
+                        state.backgroundMode == BackgroundMode.DEFAULT -> {
+                            activeTitle = "栗次元图床"
+                            activeSubtitle = DefaultNodes.DEFAULT_BACKGROUND_API
+                        }
+                        state.backgroundMode == BackgroundMode.R18 -> {
+                            activeTitle = "妖狐R18（慎用）"
+                            activeSubtitle = DefaultNodes.R18_BACKGROUND_API
+                        }
+                        state.backgroundMode == BackgroundMode.CUSTOM_API -> {
+                            val cbg = state.customBackgrounds.find { it.id == state.selectedCustomBgId }
+                            activeTitle = cbg?.name?.ifBlank { "自定义接口" } ?: "自定义接口"
+                            activeSubtitle = cbg?.url?.ifBlank { "未设置" } ?: "未设置"
+                        }
+                        else -> {
+                            activeTitle = "栗次元图床"
+                            activeSubtitle = DefaultNodes.DEFAULT_BACKGROUND_API
+                        }
+                    }
                     Column(Modifier.selectableGroup()) {
-                        BgOption(
-                            selected = state.backgroundMode == BackgroundMode.DEFAULT,
-                            title = "栗次元图床",
-                            subtitle = DefaultNodes.DEFAULT_BACKGROUND_API,
-                            onClick = { onBgModeChange(BackgroundMode.DEFAULT) },
-                        )
-                        if (state.r18HiddenEnabled) {
-                        BgOption(
-                            selected = state.backgroundMode == BackgroundMode.R18,
-                            title = "妖狐R18（慎用）",
-                            subtitle = DefaultNodes.R18_BACKGROUND_API,
-                            onClick = {
-                                if (state.r18Accepted) {
-                                    onBgModeChange(BackgroundMode.R18)
-                                } else {
-                                    showR18Dialog = true
-                                }
-                            },
-                        )
-                        }
-                        state.customBackgrounds.forEach { cbg ->
-                            CustomBgRow(
-                                cbg = cbg,
-                                selected = state.backgroundMode == BackgroundMode.CUSTOM_API &&
-                                    state.selectedCustomBgId == cbg.id,
-                                onSelect = { onSelectCustomBg(cbg.id) },
-                                onUpdate = { name, url -> onUpdateCustomBg(cbg.id, name, url) },
-                                onRemove = { onRemoveCustomBg(cbg.id) },
-                            )
-                        }
                         Row(
                             modifier = Modifier
                                 .fillMaxWidth()
-                                .selectable(
-                                    selected = false,
-                                    onClick = { onAddCustomBg("", "") },
-                                    role = Role.Button,
-                                )
-                                .padding(vertical = 4.dp),
+                                .clickable { bgListExpanded = !bgListExpanded }
+                                .padding(vertical = 8.dp),
+                            horizontalArrangement = Arrangement.SpaceBetween,
                             verticalAlignment = Alignment.CenterVertically,
                         ) {
-                            Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            Column(modifier = Modifier.weight(1f)) {
+                                Text(
+                                    activeTitle,
+                                    color = if (state.backgroundMode == BackgroundMode.CUSTOM_API) Primary else Color.White,
+                                    fontSize = 14.sp,
+                                    fontWeight = FontWeight.Medium,
+                                )
+                                Text(
+                                    activeSubtitle,
+                                    color = TextSecondary,
+                                    fontSize = 11.sp,
+                                    maxLines = 1,
+                                    overflow = TextOverflow.Ellipsis,
+                                )
+                            }
+                            Icon(
+                                imageVector = if (bgListExpanded) Icons.Default.ExpandLess else Icons.Default.ExpandMore,
+                                contentDescription = if (bgListExpanded) "收起" else "展开",
+                                tint = TextSecondary,
+                            )
+                        }
+                        if (bgListExpanded) {
+                            BgOption(
+                                selected = state.backgroundMode == BackgroundMode.DEFAULT,
+                                title = "栗次元图床",
+                                subtitle = DefaultNodes.DEFAULT_BACKGROUND_API,
+                                onClick = { onBgModeChange(BackgroundMode.DEFAULT) },
+                            )
+                            if (state.r18HiddenEnabled) {
+                                BgOption(
+                                    selected = state.backgroundMode == BackgroundMode.R18,
+                                    title = "妖狐R18（慎用）",
+                                    subtitle = DefaultNodes.R18_BACKGROUND_API,
+                                    onClick = {
+                                        if (state.r18Accepted) {
+                                            onBgModeChange(BackgroundMode.R18)
+                                        } else {
+                                            showR18Dialog = true
+                                        }
+                                    },
+                                )
+                            }
+                            state.customBackgrounds.forEach { cbg ->
+                                CustomBgRow(
+                                    cbg = cbg,
+                                    selected = state.backgroundMode == BackgroundMode.CUSTOM_API &&
+                                        state.selectedCustomBgId == cbg.id,
+                                    onSelect = { onSelectCustomBg(cbg.id) },
+                                    onUpdate = { name, url -> onUpdateCustomBg(cbg.id, name, url) },
+                                    onRemove = { onRemoveCustomBg(cbg.id) },
+                                    onMove = { delta -> onMoveCustomBg(cbg.id, delta) },
+                                )
+                            }
+                            Row(
+                                modifier = Modifier
+                                    .fillMaxWidth()
+                                    .selectable(
+                                        selected = false,
+                                        onClick = { onAddCustomBg("", "") },
+                                        role = Role.Button,
+                                    )
+                                    .padding(vertical = 4.dp),
+                                verticalAlignment = Alignment.CenterVertically,
+                            ) {
+                                Text("＋ 新增接口", color = Primary, fontSize = 14.sp, fontWeight = FontWeight.Medium)
+                            }
                         }
                     }
                     Spacer(modifier = Modifier.height(4.dp))
@@ -1012,39 +1072,75 @@ private fun CustomBgRow(
     onSelect: () -> Unit,
     onUpdate: (String, String) -> Unit,
     onRemove: () -> Unit,
+    onMove: (Int) -> Unit,
 ) {
     var editUrl by remember(cbg.id, cbg.url) { mutableStateOf(cbg.url) }
     var editName by remember(cbg.id, cbg.name) { mutableStateOf(cbg.name) }
     var editing by remember { mutableStateOf(false) }
+    var showReorder by remember { mutableStateOf(false) }
 
-    BgOption(
-        selected = selected,
-        title = editName.ifBlank { "自定义接口" },
-        subtitle = editUrl,
-        onClick = {
-            if (selected) editing = !editing
-            else onSelect()
-        },
-    )
-    if (editing) {
-        Field(value = editName, onValueChange = { editName = it }, label = "名称")
-        Spacer(Modifier.height(4.dp))
-        Field(value = editUrl, onValueChange = { editUrl = it }, label = "API 地址")
-        Spacer(Modifier.height(4.dp))
-        Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
-            TextButton(onClick = {
-                onUpdate(editName, editUrl)
-                editing = false
-            }) { Text("保存", color = Primary, fontSize = 13.sp) }
-            TextButton(onClick = {
-                onRemove()
-                editing = false
-            }) { Text("删除", color = Primary, fontSize = 13.sp) }
-            TextButton(onClick = { editing = false }) {
-                Text("取消", color = TextSecondary, fontSize = 13.sp)
+    Column {
+        Row(
+            modifier = Modifier
+                .fillMaxWidth()
+                .pointerInput(Unit) {
+                    detectTapGestures(
+                        onLongPress = { showReorder = !showReorder },
+                    )
+                },
+            verticalAlignment = Alignment.CenterVertically,
+        ) {
+            Box(modifier = Modifier.weight(1f)) {
+                BgOption(
+                    selected = selected,
+                    title = editName.ifBlank { "自定义接口" },
+                    subtitle = editUrl,
+                    onClick = {
+                        if (selected) editing = !editing
+                        else onSelect()
+                    },
+                )
+            }
+            if (showReorder) {
+                Row {
+                    IconButton(onClick = { onMove(-1) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "上移",
+                            modifier = Modifier.rotate(180f),
+                            tint = TextSecondary,
+                        )
+                    }
+                    IconButton(onClick = { onMove(1) }) {
+                        Icon(
+                            imageVector = Icons.AutoMirrored.Filled.KeyboardArrowRight,
+                            contentDescription = "下移",
+                            tint = TextSecondary,
+                        )
+                    }
+                }
             }
         }
-        Spacer(Modifier.height(4.dp))
+        if (editing) {
+            Field(value = editName, onValueChange = { editName = it }, label = "名称")
+            Spacer(Modifier.height(4.dp))
+            Field(value = editUrl, onValueChange = { editUrl = it }, label = "API 地址")
+            Spacer(Modifier.height(4.dp))
+            Row(horizontalArrangement = Arrangement.spacedBy(4.dp)) {
+                TextButton(onClick = {
+                    onUpdate(editName, editUrl)
+                    editing = false
+                }) { Text("保存", color = Primary, fontSize = 13.sp) }
+                TextButton(onClick = {
+                    onRemove()
+                    editing = false
+                }) { Text("删除", color = Primary, fontSize = 13.sp) }
+                TextButton(onClick = { editing = false }) {
+                    Text("取消", color = TextSecondary, fontSize = 13.sp)
+                }
+            }
+            Spacer(Modifier.height(4.dp))
+        }
     }
 }
 
