@@ -5,6 +5,7 @@
 .DS_Store
 /build/
 /app/build/
+/lookapp/build/
 /captures/
 .externalNativeBuild/
 .cxx/
