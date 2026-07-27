@@ -139,6 +139,7 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
     private var updateDownloadJob: Job? = null
     private var probeAllJob: Job? = null
     private var r18ResolveJob: Job? = null
+    private var customApiResolveJob: Job? = null
 
     init {
         viewModelScope.launch {
@@ -203,6 +204,16 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                         )
                     }
                     launchR18Resolve()
+                } else if (mode == BackgroundMode.CUSTOM_API) {
+                    _ui.update {
+                        it.copy(
+                            backgroundMode = mode,
+                            backgroundApiUrl = api,
+                            backgroundImageUrl = image,
+                            backgroundDisplayUrl = cacheBust(api),
+                        )
+                    }
+                    launchCustomApiResolve()
                 } else {
                     _ui.update {
                         it.copy(
@@ -326,6 +337,22 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
                 cacheBust(DefaultNodes.R18_BACKGROUND_API)
             }
             _ui.update { it.copy(backgroundDisplayUrl = finalUrl) }
+        }
+    }
+
+    private fun launchCustomApiResolve() {
+        val apiUrl = _ui.value.backgroundApiUrl.trim()
+        if (apiUrl.isBlank()) return
+        customApiResolveJob?.cancel()
+        customApiResolveJob = viewModelScope.launch {
+            val resolved = withContext(Dispatchers.IO) {
+                container.jsonResolver.resolve(apiUrl)
+            }
+            val s = _ui.value
+            if (s.backgroundMode != BackgroundMode.CUSTOM_API) return@launch
+            resolved?.let { url ->
+                _ui.update { it.copy(backgroundDisplayUrl = url) }
+            }
         }
     }
 
@@ -893,22 +920,31 @@ class MainViewModel(private val container: AppContainer) : ViewModel() {
 
     fun refreshBackground() {
         val s = _ui.value
-        if (s.backgroundMode == BackgroundMode.R18) {
-            _ui.update {
-                it.copy(backgroundDisplayUrl = cacheBust(DefaultNodes.R18_BACKGROUND_API))
+        when (s.backgroundMode) {
+            BackgroundMode.R18 -> {
+                _ui.update {
+                    it.copy(backgroundDisplayUrl = cacheBust(DefaultNodes.R18_BACKGROUND_API))
+                }
+                launchR18Resolve()
             }
-            launchR18Resolve()
-            return
-        }
-        _ui.update {
-            it.copy(
-                backgroundDisplayUrl = resolveBackgroundUrl(
-                    s.backgroundMode,
-                    s.backgroundApiUrl,
-                    s.backgroundImageUrl,
-                    bust = true,
-                ),
-            )
+            BackgroundMode.CUSTOM_API -> {
+                _ui.update {
+                    it.copy(backgroundDisplayUrl = cacheBust(s.backgroundApiUrl))
+                }
+                launchCustomApiResolve()
+            }
+            else -> {
+                _ui.update {
+                    it.copy(
+                        backgroundDisplayUrl = resolveBackgroundUrl(
+                            s.backgroundMode,
+                            s.backgroundApiUrl,
+                            s.backgroundImageUrl,
+                            bust = true,
+                        ),
+                    )
+                }
+            }
         }
     }
 

@@ -14,6 +14,7 @@ class AppContainer(context: Context) {
     val hitokoto = HitokotoClient()
     val updateChecker = UpdateChecker()
     val r18Resolver = R18BackgroundResolver()
+    val jsonResolver = JsonBackgroundResolver()
     val backgroundImages = BackgroundImageStore(appCtx)
 
     val appVersionName: String = run {
