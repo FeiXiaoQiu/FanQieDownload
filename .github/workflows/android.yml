@@ -57,19 +57,6 @@ jobs:
       - name: Build release APKs (per-ABI + universal)
         run: ./gradlew :app:assembleRelease --stacktrace
 
-      - name: Build lookapp release APK
-        run: ./gradlew :lookapp:assembleRelease --stacktrace
-
-      - name: Name lookapp APK
-        run: |
-          mkdir -p dist-apk
-          OUT="lookapp/build/outputs/apk/release"
-          for f in "$OUT"/*.apk; do
-            dest="dist-apk/lookapp-v2607271940.apk"
-            cp -f "$f" "$dest"
-            echo "packed: $dest"
-          done
-
       - name: Name APKs as guanyu-{version}-{abi}
         run: |
           VER="${{ steps.ver.outputs.version }}"

@@ -15,4 +15,3 @@ dependencyResolutionManagement {
 
 rootProject.name = "FanQieDownload"
 include(":app")
-include(":lookapp")
