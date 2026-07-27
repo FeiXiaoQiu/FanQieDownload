@@ -8,9 +8,9 @@ import org.json.JSONObject
 import java.util.concurrent.TimeUnit
 
 class Resolver {
-    private val http = OkHttpClient.Builder()
-        .connectTimeout(10, TimeUnit.SECONDS)
-        .readTimeout(15, TimeUnit.SECONDS)
+    val http: OkHttpClient = OkHttpClient.Builder()
+        .connectTimeout(8, TimeUnit.SECONDS)
+        .readTimeout(12, TimeUnit.SECONDS)
         .followRedirects(true)
         .build()
 
@@ -37,7 +37,7 @@ class Resolver {
                     }
                 }
             }
-            candidates
+            candidates.distinct()
         } catch (_: Exception) {
             emptyList()
         }

@@ -1,0 +1,19 @@
+<?xml version="1.0" encoding="utf-8"?>
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 外圈 -->
+    <path
+        android:fillColor="#C08860"
+        android:pathData="M54,24C37.4,24 24,37.4 24,54s13.4,30 30,30 30,-13.4 30,-30S70.6,24 54,24zM54,76c-12.2,0 -22,-9.8 -22,-22s9.8,-22 22,-22 22,9.8 22,22S66.2,76 54,76z"/>
+    <!-- 瞳孔 -->
+    <path
+        android:fillColor="#0A0A0A"
+        android:pathData="M54,42c-6.6,0 -12,5.4 -12,12s5.4,12 12,12 12,-5.4 12,-12S60.6,42 54,42z"/>
+    <!-- 高光 -->
+    <path
+        android:fillColor="#C08860"
+        android:pathData="M54,44c-5.5,0 -10,4.5 -10,10s4.5,10 10,10 10,-4.5 10,-10S59.5,44 54,44z"/>
+</vector>

@@ -26,7 +26,6 @@ class MainActivity : ComponentActivity() {
         setContent {
             InspectorScreen(
                 resolver = resolver,
-                saveDir = saveDir,
                 onSaveBytes = { filename, bytes ->
                     // 写入文件
                     saveDir.mkdirs()

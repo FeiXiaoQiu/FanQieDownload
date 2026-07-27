@@ -71,12 +71,11 @@ import coil.request.ImageRequest
 import com.feixiaoqiu.lookapp.data.Resolver
 import kotlinx.coroutines.CoroutineScope
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.async
+import kotlinx.coroutines.awaitAll
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
-import okhttp3.OkHttpClient
 import okhttp3.Request
-import java.io.File
-import java.util.concurrent.TimeUnit
 
 private val BgBlack = Color(0xFF0A0A0A)
 private val Primary = Color(0xFFC08860)
@@ -85,7 +84,6 @@ private val Primary = Color(0xFFC08860)
 @Composable
 fun InspectorScreen(
     resolver: Resolver,
-    saveDir: File,
     onSaveBytes: (String, ByteArray) -> Unit,
 ) {
     val context = LocalContext.current
@@ -100,13 +98,7 @@ fun InspectorScreen(
     var saveTotal by remember { mutableIntStateOf(0) }
     var saveProgress by remember { mutableFloatStateOf(0f) }
 
-    val http = remember {
-        OkHttpClient.Builder()
-            .connectTimeout(15, TimeUnit.SECONDS)
-            .readTimeout(30, TimeUnit.SECONDS)
-            .followRedirects(true)
-            .build()
-    }
+    val http = resolver.http
 
     fun doParse() {
         if (url.isBlank() || loading) return
@@ -134,7 +126,7 @@ fun InspectorScreen(
             ) {
                 Text("观察", color = Color.White, fontSize = 20.sp, fontWeight = FontWeight.Bold)
                 Spacer(Modifier.width(6.dp))
-                Text("v2607271434", color = Color(0xFF666666), fontSize = 12.sp)
+                Text("v2607271900", color = Color(0xFF666666), fontSize = 12.sp)
                 Spacer(Modifier.weight(1f))
                 if (urls.isNotEmpty() && !saving) {
                     TextButton(onClick = {
@@ -144,18 +136,23 @@ fun InspectorScreen(
                         saveProgress = 0f
                         scope.launch {
                             withContext(Dispatchers.IO) {
-                                for ((i, u) in urls.withIndex()) {
-                                    try {
-                                        val req = Request.Builder().url(u).get().build()
-                                        val bytes = http.newCall(req).execute().use { resp ->
-                                            if (!resp.isSuccessful) return@use null
-                                            resp.body?.bytes()
+                                val batch = urls.chunked(4)
+                                for (chunk in batch) {
+                                    chunk.map { u ->
+                                        async {
+                                            try {
+                                                val req = Request.Builder().url(u).get().build()
+                                                val bytes = http.newCall(req).execute().use { resp ->
+                                                    if (!resp.isSuccessful) return@async
+                                                    resp.body?.bytes()
+                                                }
+                                                if (bytes != null) {
+                                                    onSaveBytes("img_${System.currentTimeMillis()}_${u.hashCode()}.jpg", bytes)
+                                                }
+                                            } catch (_: Exception) {}
                                         }
-                                        if (bytes != null) {
-                                            onSaveBytes("img_${System.currentTimeMillis()}_${i}.jpg", bytes)
-                                        }
-                                    } catch (_: Exception) {}
-                                    saveDone = i + 1
+                                    }.awaitAll()
+                                    saveDone += chunk.size
                                     saveProgress = saveDone.toFloat() / saveTotal
                                 }
                             }
@@ -217,7 +214,14 @@ fun InspectorScreen(
                     verticalArrangement = Arrangement.spacedBy(4.dp),
                 ) {
                     itemsIndexed(urls) { index, imgUrl ->
-                        val req = remember(imgUrl) { ImageRequest.Builder(context).data(imgUrl).crossfade(true).size(400).build() }
+                        val req = remember(imgUrl) {
+                            ImageRequest.Builder(context)
+                                .data(imgUrl)
+                                .crossfade(true)
+                                .size(400)
+                                .memoryCacheKey(imgUrl)
+                                .build()
+                        }
                         AsyncImage(
                             model = req,
                             contentDescription = null,
