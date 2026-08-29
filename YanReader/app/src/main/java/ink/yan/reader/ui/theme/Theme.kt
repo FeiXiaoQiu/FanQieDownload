@@ -1,62 +1,30 @@
 package ink.yan.reader.ui.theme
 
-import androidx.compose.foundation.isSystemInDarkTheme
 import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.Typography
 import androidx.compose.material3.darkColorScheme
 import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.CompositionLocalProvider
 import androidx.compose.ui.graphics.Color
 import androidx.compose.ui.text.TextStyle
 import androidx.compose.ui.text.font.FontFamily
 import androidx.compose.ui.text.font.FontWeight
 import androidx.compose.ui.unit.sp
+import ink.yan.reader.data.Appearance
+import ink.yan.reader.data.StylePreset
+import ink.yan.reader.ui.GlassStyle
+import ink.yan.reader.ui.LocalGlassStyle
 
 /**
  * 砚 YanReader 主题。
  *
  * 配色刻意压低饱和度：液态玻璃的质感依赖背景透出，
- * 背景一花，玻璃就糊了，所以这里用大面积低饱和深色 + 少量点亮色。
+ * 背景一花，玻璃就糊了，所以这里用大面积低饱和底色 + 少量点亮色。
+ *
+ * 整套颜色来自 [Appearance.preset]，不再硬编码 —— 换风格包时配色与玻璃
+ * 参数必须一起变，否则会出现「换成浅色但玻璃本色还是白的」这种割裂。
  */
-
-// 墨色基调（暗色）
-private val InkBlack = Color(0xFF0B0D10)
-private val InkSurface = Color(0xFF14171C)
-private val InkSurfaceHi = Color(0xFF1C2027)
-private val InkBorder = Color(0xFF2A2F38)
-
-// 砚青 —— 主色，取砚台的青灰
-private val YanCyan = Color(0xFF6FD3C7)
-private val YanCyanDim = Color(0xFF3E8C84)
-
-// 朱砂 —— 强调色，用于危险操作与下载中状态
-private val ZhuSha = Color(0xFFE4796B)
-
-private val DarkColors = darkColorScheme(
-    primary = YanCyan,
-    onPrimary = Color(0xFF06322E),
-    primaryContainer = YanCyanDim,
-    secondary = Color(0xFFB8C4D0),
-    tertiary = ZhuSha,
-    background = InkBlack,
-    surface = InkSurface,
-    surfaceVariant = InkSurfaceHi,
-    outline = InkBorder,
-    onBackground = Color(0xFFE6EAEF),
-    onSurface = Color(0xFFE6EAEF),
-    onSurfaceVariant = Color(0xFF9AA4B1),
-)
-
-private val LightColors = lightColorScheme(
-    primary = Color(0xFF2F7B72),
-    onPrimary = Color.White,
-    secondary = Color(0xFF4A5560),
-    tertiary = Color(0xFFB8503F),
-    background = Color(0xFFF4F6F8),
-    surface = Color.White,
-    onBackground = Color(0xFF1A1D21),
-    onSurface = Color(0xFF1A1D21),
-)
 
 private val YanTypography = Typography(
     displaySmall = TextStyle(
@@ -87,12 +55,48 @@ private val YanTypography = Typography(
 
 @Composable
 fun YanTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
+    appearance: Appearance = Appearance(),
     content: @Composable () -> Unit,
 ) {
+    val p = appearance.preset
     MaterialTheme(
-        colorScheme = if (darkTheme) DarkColors else LightColors,
+        colorScheme = if (p.lightContent) lightOf(p) else darkOf(p),
         typography = YanTypography,
-        content = content,
-    )
+    ) {
+        // 玻璃参数随配色一起下发，子组件用 Modifier.glass() 即自动跟随
+        CompositionLocalProvider(
+            LocalGlassStyle provides GlassStyle.from(appearance),
+            content = content,
+        )
+    }
 }
+
+private fun darkOf(p: StylePreset) = darkColorScheme(
+    primary = Color(p.accent),
+    onPrimary = Color(p.onAccent),
+    primaryContainer = Color(p.accentDim),
+    secondary = Color(p.onInkMuted),
+    tertiary = Color(p.accent),
+    background = Color(p.ink),
+    surface = Color(p.surface),
+    surfaceVariant = Color(p.surfaceHi),
+    outline = Color(p.border),
+    onBackground = Color(p.onInk),
+    onSurface = Color(p.onInk),
+    onSurfaceVariant = Color(p.onInkMuted),
+)
+
+private fun lightOf(p: StylePreset) = lightColorScheme(
+    primary = Color(p.accent),
+    onPrimary = Color(p.onAccent),
+    primaryContainer = Color(p.accentDim),
+    secondary = Color(p.onInkMuted),
+    tertiary = Color(p.accent),
+    background = Color(p.ink),
+    surface = Color(p.surface),
+    surfaceVariant = Color(p.surfaceHi),
+    outline = Color(p.border),
+    onBackground = Color(p.onInk),
+    onSurface = Color(p.onInk),
+    onSurfaceVariant = Color(p.onInkMuted),
+)

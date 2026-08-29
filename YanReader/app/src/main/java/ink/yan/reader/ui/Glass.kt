@@ -1,6 +1,8 @@
 package ink.yan.reader.ui
 
-import androidx.compose.runtime.Stable
+import androidx.compose.runtime.Composable
+import androidx.compose.runtime.Immutable
+import androidx.compose.runtime.compositionLocalOf
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
@@ -13,6 +15,7 @@ import androidx.compose.ui.graphics.PathEffect
 import androidx.compose.ui.graphics.drawscope.Stroke
 import androidx.compose.ui.unit.Dp
 import androidx.compose.ui.unit.dp
+import ink.yan.reader.data.Appearance
 
 /**
  * 液态玻璃（Liquid Glass）材质。
@@ -30,16 +33,63 @@ import androidx.compose.ui.unit.dp
  *
  * 如果需要「真实背景模糊」，见本文件末尾的说明，但请谨慎使用。
  */
-@Stable
-object LiquidGlassTokens {
-    val FillTop = Color.White
-    val FillBottom = Color.White
-    val BorderTop = Color.White
-    val BorderBottom = Color.White
-    val Highlight = Color.White
+
+/**
+ * 一组玻璃参数。由 [Appearance] 推导而来，通过 [LocalGlassStyle] 下发，
+ * 于是全应用改外观时不必逐个组件传参。
+ *
+ * [tint] 是玻璃本色：深色主题用白，浅色主题用深灰蓝 —— 白色描边画在
+ * 白底上等于没画，这个字段就是为此存在的。
+ */
+@Immutable
+data class GlassStyle(
+    val tint: Color = Color.White,
+    val fillAlpha: Float = 0.10f,
+    val borderAlpha: Float = 0.34f,
+    val highlightAlpha: Float = 0.55f,
+    val cornerDp: Int = 22,
+) {
+    companion object {
+        fun from(a: Appearance): GlassStyle = GlassStyle(
+            tint = Color(a.preset.glassTint),
+            fillAlpha = a.resolvedFill,
+            borderAlpha = a.resolvedBorder,
+            highlightAlpha = a.resolvedHighlight,
+            cornerDp = a.resolvedCorner,
+        )
+    }
+}
+
+/** 玻璃参数的作用域默认值。覆盖它即可让整棵子树换一套玻璃。 */
+val LocalGlassStyle = compositionLocalOf { GlassStyle() }
+
+/** 圆角上下限，防止微调叠加后退化成直角或糊成胶囊 */
+private val CORNER_RANGE = 0..32
+
+/**
+ * 按当前外观绘制玻璃。
+ *
+ * @param cornerDelta 相对基准圆角的偏移。各组件保留自己的层级差异
+ *   （卡片 -4、输入框 -2），用户调圆角时整体等比变化而不会全部拉平。
+ */
+@Composable
+fun Modifier.glass(
+    cornerDelta: Int = 0,
+    elevationShadow: Boolean = true,
+): Modifier {
+    val s = LocalGlassStyle.current
+    return this.liquidGlass(
+        tint = s.tint,
+        corner = (s.cornerDp + cornerDelta).coerceIn(CORNER_RANGE).dp,
+        fillAlpha = s.fillAlpha,
+        borderAlpha = s.borderAlpha,
+        highlightAlpha = s.highlightAlpha,
+        elevationShadow = elevationShadow,
+    )
 }
 
 fun Modifier.liquidGlass(
+    tint: Color = Color.White,
     corner: Dp = 22.dp,
     fillAlpha: Float = 0.10f,
     borderAlpha: Float = 0.34f,
@@ -50,14 +100,14 @@ fun Modifier.liquidGlass(
 
     val fillBrush = Brush.verticalGradient(
         listOf(
-            LiquidGlassTokens.FillTop.copy(alpha = fillAlpha),
-            LiquidGlassTokens.FillBottom.copy(alpha = fillAlpha * 0.55f),
+            tint.copy(alpha = fillAlpha),
+            tint.copy(alpha = fillAlpha * 0.55f),
         )
     )
     val borderBrush = Brush.verticalGradient(
         listOf(
-            LiquidGlassTokens.BorderTop.copy(alpha = borderAlpha),
-            LiquidGlassTokens.BorderBottom.copy(alpha = borderAlpha * 0.28f),
+            tint.copy(alpha = borderAlpha),
+            tint.copy(alpha = borderAlpha * 0.28f),
         )
     )
 
@@ -98,7 +148,7 @@ fun Modifier.liquidGlass(
             brush = Brush.horizontalGradient(
                 listOf(
                     Color.Transparent,
-                    LiquidGlassTokens.Highlight.copy(alpha = highlightAlpha),
+                    tint.copy(alpha = highlightAlpha),
                     Color.Transparent,
                 )
             ),
@@ -115,7 +165,7 @@ fun Modifier.liquidGlass(
                 moveTo(inset * 2, y)
                 lineTo(size.width - inset * 2, y)
             },
-            color = Color.White.copy(alpha = 0.10f),
+            color = tint.copy(alpha = 0.10f),
             style = Stroke(width = 1.dp.toPx()),
         )
 
@@ -134,6 +184,8 @@ fun Modifier.liquidGlass(
  *     Modifier.blur(radius, BlurredEdgeTreatment(RoundedCornerShape(corner)))
  * 但请注意 blur 会逐帧 GPU 重采样，滚动列表里大量使用会明显掉帧，
  * 只建议用在静态浮层（弹窗、详情页头部）上。
+ *
+ * 背景图本身是可以放心模糊的：它不随列表滚动重绘，画完一帧就静止了。
  */
 
 /** 玻璃按钮。按下时略微加深填充，配合 spring 动画形成「按压回弹」的液态感。 */
@@ -144,8 +196,15 @@ object LiquidGlassDefaults {
     val ContentPadding = 14.dp
 }
 
-fun Modifier.glassPressed(isPressed: Boolean, corner: Dp = 22.dp): Modifier =
-    this.liquidGlass(
-        corner = corner,
-        fillAlpha = if (isPressed) 0.10f + LiquidGlassDefaults.PressedFillBoost else 0.10f,
+@Composable
+fun Modifier.glassPressed(isPressed: Boolean, cornerDelta: Int = 0): Modifier {
+    val s = LocalGlassStyle.current
+    return this.liquidGlass(
+        tint = s.tint,
+        corner = (s.cornerDp + cornerDelta).coerceIn(CORNER_RANGE).dp,
+        fillAlpha = (s.fillAlpha + if (isPressed) LiquidGlassDefaults.PressedFillBoost else 0f)
+            .coerceIn(0f, 0.95f),
+        borderAlpha = s.borderAlpha,
+        highlightAlpha = s.highlightAlpha,
     )
+}

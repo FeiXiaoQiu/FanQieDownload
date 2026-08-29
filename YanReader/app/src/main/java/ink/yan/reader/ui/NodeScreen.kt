@@ -64,7 +64,6 @@ fun NodeScreen(vm: MainViewModel, onBack: () -> Unit) {
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding(),
@@ -102,7 +101,7 @@ fun NodeScreen(vm: MainViewModel, onBack: () -> Unit) {
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .liquidGlass(corner = 20.dp)
+                .glass(cornerDelta = -2)
                 .padding(14.dp),
         ) {
             OutlinedTextField(
@@ -185,7 +184,7 @@ private fun NodeCard(
     Row(
         modifier = Modifier
             .fillMaxWidth()
-            .liquidGlass(corner = 18.dp)
+            .glass(cornerDelta = -4)
             .padding(horizontal = 14.dp, vertical = 12.dp),
         verticalAlignment = Alignment.CenterVertically,
     ) {

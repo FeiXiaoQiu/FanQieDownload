@@ -9,9 +9,9 @@
 | 命名空间 | `ink.yan.reader` |
 | 技术栈 | Kotlin 2.1.21 + Jetpack Compose Material 3（BOM 2026.06.01 / Compose 1.11.4） |
 | minSdk / targetSdk | 26 / 36 |
-| 版本 | 0.1.0（versionCode 1） |
+| 版本 | 0.2.0（versionCode 2） |
 | 签名 | 独立密钥 `CN=YanReader`（与观隅 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
-| 发布 | [yanreader-v0.1.0](https://github.com/FeiXiaoQiu/FanQieDownload/releases/tag/yanreader-v0.1.0)（GitHub Actions 自动构建并发布） |
+| 发布 | 推送 `yanreader-v*` tag 后由 GitHub Actions 自动构建并发布 |
 
 包名、应用名、签名与「观隅」「弦」均不相同，是独立应用。
 
@@ -88,20 +88,41 @@ app/src/main/java/ink/yan/reader/
 │   ├── NodeTester.kt          节点测速 + NodeRepository 内存态管理
 │   ├── NodeCodec.kt           节点列表序列化（纯 Kotlin）
 │   ├── DownloadEngine.kt      并发下载引擎  ← 核心
+│   ├── Appearance.kt          风格预设 / 玻璃参数 / 背景缩放（纯 Kotlin）
+│   ├── BackgroundSource.kt    背景图源模型 + 预置清单
+│   ├── HitokotoSource.kt      一言源模型 + 预置清单 + 兜底文案
+│   ├── JsonValue.kt           极简 JSON 值模型（让解析逻辑可脱离 org.json 单测）
+│   ├── JsonAdapter.kt         org.json ↔ JsonVal 转换（**唯一** import org.json 处）
+│   ├── BackgroundResolver.kt  背景地址解析：路径求值 + 全树探测 + 相对路径补全 ← 核心
+│   ├── BackgroundFetcher.kt   背景网络层（含 cache-bust）
+│   ├── HitokotoParser.kt      一言响应解析：多字段回退 + 兜底取句
+│   ├── HitokotoClient.kt      一言网络层
 │   └── export/
 │       ├── TxtWriter.kt       流式 TXT 写出
 │       └── EpubWriter.kt      流式 EPUB 3.0 写出（零依赖，仅 java.util.zip）
 ├── store/
-│   └── NodeStore.kt           DataStore 落盘
+│   ├── NodeStore.kt           DataStore 落盘（节点）
+│   └── AppearanceStore.kt     DataStore 落盘（外观 / 背景 / 一言 / 导出格式）
 ├── ui/
-│   ├── Glass.kt               液态玻璃材质
+│   ├── Glass.kt               液态玻璃材质 + LocalGlassStyle
+│   ├── Backdrop.kt            全屏背景渲染（FIT 用同图模糊填白）
 │   ├── NodeScreen.kt          数据源管理
-│   ├── SearchScreen.kt        搜索 / 下载
-│   ├── SettingsScreen.kt      设置
-│   └── theme/Theme.kt         配色
+│   ├── SearchScreen.kt        搜索 / 下载 / 首页一言
+│   ├── SettingsScreen.kt      设置（组装各分区）
+│   ├── settings/
+│   │   ├── SettingsParts.kt   分区卡片 / 单选行 / 开关行 / 滑杆行
+│   │   ├── LookSection.kt     外观风格
+│   │   ├── BackgroundSection.kt  背景源 + 显示参数 + 自定义接口
+│   │   └── HitokotoSection.kt 一言开关 + 源选择 + 自定义接口
+│   └── theme/Theme.kt         配色（随风格预设切换）+ 下发玻璃参数
 └── vm/
-    └── MainViewModel.kt       引擎与 UI 的桥
+    └── MainViewModel.kt       引擎、外观、背景、一言的中枢
 ```
+
+> `JsonValue.kt` 存在的理由：org.json 在 Android 上是平台内置，JVM 单测里却是
+> android.jar 的 stub，一调用就抛 "Method ... not mocked"。把解析算法面向
+> [JsonVal] 编写、把 org.json 隔离到 `JsonAdapter.kt` 一个文件，背景与一言的
+> 解析逻辑才能写真正的单元测试（21 个用例）。
 
 ---
 
@@ -151,7 +172,49 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 ---
 
-## 五、已知未完成项
+## 五、外观与背景系统
+
+### 1. 风格包 + 微调
+
+四套预设（砚青 / 黛蓝 / 朱砂 / 墨白），每套 =「底色 + 主色 + 一组玻璃参数」。选中后还能单独调浓度与圆角，微调字段用可空的 `null` 表示「跟随预设」，切换风格包时清空。
+
+玻璃参数必须跟着配色一起变，不能各自独立 —— 否则会出现「换成浅色但玻璃本色还是白的」这种割裂：白描边画在白底上等于没画。所以墨白预设的 `glassTint` 是深灰蓝而不是白色。
+
+### 2. 玻璃参数靠 CompositionLocal 下发
+
+`LocalGlassStyle` 由 `YanTheme` 提供，业务组件统一写 `Modifier.glass()`。加新组件时不必逐处传参，也不会漏掉某个组件没跟着换风格。
+
+`glass(cornerDelta)` 传的是**相对基准的偏移**而不是绝对值：卡片 -4、输入框 -2。这样用户调圆角时整体等比变化，不会把所有层级差异拉平。
+
+### 3. 背景接口至少三种形态，解析器都得吃
+
+| 形态 | 例子 | 处理 |
+| --- | --- | --- |
+| 直链出图 | `t.alcy.cc/ycy` | 302 直接跳 webp，交给 Coil 跟随重定向 |
+| JSON + 绝对路径 | `acg.yaohud.cn` | 解析 JSON 取图片地址 |
+| JSON + 相对路径 | 必应每日一图 | 取出的 `/th?id=...` 必须补 origin 才有效 |
+
+观隅的实现是硬编码 `data[].urlsList[].url` 一家的结构，换个接口就失效 —— 而「动态选择 + 自定义」恰恰要求支持任意接口。这里改成三层策略：
+
+- **显式路径优先**：点分字段，遇数组自动展开。`images.url`、`data.urlsList.url`（兼容观隅老格式）、`data[0].url` 都认
+- **全树探测兜底**：路径取不到时不报错，退回遍历整棵树找像图片 URL 的字符串
+- **相对路径补全**：图片判定也刻意不要求扩展名在结尾 —— 必应的地址是 `.jpg&rf=...&pid=hp`，只认结尾会漏掉
+
+### 4. 两个不写就会踩的坑
+
+**缓存穿透**：同一个地址不加时间戳，Coil 命中缓存，用户点「换一张」界面毫无反应，很容易被当成功能没做。所以 `refreshBackground(bust = true)` 会附加 `_t=` 参数 —— 且必须判断原地址是否已有 query，直接拼 `?_t=` 会破坏原有参数。
+
+**本地图片不能直接存 URI**：相册返回的 `content://` 是一次性授权，进程重启后就没权限了，背景会静默变回纯色，而且极难排查。必须复制到私有目录再存路径。
+
+### 5. 滑杆只在松手时落盘
+
+`SliderRow` 把拖动中的高频回调（`onValue`，只改内存）与松手回调（`onCommit`，写 DataStore）分开 —— 一次拖动会产生几十次值变化，每次都写磁盘纯属浪费。
+
+同理，外观设置在 `MainViewModel` 里只读一次快照而不 `collect` 整条 flow：否则落盘回灌的旧值会把用户正在拖的数值拽回去，表现为「滑杆自己往回跳」。节点列表用的是同一个策略，理由见第四节第 7 条。
+
+---
+
+## 六、已知未完成项
 
 `MainViewModel.kt` 里有**两处刻意保留的占位**：
 
@@ -166,7 +229,7 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 ---
 
-## 六、测试
+## 七、测试
 
 ```bash
 ./gradlew :app:testDebugUnitTest
@@ -182,7 +245,7 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 ---
 
-## 七、依赖版本说明
+## 八、依赖版本说明
 
 有一个坑值得单独写下来：**Compose BOM `2026.08.00` 不能配 AGP 8.13.2**。
 
@@ -209,12 +272,12 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 
 ---
 
-## 八、验证状态
+## 九、验证状态
 
 **已完整构建通过**，不是"应该能编过"：
 
 ```
-./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（6 tests, 0 failures）
+./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（27 tests, 0 failures）
 ./gradlew :app:assembleRelease   → BUILD SUCCESSFUL（含 R8 混淆 + 真实签名）
 ```
 
@@ -224,14 +287,19 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 | --- | --- |
 | package | `ink.yan.reader` |
 | application-label | 砚 |
-| versionCode / versionName | 1 / 0.1.0 |
+| versionCode / versionName | 2 / 0.2.0 |
 | minSdk / targetSdk | 26 / 36 |
 | launchable-activity | `ink.yan.reader.MainActivity` |
 | 签名 SHA1 | `1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B` |
 | 签名 SHA256 | `C8:D0:8A:2C:5E:A6:08:48:CF:68:7F:F4:94:2E:9A:56:CC:8B:3A:24:9A:53:18:02:6D:0B:4C:9F:9A:34:FA:5C` |
-| APK 体积 | 1.5 MB（release，R8 后）/ 约 20 MB（debug） |
+| APK 体积 | 1.8 MB（release，R8 后）/ 约 20 MB（debug） |
 
-单元测试 6 个用例全部通过，覆盖节点序列化、并发下载、EPUB 结构三块（详见第六节）。
+签名与 0.1.0 完全一致，可以直接覆盖安装升级。
+
+单元测试 27 个用例全部通过：
+
+- **6 个**（`CoreLogicTest`）—— 节点序列化、并发下载、EPUB 结构
+- **21 个**（`AppearanceLogicTest`）—— 背景地址解析（必应相对路径、观隅老格式兼容、方括号下标、路径失效回退探测、非图片过滤、协议相对地址）、cache-bust 的有无 query 分支、一言解析（标准字段 / 备选字段 / data 包裹 / 纯文本 / 字段名未知时兜底）、外观预设与微调覆盖
 
 CI 上一次运行（run 33225938215）17 步全绿，Release 附件 `yanreader-0.1.0.apk`（1,517,666 字节）已发布。
 
@@ -239,7 +307,7 @@ CI 上一次运行（run 33225938215）17 步全绿，Release 附件 `yanreader-
 
 ---
 
-## 九、CI 排查记录
+## 十、CI 排查记录
 
 构建在 CI 上连续挂了六次，两个根因都值得记下来，因为本地 `gradlew` 与 GitHub runner 的行为不一致：
 

@@ -51,7 +51,6 @@ fun SearchScreen(
     Column(
         modifier = Modifier
             .fillMaxSize()
-            .background(MaterialTheme.colorScheme.background)
             .statusBarsPadding()
             .navigationBarsPadding()
             .imePadding(),
@@ -76,11 +75,20 @@ fun SearchScreen(
             }
         }
 
+        // 一言：点一下换一句
+        if (ui.hitokoto.enabled && ui.hitokotoText.isNotBlank()) {
+            HitokotoLine(
+                text = ui.hitokotoText,
+                onRefresh = vm::refreshHitokoto,
+                modifier = Modifier.padding(horizontal = 20.dp, vertical = 2.dp),
+            )
+        }
+
         // 搜索框（玻璃容器）
         Column(
             modifier = Modifier
                 .padding(horizontal = 16.dp, vertical = 8.dp)
-                .liquidGlass(corner = 20.dp)
+                .glass(cornerDelta = -2)
                 .padding(14.dp),
         ) {
             OutlinedTextField(
@@ -122,7 +130,7 @@ fun SearchScreen(
                     is DownloadState.Progress -> Column(
                         Modifier
                             .fillMaxWidth()
-                            .liquidGlass(corner = 18.dp)
+                            .glass(cornerDelta = -4)
                             .padding(14.dp),
                     ) {
                         Text(state.message, style = MaterialTheme.typography.titleMedium)
@@ -150,7 +158,7 @@ fun SearchScreen(
                     is DownloadState.Done -> Column(
                         Modifier
                             .fillMaxWidth()
-                            .liquidGlass(corner = 18.dp)
+                            .glass(cornerDelta = -4)
                             .padding(14.dp),
                     ) {
                         Text(
@@ -177,7 +185,7 @@ fun SearchScreen(
                     is DownloadState.Failed -> Column(
                         Modifier
                             .fillMaxWidth()
-                            .liquidGlass(corner = 18.dp)
+                            .glass(cornerDelta = -4)
                             .padding(14.dp),
                     ) {
                         Text(
@@ -217,7 +225,7 @@ fun SearchScreen(
                     Column(
                         Modifier
                             .fillMaxWidth()
-                            .liquidGlass(corner = 18.dp)
+                            .glass(cornerDelta = -4)
                             .padding(14.dp),
                     ) {
                         Text(
@@ -248,5 +256,39 @@ fun SearchScreen(
                 item { Spacer(Modifier.height(24.dp)) }
             }
         }
+    }
+}
+
+/**
+ * 一句话。整行可点，点了换一句。
+ *
+ * 刻意不做成按钮：它只是首页的一句点缀，加边框和背景反而会抢走搜索框的
+ * 视觉重心。水波纹也关掉了 —— 整行都是点击区，波纹铺满一行显得脏。
+ */
+@Composable
+private fun HitokotoLine(
+    text: String,
+    onRefresh: () -> Unit,
+    modifier: Modifier = Modifier,
+) {
+    Row(
+        modifier = modifier
+            .fillMaxWidth()
+            .clickable(
+                interactionSource = remember { MutableInteractionSource() },
+                indication = null,
+                onClick = onRefresh,
+            )
+            .padding(vertical = 6.dp),
+        verticalAlignment = Alignment.CenterVertically,
+    ) {
+        Text(
+            text = text,
+            style = MaterialTheme.typography.bodyMedium,
+            color = MaterialTheme.colorScheme.onSurfaceVariant,
+            maxLines = 2,
+            overflow = TextOverflow.Ellipsis,
+            modifier = Modifier.weight(1f),
+        )
     }
 }

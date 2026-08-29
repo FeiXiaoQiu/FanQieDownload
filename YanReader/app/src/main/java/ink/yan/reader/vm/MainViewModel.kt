@@ -8,19 +8,34 @@ import android.os.Environment
 import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
+import ink.yan.reader.data.Appearance
+import ink.yan.reader.data.BackgroundFetcher
+import ink.yan.reader.data.BackgroundKind
+import ink.yan.reader.data.BackgroundPresets
+import ink.yan.reader.data.BackgroundScale
+import ink.yan.reader.data.BackgroundSource
 import ink.yan.reader.data.BookInfo
 import ink.yan.reader.data.Chapter
 import ink.yan.reader.data.ChapterContent
+import ink.yan.reader.data.CornerStyle
 import ink.yan.reader.data.DownloadEngine
 import ink.yan.reader.data.DownloadRequest
 import ink.yan.reader.data.DownloadState
 import ink.yan.reader.data.ExportFormat
+import ink.yan.reader.data.GlassStrength
+import ink.yan.reader.data.HitokotoClient
+import ink.yan.reader.data.HitokotoPresets
+import ink.yan.reader.data.HitokotoSource
 import ink.yan.reader.data.NodeConfig
 import ink.yan.reader.data.NodeLatency
 import ink.yan.reader.data.NodeRepository
 import ink.yan.reader.data.NodeTester
+import ink.yan.reader.data.StylePreset
 import ink.yan.reader.data.export.EpubWriter
 import ink.yan.reader.data.export.TxtWriter
+import ink.yan.reader.store.AppearanceStore
+import ink.yan.reader.store.BackgroundPrefs
+import ink.yan.reader.store.HitokotoPrefs
 import ink.yan.reader.store.NodeStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
@@ -50,11 +65,23 @@ data class UiState(
     val format: ExportFormat = ExportFormat.EPUB,
     val concurrency: Int = 5,
     val message: String? = null,
+
+    // —— 外观 / 背景 / 一言 ——
+    val appearance: Appearance = Appearance(),
+    val background: BackgroundPrefs = BackgroundPrefs(),
+    val hitokoto: HitokotoPrefs = HitokotoPrefs(),
+    /** 已解析出的图片地址，交给 Coil 加载；null 表示还没有可用背景 */
+    val backgroundUrl: String? = null,
+    val hitokotoText: String = "",
+    val bgRefreshing: Boolean = false,
 )
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val store = NodeStore(app.applicationContext)
+    private val lookStore = AppearanceStore(app.applicationContext)
+    private val hitokotoClient = HitokotoClient()
+    private val backgroundFetcher = BackgroundFetcher()
     private val repo = NodeRepository()
     private val engine = DownloadEngine(
         fetch = { ch -> fetchChapter(ch) },
@@ -76,6 +103,19 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             val saved = runCatching { store.nodes.first() }.getOrDefault(emptyList())
             repo.replaceAll(saved)
             _ui.update { it.copy(nodes = repo.nodes) }
+        }
+
+        // 外观设置同样只读一次快照，理由比节点更充分：
+        // 滑杆是高频写入，若持续 collect，落盘回灌的旧值会把用户正在拖的
+        // 数值拽回去，表现为「滑杆自己往回跳」。
+        viewModelScope.launch {
+            val look = runCatching { lookStore.appearance.first() }.getOrDefault(Appearance())
+            val bg = runCatching { lookStore.background.first() }.getOrDefault(BackgroundPrefs())
+            val hk = runCatching { lookStore.hitokoto.first() }.getOrDefault(HitokotoPrefs())
+            val fmt = runCatching { lookStore.format.first() }.getOrDefault(ExportFormat.EPUB)
+            _ui.update { it.copy(appearance = look, background = bg, hitokoto = hk, format = fmt) }
+            if (hk.enabled) refreshHitokoto()
+            refreshBackground(bust = false)
         }
     }
 
@@ -192,7 +232,10 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     // ---------- 下载与导出 ----------
 
-    fun setFormat(f: ExportFormat) = _ui.update { it.copy(format = f) }
+    fun setFormat(f: ExportFormat) {
+        _ui.update { it.copy(format = f) }
+        viewModelScope.launch { runCatching { lookStore.saveFormat(f) } }
+    }
 
     fun cancelDownload() {
         downloadJob?.cancel()
@@ -296,6 +339,243 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun safeName(s: String): String =
         s.replace(Regex("[\\\\/:*?\"<>|]"), "_").take(60).ifBlank { "未命名" }
+
+    // ---------- 外观 ----------
+
+    fun setPreset(p: StylePreset) {
+        val next = _ui.value.appearance.withPreset(p)
+        _ui.update { it.copy(appearance = next) }
+        persistLook(next)
+    }
+
+    fun setGlassStrength(s: GlassStrength) = updateLook { it.copy(strength = s) }
+
+    fun setCornerStyle(c: CornerStyle) = updateLook { it.copy(corner = c) }
+
+    fun resetTweaks() = updateLook { it.resetTweaks() }
+
+    private fun updateLook(transform: (Appearance) -> Appearance) {
+        val next = transform(_ui.value.appearance)
+        _ui.update { it.copy(appearance = next) }
+        persistLook(next)
+    }
+
+    // ---------- 背景 ----------
+
+    /**
+     * 解析当前背景源的图片地址。
+     *
+     * @param bust 是否绕过缓存。用户点「换一张」必须为 true，否则 Coil 命中
+     *             旧缓存、界面毫无反应 —— 这是最容易当成「功能没做」的坑。
+     */
+    fun refreshBackground(bust: Boolean = true) {
+        viewModelScope.launch {
+            val prefs = _ui.value.background
+            val src = prefs.sources.find { it.id == prefs.sourceId }
+            if (src == null) {
+                _ui.update {
+                    it.copy(
+                        backgroundUrl = null,
+                        bgRefreshing = false,
+                        message = "背景源已不存在，回退纯色",
+                    )
+                }
+                return@launch
+            }
+            _ui.update { it.copy(bgRefreshing = true) }
+            val url = backgroundFetcher.resolveUrl(src, bust)
+            _ui.update {
+                it.copy(
+                    backgroundUrl = url,
+                    bgRefreshing = false,
+                    message = if (url == null) "背景解析失败，沿用底色" else null,
+                )
+            }
+        }
+    }
+
+    fun selectBackgroundSource(id: String) {
+        val next = _ui.value.background.copy(sourceId = id, localPath = "")
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+        refreshBackground(bust = false)
+    }
+
+    /** @param commit 滑杆松手时才落盘，拖动过程中只改内存 */
+    fun setBackgroundScale(s: BackgroundScale) {
+        val next = _ui.value.background.copy(scale = s)
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+    }
+
+    fun setBackgroundBlur(v: Float, commit: Boolean = false) = tweakBg(commit) {
+        it.copy(blurDp = v.coerceIn(0f, 40f))
+    }
+
+    fun setBackgroundScrim(v: Float, commit: Boolean = false) = tweakBg(commit) {
+        it.copy(scrimAlpha = v.coerceIn(0f, 0.9f))
+    }
+
+    private fun tweakBg(commit: Boolean, transform: (BackgroundPrefs) -> BackgroundPrefs) {
+        val next = transform(_ui.value.background)
+        _ui.update { it.copy(background = next) }
+        if (commit) persistBg(next)
+    }
+
+    fun setShowMature(on: Boolean) {
+        val cur = _ui.value.background
+        val next = if (!on && BackgroundPresets.byId(cur.sourceId)?.mature == true) {
+            // 关掉开关时若正选中成熟源，必须一并切走，否则会停在不可见的选择上
+            cur.copy(showMature = false, sourceId = BackgroundPresets.ALCY.id)
+        } else {
+            cur.copy(showMature = on)
+        }
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+        refreshBackground(bust = false)
+    }
+
+    fun useLocalBackground(path: String) {
+        val next = _ui.value.background.copy(localPath = path)
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+    }
+
+    fun clearLocalBackground() {
+        val next = _ui.value.background.copy(localPath = "")
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+        refreshBackground(bust = false)
+    }
+
+    /**
+     * 从相册选的图要复制到私有目录再用。
+     *
+     * 不能图省事直接存 content:// URI：那是一次性授权，进程重启后就没权限了，
+     * 背景会静默变回纯色，而且很难排查。
+     */
+    fun importLocalBackground(uri: Uri) {
+        viewModelScope.launch(Dispatchers.IO) {
+            val path = runCatching {
+                val app = getApplication<Application>()
+                val dir = File(app.filesDir, "backgrounds").apply { mkdirs() }
+                val dest = File(dir, "custom_bg.img")
+                val input = app.contentResolver.openInputStream(uri)
+                    ?: error("无法读取所选图片")
+                input.use { src -> dest.outputStream().use { dst -> src.copyTo(dst) } }
+                require(dest.isFile && dest.length() > 0L) { "图片保存失败" }
+                dest.absolutePath
+            }.getOrElse { e ->
+                _ui.update { it.copy(message = "背景导入失败：${e.message}") }
+                return@launch
+            }
+            useLocalBackground(path)
+        }
+    }
+
+    fun addCustomBackground(name: String, url: String, kind: BackgroundKind, jsonPath: String) {
+        val trimmed = url.trim()
+        if (!NodeTester.isValidHttpUrl(trimmed)) {
+            _ui.update { it.copy(message = "地址无效，需以 http:// 或 https:// 开头") }
+            return
+        }
+        val src = BackgroundSource(
+            id = "cbg-" + System.currentTimeMillis().toString(36),
+            name = name.ifBlank { "自定义接口" },
+            url = trimmed,
+            kind = kind,
+            jsonPath = jsonPath.trim(),
+        )
+        val next = _ui.value.background.copy(
+            customSources = _ui.value.background.customSources + src,
+            sourceId = src.id,
+            localPath = "",
+        )
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+        refreshBackground(bust = false)
+    }
+
+    fun removeCustomBackground(id: String) {
+        val cur = _ui.value.background
+        val next = cur.copy(
+            customSources = cur.customSources.filterNot { it.id == id },
+            sourceId = if (cur.sourceId == id) BackgroundPresets.ALCY.id else cur.sourceId,
+        )
+        _ui.update { it.copy(background = next) }
+        persistBg(next)
+        if (cur.sourceId == id) refreshBackground(bust = false)
+    }
+
+    // ---------- 一言 ----------
+
+    fun refreshHitokoto() {
+        val prefs = _ui.value.hitokoto
+        val src = prefs.sources.find { it.id == prefs.sourceId }
+        viewModelScope.launch {
+            val text = hitokotoClient.fetchOrFallback(src?.url.orEmpty())
+            _ui.update { it.copy(hitokotoText = text) }
+        }
+    }
+
+    fun selectHitokotoSource(id: String) {
+        val next = _ui.value.hitokoto.copy(sourceId = id)
+        _ui.update { it.copy(hitokoto = next) }
+        persistHk(next)
+        refreshHitokoto()
+    }
+
+    fun setHitokotoEnabled(on: Boolean) {
+        val next = _ui.value.hitokoto.copy(enabled = on)
+        _ui.update { it.copy(hitokoto = next) }
+        persistHk(next)
+        if (on) refreshHitokoto()
+    }
+
+    fun addCustomHitokoto(name: String, url: String) {
+        val trimmed = url.trim()
+        if (!NodeTester.isValidHttpUrl(trimmed)) {
+            _ui.update { it.copy(message = "地址无效，需以 http:// 或 https:// 开头") }
+            return
+        }
+        val src = HitokotoSource(
+            id = "chk-" + System.currentTimeMillis().toString(36),
+            name = name.ifBlank { "自定义接口" },
+            url = trimmed,
+        )
+        val next = _ui.value.hitokoto.copy(
+            customSources = _ui.value.hitokoto.customSources + src,
+            sourceId = src.id,
+        )
+        _ui.update { it.copy(hitokoto = next) }
+        persistHk(next)
+        refreshHitokoto()
+    }
+
+    fun removeCustomHitokoto(id: String) {
+        val cur = _ui.value.hitokoto
+        val next = cur.copy(
+            customSources = cur.customSources.filterNot { it.id == id },
+            sourceId = if (cur.sourceId == id) HitokotoPresets.MIXED.id else cur.sourceId,
+        )
+        _ui.update { it.copy(hitokoto = next) }
+        persistHk(next)
+        if (cur.sourceId == id) refreshHitokoto()
+    }
+
+    // ---------- 落盘 ----------
+
+    private fun persistLook(a: Appearance) {
+        viewModelScope.launch { runCatching { lookStore.saveLook(a) } }
+    }
+
+    private fun persistBg(p: BackgroundPrefs) {
+        viewModelScope.launch { runCatching { lookStore.saveBackground(p) } }
+    }
+
+    private fun persistHk(p: HitokotoPrefs) {
+        viewModelScope.launch { runCatching { lookStore.saveHitokoto(p) } }
+    }
 
     fun clearMessage() = _ui.update { it.copy(message = null) }
 }

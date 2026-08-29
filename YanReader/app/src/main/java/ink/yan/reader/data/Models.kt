@@ -67,6 +67,12 @@ enum class ExportFormat(
 ) {
     TXT("txt", "text/plain", "TXT"),
     EPUB("epub", "application/epub+zip", "EPUB"),
+    ;
+
+    companion object {
+        fun fromStorageOrNull(raw: String?): ExportFormat? =
+            entries.find { it.name == raw }
+    }
 }
 
 /** 下载请求。start/end 为闭区间章节下标，越界会被 clamp。 */
