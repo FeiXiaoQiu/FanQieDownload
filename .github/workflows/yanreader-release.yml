@@ -82,17 +82,17 @@ jobs:
       - name: Run unit tests
         id: tests
         continue-on-error: true
-        run: ./gradlew :app:testDebugUnitTest --stacktrace
+        run: |
+          set -o pipefail
+          ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/unit-test.log"
 
-      - name: Upload test reports
+      - name: Upload unit test log
         if: always()
         uses: actions/upload-artifact@v4
         with:
-          name: yanreader-test-reports
-          path: |
-            YanReader/app/build/reports/tests/**
-            YanReader/app/build/test-results/**
-          if-no-files-found: warn
+          name: yanreader-unit-test-log
+          path: ${{ runner.temp }}/unit-test.log
+          if-no-files-found: error
 
       - name: Fail if tests failed
         if: steps.tests.outcome == 'failure'
