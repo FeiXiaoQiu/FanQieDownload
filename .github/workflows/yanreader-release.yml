@@ -86,39 +86,19 @@ jobs:
           set -o pipefail
           ./gradlew :app:testDebugUnitTest --stacktrace 2>&1 | tee "$RUNNER_TEMP/unit-test.log"
 
-      - name: Archive unit test log on failure
-        # 单元测试失败不阻断发布，但把完整日志留档到仓库 ci-diag/ 便于排查
+      - name: Upload unit test log on failure
         if: steps.tests.outcome == 'failure'
-        env:
-          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
-        run: |
-          python3 - <<'PYEOF'
-          import base64, json, os, urllib.request
+        uses: actions/upload-artifact@v4
+        with:
+          name: yanreader-unit-test-log
+          path: ${{ runner.temp }}/unit-test.log
+          if-no-files-found: warn
 
-          log_path = os.path.join(os.environ["RUNNER_TEMP"], "unit-test.log")
-          data = open(log_path, "rb").read()
-          # 只留最后 120KB，够定位问题又不撑爆仓库
-          data = data[-120000:]
-          path = "ci-diag/unit-test-%s.log" % os.environ["GITHUB_RUN_ID"]
-          body = json.dumps({
-              "message": "ci: 单元测试诊断日志 run %s" % os.environ["GITHUB_RUN_ID"],
-              "content": base64.b64encode(data).decode(),
-              "branch": "main",
-          }).encode()
-          url = "https://api.github.com/repos/%s/contents/%s" % (
-              os.environ["GITHUB_REPOSITORY"], path)
-          req = urllib.request.Request(url, data=body, method="PUT", headers={
-              "Authorization": "token " + os.environ["GITHUB_TOKEN"],
-              "Accept": "application/vnd.github+json",
-              "Content-Type": "application/json",
-          })
-          try:
-              urllib.request.urlopen(req, timeout=60)
-              print("诊断日志已写入 %s" % path)
-          except Exception as e:
-              print("写入失败: %s" % e)
-          PYEOF
-          echo "::warning::单元测试未通过，详见 ci-diag/ 下的诊断日志；发布继续"
+      - name: Fail if tests failed
+        if: steps.tests.outcome == 'failure'
+        run: |
+          echo "::error::单元测试未通过，终止发布。完整日志见 yanreader-unit-test-log"
+          exit 1
 
       - name: Build release APK
         run: ./gradlew :app:assembleRelease --stacktrace
