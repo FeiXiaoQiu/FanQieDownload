@@ -5,7 +5,7 @@ package ink.yan.reader.data
  *
  * 各家的字段名完全没有共识，所以统一按「优先级列表」逐个试：
  * 正文 hitokoto/text/content/msg…，出处 from/source…，作者 from_who/author…。
- * 这段思路沿用观隅的 HitokotoClient，补了三处：
+ * 据此定下的解析规则，补了三处容错：
  *
  *   1. 句子可能被包在 `data` 里（很多自建接口这么干）
  *   2. 字段名做大小写不敏感兜底
@@ -87,6 +87,7 @@ object HitokotoParser {
             is JsonVal.Str -> out.add(node.value.trim())
             is JsonVal.Obj -> node.fields.values.forEach { walk(it, out) }
             is JsonVal.Arr -> node.items.forEach { walk(it, out) }
+            is JsonVal.Num -> Unit
             JsonVal.Nil -> Unit
         }
     }

@@ -1,9 +1,9 @@
 # 砚 YanReader —— 独立 Android 应用
 #
-# 与观隅（android/）完全隔离：
-#   · 包名 ink.yan.reader        ≠ 观隅 com.feixiaoqiu.fanqiedl
-#   · 签名 独立密钥（GitHub Secrets）≠ 观隅仓库内的 android/keystore
-#   · tag 前缀 yanreader-v*      ≠ 观隅 v*（不会互相触发）
+# 与本仓库其它目录互相隔离，互不干扰：
+#   · 包名 ink.yan.reader        ≠ com.feixiaoqiu.fanqiedl
+#   · 签名 独立密钥（GitHub Secrets），不在仓库内
+#   · tag 前缀 yanreader-v*      ≠ 裸版本号 v*（不会互相触发）
 #
 # 产物命名 yanreader-{version}.apk（GitHub Release 附件不支持中文文件名）
 
@@ -114,7 +114,7 @@ jobs:
           if command -v apksigner >/dev/null 2>&1; then
             apksigner verify --print-certs "$APK" || true
           fi
-          # 确认包名与观隅不同
+          # 确认包名正确
           if command -v aapt >/dev/null 2>&1; then
             aapt dump badging "$APK" | head -2 || true
           fi
@@ -154,7 +154,7 @@ jobs:
             | 应用名 | 砚 |
             | 包名 | `ink.yan.reader` |
             | minSdk / targetSdk | 26 / 36 |
-            | 签名密钥 | 独立密钥（与本仓库观隅 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
+            | 签名密钥 | 独立密钥（与 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
 
             ### 安装前须知
 

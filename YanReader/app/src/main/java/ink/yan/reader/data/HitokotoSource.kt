@@ -42,7 +42,7 @@ object HitokotoPresets {
 
     fun byId(id: String): HitokotoSource? = all.find { it.id == id }
 
-    /** 网络不可用时的兜底文案，复用观隅那份。 */
+    /** 网络不可用时的兜底文案。 */
     val FALLBACK: List<String> = listOf(
         "无论你去哪里，你总是在那里。——村上春树",
         "人生如逆旅，我亦是行人。——苏轼",

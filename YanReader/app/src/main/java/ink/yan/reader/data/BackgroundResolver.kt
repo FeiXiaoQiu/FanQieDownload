@@ -9,7 +9,7 @@ package ink.yan.reader.data
  *   · JSON+绝对路径  acg.yaohud.cn —— {"data":{"url":"https://..."}}
  *   · JSON+相对路径  必应每日一图 —— {"images":[{"url":"/th?id=OHR..."}]}
  *
- * 第三种最坑：相对路径不补全就是个无效地址。观隅的做法是硬编码
+ * 第三种最坑：相对路径不补全就是个无效地址。常见实现是硬编码
  * `data[].urlsList[].url` 一家的结构，换接口就失效；这里改成
  * 「显式路径优先 + 全树探测兜底 + 相对路径补全」，任意接口都能吃。
  *
@@ -65,7 +65,7 @@ object BackgroundResolver {
      *
      * 路径语法是点分字段，遇到数组会自动展开：
      *   `images.url`        取 images 数组里每个元素的 url
-     *   `data.urlsList.url` 二级数组（观隅老格式，兼容）
+     *   `data.urlsList.url` 二级数组（历史格式，兼容）
      *   `data.url`          普通嵌套对象
      *   `data[0].url`       也认，方括号可省略
      */
@@ -147,6 +147,7 @@ object BackgroundResolver {
             is JsonVal.Str -> out.add(node.value)
             is JsonVal.Obj -> node.fields.values.forEach { walk(it, out) }
             is JsonVal.Arr -> node.items.forEach { walk(it, out) }
+            is JsonVal.Num -> Unit
             JsonVal.Nil -> Unit
         }
     }

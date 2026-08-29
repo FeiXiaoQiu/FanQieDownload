@@ -25,7 +25,14 @@ fun HitokotoSection(vm: MainViewModel) {
     val prefs = ui.hitokoto
     var showAdd by remember { mutableStateOf(false) }
 
-    SettingsSection("一言") {
+    CollapsibleSection(
+        title = "首页一言",
+        summary = if (prefs.enabled) {
+            prefs.sources.find { it.id == prefs.sourceId }?.name ?: "未选择"
+        } else {
+            "已关闭"
+        },
+    ) {
         SwitchRow(
             text = "首页显示一言",
             sub = "关掉后首页只留搜索框",

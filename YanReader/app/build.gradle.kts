@@ -9,7 +9,7 @@ plugins {
 /**
  * 签名。
  *
- * 密钥刻意不进仓库（与观隅 android/keystore 的做法不同）：
+ * 密钥刻意不进仓库：
  * 私钥一旦提交到公开仓库，任何人都能冒名签发同名应用，且永远无法撤销。
  * 本项目的 release 密钥只存在于 GitHub Secrets，CI 构建时写入 keystore.properties。
  *
@@ -36,8 +36,8 @@ android {
         applicationId = "ink.yan.reader"
         minSdk = 26
         targetSdk = 36
-        versionCode = 2
-        versionName = "0.2.0"
+        versionCode = 3
+        versionName = "0.3.0"
 
         testInstrumentationRunner = "androidx.test.runner.AndroidJUnitRunner"
     }

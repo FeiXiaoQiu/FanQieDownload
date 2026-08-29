@@ -2,6 +2,7 @@ package ink.yan.reader.vm
 
 import android.app.Application
 import android.content.ContentValues
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.os.Environment
@@ -9,6 +10,7 @@ import android.provider.MediaStore
 import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.viewModelScope
 import ink.yan.reader.data.Appearance
+import ink.yan.reader.data.ApkFetcher
 import ink.yan.reader.data.BackgroundFetcher
 import ink.yan.reader.data.BackgroundKind
 import ink.yan.reader.data.BackgroundPresets
@@ -20,8 +22,10 @@ import ink.yan.reader.data.ChapterContent
 import ink.yan.reader.data.CornerStyle
 import ink.yan.reader.data.DownloadEngine
 import ink.yan.reader.data.DownloadRequest
+import ink.yan.reader.data.DownloadSource
 import ink.yan.reader.data.DownloadState
 import ink.yan.reader.data.ExportFormat
+import ink.yan.reader.data.formatSize
 import ink.yan.reader.data.GlassStrength
 import ink.yan.reader.data.HitokotoClient
 import ink.yan.reader.data.HitokotoPresets
@@ -30,6 +34,12 @@ import ink.yan.reader.data.NodeConfig
 import ink.yan.reader.data.NodeLatency
 import ink.yan.reader.data.NodeRepository
 import ink.yan.reader.data.NodeTester
+import ink.yan.reader.data.ReleaseInfo
+import ink.yan.reader.data.buildDownloadCandidates
+import ink.yan.reader.data.compareVersion
+import ink.yan.reader.data.formatSize
+import ink.yan.reader.data.pickApkAsset
+import ink.yan.reader.data.resolveSourceUrl
 import ink.yan.reader.data.StylePreset
 import ink.yan.reader.data.export.EpubWriter
 import ink.yan.reader.data.export.TxtWriter
@@ -37,6 +47,8 @@ import ink.yan.reader.store.AppearanceStore
 import ink.yan.reader.store.BackgroundPrefs
 import ink.yan.reader.store.HitokotoPrefs
 import ink.yan.reader.store.NodeStore
+import ink.yan.reader.store.UpdatePrefs
+import ink.yan.reader.store.UpdateStore
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.flow.MutableStateFlow
@@ -74,14 +86,39 @@ data class UiState(
     val backgroundUrl: String? = null,
     val hitokotoText: String = "",
     val bgRefreshing: Boolean = false,
-)
+
+    // —— 应用更新 ——
+    /** 安装包里读到的版本名，读不到时为空串 */
+    val currentVersion: String = "",
+    val updatePrefs: UpdatePrefs = UpdatePrefs(),
+    /** 查到的最新版；为 null 表示还没查过或没查到 */
+    val updateInfo: ReleaseInfo? = null,
+    val updateChecking: Boolean = false,
+    val updateMessage: String? = null,
+    /** 下载进度 0..1；null 表示没在下载 */
+    val apkProgress: Float? = null,
+    val apkMessage: String? = null,
+    /** 已下好待安装的文件，UI 拉起安装后调 consumeApk() 清空 */
+    val apkFile: File? = null,
+) {
+    /**
+     * 查到的版本确实比当前新。
+     *
+     * 当前版本读不到时是空串，比较结果恒为「有更新」——
+     * 宁可多提示一次，也不要因为取不到版本号而永远不提示。
+     */
+    val hasUpdate: Boolean
+        get() = updateInfo?.let { compareVersion(it.version, currentVersion) > 0 } ?: false
+}
 
 class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private val store = NodeStore(app.applicationContext)
     private val lookStore = AppearanceStore(app.applicationContext)
+    private val updateStore = UpdateStore(app.applicationContext)
     private val hitokotoClient = HitokotoClient()
     private val backgroundFetcher = BackgroundFetcher()
+    private val apkFetcher = ApkFetcher()
     private val repo = NodeRepository()
     private val engine = DownloadEngine(
         fetch = { ch -> fetchChapter(ch) },
@@ -94,6 +131,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     val ui: StateFlow<UiState> = _ui.asStateFlow()
 
     private var downloadJob: Job? = null
+    private var updateJob: Job? = null
 
     init {
         // 只读一次快照，而不是 collect 整条 flow：
@@ -117,7 +155,26 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             if (hk.enabled) refreshHitokoto()
             refreshBackground(bust = false)
         }
+
+        // 下载源同样只读快照：开关是点击式操作，被回灌覆盖会表现为「点了没反应」
+        viewModelScope.launch {
+            val up = runCatching { updateStore.prefs.first() }.getOrDefault(UpdatePrefs())
+            _ui.update { it.copy(updatePrefs = up, currentVersion = currentVersionName()) }
+        }
     }
+
+    /** 读安装包版本名。失败返回空串 —— 那样比较结果恒为「有更新」，比静默不提示安全。 */
+    private fun currentVersionName(): String = runCatching {
+        val ctx = getApplication<Application>()
+        val pm = ctx.packageManager
+        val info = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
+            pm.getPackageInfo(ctx.packageName, PackageManager.PackageInfoFlags.of(0))
+        } else {
+            @Suppress("DEPRECATION")
+            pm.getPackageInfo(ctx.packageName, 0)
+        }
+        info.versionName.orEmpty()
+    }.getOrDefault("")
 
     /** 内存态变更后落盘。失败只提示，不回滚内存 —— 节点丢了可以重加，卡住界面不行。 */
     private fun persist() {
@@ -575,6 +632,191 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     private fun persistHk(p: HitokotoPrefs) {
         viewModelScope.launch { runCatching { lookStore.saveHitokoto(p) } }
+    }
+
+    // ---------- 应用更新 ----------
+
+    /**
+     * 检查更新。
+     *
+     * @param silent 静默模式：只在确实有新版本时才更新状态，用于启动时自动检查。
+     */
+    fun checkUpdate(silent: Boolean = false) {
+        if (_ui.value.updateChecking) return
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
+            _ui.update {
+                it.copy(
+                    updateChecking = true,
+                    updateMessage = if (silent) null else "正在检查更新…",
+                )
+            }
+            apkFetcher.latest().fold(
+                onSuccess = { info ->
+                    _ui.update { s ->
+                        when {
+                            info == null ->
+                                s.copy(updateChecking = false, updateMessage = "暂时没有可用的发布版本")
+
+                            compareVersion(info.version, s.currentVersion) > 0 ->
+                                s.copy(updateChecking = false, updateInfo = info, updateMessage = null)
+
+                            else -> s.copy(
+                                updateChecking = false,
+                                updateInfo = info,
+                                updateMessage = "已是最新版本（${s.currentVersion}）",
+                            )
+                        }
+                    }
+                },
+                onFailure = { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    _ui.update {
+                        it.copy(updateChecking = false, updateMessage = "检查更新失败：${e.message}")
+                    }
+                },
+            )
+        }
+    }
+
+    /**
+     * 下载更新包。
+     *
+     * 逐个探测候选源，取第一个可达的。探测用 HEAD，代价远小于先下一个再说。
+     * 全部不可达才报错 —— 镜像站抽风是常态，多试几个比直接失败有用。
+     */
+    fun downloadUpdate() {
+        val info = _ui.value.updateInfo ?: return
+        val asset = pickApkAsset(info.assets)
+        if (asset == null) {
+            _ui.update { it.copy(updateMessage = "这个版本没有可安装的 APK") }
+            return
+        }
+        if (_ui.value.apkProgress != null) return
+
+        val candidates = buildDownloadCandidates(_ui.value.updatePrefs.activeSources, asset.url)
+        if (candidates.isEmpty()) {
+            _ui.update { it.copy(updateMessage = "没有启用的下载源") }
+            return
+        }
+
+        updateJob?.cancel()
+        updateJob = viewModelScope.launch {
+            _ui.update { it.copy(apkProgress = 0f, apkMessage = "正在选择下载源…") }
+
+            val dest = File(getApplication<Application>().cacheDir, "update/${asset.name}")
+            // 下过且大小吻合就复用，不重复耗用户流量
+            if (dest.isFile && (asset.size <= 0 || dest.length() == asset.size)) {
+                _ui.update { it.copy(apkProgress = null, apkMessage = null, apkFile = dest) }
+                return@launch
+            }
+
+            var picked: Pair<DownloadSource, String>? = null
+            for ((src, url) in candidates) {
+                _ui.update { it.copy(apkMessage = "正在探测 ${src.name}…") }
+                if (apkFetcher.probe(url)) {
+                    picked = src to url
+                    break
+                }
+            }
+            val (src, url) = picked ?: run {
+                _ui.update {
+                    it.copy(
+                        apkProgress = null,
+                        apkMessage = null,
+                        updateMessage = "所有下载源都不可达，可稍后重试或手动前往发布页",
+                    )
+                }
+                return@launch
+            }
+
+            _ui.update { it.copy(apkMessage = "正在从 ${src.name} 下载…") }
+            // 进度回调是每 64KB 一次，直接回写 UI 会刷新到卡死，按整百分比节流
+            var lastPct = -1
+            apkFetcher.download(url, dest) { done, total ->
+                val pct = if (total > 0) (done * 100 / total).toInt() else 0
+                if (pct != lastPct) {
+                    lastPct = pct
+                    _ui.update {
+                        it.copy(
+                            apkProgress = pct / 100f,
+                            apkMessage = "正在从 ${src.name} 下载 ${formatSize(done)}",
+                        )
+                    }
+                }
+            }.fold(
+                onSuccess = { file ->
+                    _ui.update { it.copy(apkProgress = null, apkMessage = null, apkFile = file) }
+                },
+                onFailure = { e ->
+                    if (e is kotlinx.coroutines.CancellationException) throw e
+                    _ui.update {
+                        it.copy(
+                            apkProgress = null,
+                            apkMessage = null,
+                            updateMessage = "从 ${src.name} 下载失败：${e.message}",
+                        )
+                    }
+                },
+            )
+        }
+    }
+
+    fun cancelUpdate() {
+        updateJob?.cancel()
+        updateJob = null
+        _ui.update { it.copy(apkProgress = null, apkMessage = null) }
+    }
+
+    /** 安装意图已拉起，清空待安装文件，避免下次进入设置又弹一次。 */
+    fun consumeApk() = _ui.update { it.copy(apkFile = null) }
+
+    fun clearUpdateMessage() = _ui.update { it.copy(updateMessage = null) }
+
+    /** 预置源只能停用；自定义源直接删。 */
+    fun setDownloadSourceEnabled(src: DownloadSource, enabled: Boolean) {
+        if (!src.builtin) return
+        val cur = _ui.value.updatePrefs
+        val next = cur.copy(
+            disabledIds = if (enabled) cur.disabledIds - src.id else cur.disabledIds + src.id
+        )
+        _ui.update { it.copy(updatePrefs = next) }
+        persistUpdate(next)
+    }
+
+    fun addCustomDownloadSource(name: String, template: String) {
+        val tpl = template.trim()
+        if (!tpl.contains("{url}")) {
+            _ui.update { it.copy(message = "模板必须包含 {url} 占位符") }
+            return
+        }
+        // 拿一个假地址试替换，比对着模板字符串做正则直观得多
+        val sample = resolveSourceUrl(tpl, "https://example.com/a.apk")
+        if (!NodeTester.isValidHttpUrl(sample)) {
+            _ui.update { it.copy(message = "模板替换后不是合法地址：$sample") }
+            return
+        }
+        val cur = _ui.value.updatePrefs
+        val src = DownloadSource(
+            id = "cds-" + System.currentTimeMillis().toString(36),
+            name = name.ifBlank { "自定义镜像" },
+            urlTemplate = tpl,
+        )
+        val next = cur.copy(customSources = cur.customSources + src)
+        _ui.update { it.copy(updatePrefs = next) }
+        persistUpdate(next)
+    }
+
+    fun removeCustomDownloadSource(id: String) {
+        val cur = _ui.value.updatePrefs
+        if (cur.customSources.none { it.id == id }) return
+        val next = cur.copy(customSources = cur.customSources.filterNot { it.id == id })
+        _ui.update { it.copy(updatePrefs = next) }
+        persistUpdate(next)
+    }
+
+    private fun persistUpdate(p: UpdatePrefs) {
+        viewModelScope.launch { runCatching { updateStore.save(p) } }
     }
 
     fun clearMessage() = _ui.update { it.copy(message = null) }

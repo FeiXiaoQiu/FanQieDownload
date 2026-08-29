@@ -4,9 +4,9 @@ package ink.yan.reader.data
  * 背景图源。
  *
  * 关键设计：[kind] 区分两种接口形态，[jsonPath] 用来从 JSON 里取图。
- * 观隅在这里的做法是直接硬编码 `data[].urlsList[].url` 一家接口的结构，
- * 换个接口就废了 —— 而「动态选择 + 自定义」正是要支持任意接口，所以这里
- * 改成「显式路径 + 递归探测兜底」两层策略。
+ * 常见做法是硬编码某一家接口的 JSON 结构，换个接口就废了 ——
+ * 而「动态选择 + 自定义」正是要支持任意接口，所以这里改成
+ * 「显式路径 + 递归探测兜底」两层策略。
  */
 
 enum class BackgroundKind(val label: String, val hint: String) {
@@ -46,8 +46,7 @@ data class BackgroundSource(
 /**
  * 预置背景源。
  *
- * 地址与观隅保持一致，方便两边用户无缝迁移。其中 R18 那条沿用观隅的
- * 接口地址，但 [mature] 标记为 true —— 默认不出现在可选列表里，
+ * 其中 R18 那条标记为 [mature]，默认不出现在可选列表里，
  * 需要用户自己在设置里打开开关。
  */
 object BackgroundPresets {
@@ -64,7 +63,7 @@ object BackgroundPresets {
 
     val ALCY = BackgroundSource(
         id = "bg-alcy",
-        name = "随机二次元（观隅同款）",
+        name = "随机二次元",
         url = "https://t.alcy.cc/ycy",
         kind = BackgroundKind.DIRECT,
         builtin = true,

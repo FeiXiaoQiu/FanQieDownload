@@ -20,7 +20,10 @@ fun LookSection(vm: MainViewModel) {
     val ui by vm.ui.collectAsState()
     val look = ui.appearance
 
-    SettingsSection("外观风格") {
+    CollapsibleSection(
+        title = "外观风格",
+        summary = "当前：${look.preset.label}",
+    ) {
         StylePreset.entries.forEach { p ->
             ChoiceRow(
                 text = p.label,
@@ -31,7 +34,10 @@ fun LookSection(vm: MainViewModel) {
         }
     }
 
-    SettingsSection("玻璃质感") {
+    CollapsibleSection(
+        title = "玻璃质感",
+        summary = "${look.strength?.label ?: "默认浓度"} · ${look.corner?.label ?: "跟随预设"}",
+    ) {
         Text(
             "浓度",
             style = androidx.compose.material3.MaterialTheme.typography.bodyMedium,

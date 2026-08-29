@@ -7,6 +7,8 @@
     <uses-permission android:name="android.permission.POST_NOTIFICATIONS" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE" />
     <uses-permission android:name="android.permission.FOREGROUND_SERVICE_DATA_SYNC" />
+    <!-- Android 8.0 起安装未知来源应用需要它；未授权时系统会把安装意图直接拦掉 -->
+    <uses-permission android:name="android.permission.REQUEST_INSTALL_PACKAGES" />
 
     <!-- Android 10 以下写入公共下载目录需要存储权限；Q 及以上走 MediaStore，不需要 -->
     <uses-permission

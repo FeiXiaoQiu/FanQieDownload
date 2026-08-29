@@ -48,6 +48,8 @@ object JsonAdapter {
             }
 
             is String -> JsonVal.Str(value)
+            is Boolean -> JsonVal.Num(if (value) 1.0 else 0.0)
+            is Number -> JsonVal.Num(value.toDouble())
             else -> JsonVal.Nil
         }
     }

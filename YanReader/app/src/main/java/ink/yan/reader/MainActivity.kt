@@ -16,6 +16,7 @@ import androidx.compose.foundation.layout.Box
 import androidx.compose.foundation.layout.fillMaxSize
 import androidx.compose.material3.Surface
 import androidx.compose.runtime.Composable
+import androidx.compose.runtime.LaunchedEffect
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
 import androidx.compose.ui.Modifier
@@ -42,6 +43,9 @@ class MainActivity : ComponentActivity() {
             val ui by vm.ui.collectAsState()
 
             YanTheme(appearance = ui.appearance) {
+                // 启动查一次更新，只在真有新版时才出状态，不打搅正常使用
+                LaunchedEffect(Unit) { vm.checkUpdate(silent = true) }
+
                 Box(modifier = Modifier.fillMaxSize()) {
                     // 背景垫在最底层；各页面一律透明，否则会把整张图盖掉
                     YanBackdrop(

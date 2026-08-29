@@ -35,7 +35,14 @@ fun BackgroundSection(vm: MainViewModel) {
         ActivityResultContracts.GetContent()
     ) { uri -> if (uri != null) vm.importLocalBackground(uri) }
 
-    SettingsSection("背景图源") {
+    CollapsibleSection(
+        title = "背景图源",
+        summary = if (prefs.localPath.isBlank()) {
+            prefs.sources.find { it.id == prefs.sourceId }?.name ?: "未选择"
+        } else {
+            "本地图片"
+        },
+    ) {
         // 本地图片：一旦选了就优先于任何网络源
         ChoiceRow(
             text = "本地图片",
@@ -86,7 +93,10 @@ fun BackgroundSection(vm: MainViewModel) {
         }
     }
 
-    SettingsSection("背景显示") {
+    CollapsibleSection(
+        title = "背景显示",
+        summary = "${prefs.scale.label} · 模糊 ${prefs.blurDp.toInt()}dp · 压暗 ${(prefs.scrimAlpha * 100).toInt()}%",
+    ) {
         TextButton(
             onClick = { vm.refreshBackground(bust = true) },
             enabled = !ui.bgRefreshing,

@@ -27,11 +27,19 @@ import androidx.compose.ui.unit.dp
 import ink.yan.reader.data.ExportFormat
 import ink.yan.reader.ui.settings.BackgroundSection
 import ink.yan.reader.ui.settings.ChoiceRow
+import ink.yan.reader.ui.settings.CollapsibleSection
 import ink.yan.reader.ui.settings.HitokotoSection
 import ink.yan.reader.ui.settings.LookSection
-import ink.yan.reader.ui.settings.SettingsSection
+import ink.yan.reader.ui.settings.UpdateSection
 import ink.yan.reader.vm.MainViewModel
 
+/**
+ * 设置页。
+ *
+ * 每个分区默认收起，只留一行摘要。摊平之后十几项堆在一起，
+ * 找一项要滚很久；收起后靠摘要确认当前值，需要改再展开。
+ * item 都带 key —— 折叠状态存在 item 内部，不设 key 会在滚动后串位。
+ */
 @Composable
 fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
     val ui by vm.ui.collectAsState()
@@ -56,11 +64,17 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             modifier = Modifier
                 .fillMaxSize()
                 .padding(horizontal = 16.dp),
-            verticalArrangement = Arrangement.spacedBy(20.dp),
+            verticalArrangement = Arrangement.spacedBy(12.dp),
             contentPadding = PaddingValues(bottom = 32.dp),
         ) {
-            item {
-                SettingsSection("导出格式") {
+            item(key = "format") {
+                CollapsibleSection(
+                    title = "导出格式",
+                    summary = "${ui.format.label} —— ${
+                        if (ui.format == ExportFormat.EPUB) "支持目录与章节跳转"
+                        else "兼容性最好"
+                    }",
+                ) {
                     ExportFormat.entries.forEach { f ->
                         ChoiceRow(
                             text = f.label,
@@ -73,32 +87,26 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
                 }
             }
 
-            item { LookSection(vm) }
-            item { BackgroundSection(vm) }
-            item { HitokotoSection(vm) }
+            item(key = "look") { LookSection(vm) }
+            item(key = "background") { BackgroundSection(vm) }
+            item(key = "hitokoto") { HitokotoSection(vm) }
+            item(key = "update") { UpdateSection(vm) }
 
-            item {
-                Column {
+            item(key = "about") {
+                CollapsibleSection(title = "关于", summary = "砚 v${ui.currentVersion.ifBlank { "0.3.0" }}") {
                     Text(
-                        "关于",
-                        style = MaterialTheme.typography.titleMedium,
-                        color = MaterialTheme.colorScheme.primary,
+                        "本项目不内置任何内容源。所有数据源、背景接口与一言接口"
+                            + "均由用户自行配置，请遵守相关平台条款与版权法规，"
+                            + "仅限个人学习研究使用。",
+                        style = MaterialTheme.typography.bodyMedium,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )
-                    Spacer(Modifier.height(8.dp))
-                    Column(Modifier.glass(cornerDelta = -4).padding(14.dp)) {
-                        Text(
-                            "砚 YanReader v0.2.0",
-                            style = MaterialTheme.typography.titleMedium,
-                        )
-                        Spacer(Modifier.height(6.dp))
-                        Text(
-                            "本项目不内置任何内容源。所有数据源、背景接口与一言接口"
-                                + "均由用户自行配置，请遵守相关平台条款与版权法规，"
-                                + "仅限个人学习研究使用。",
-                            style = MaterialTheme.typography.bodyMedium,
-                            color = MaterialTheme.colorScheme.onSurfaceVariant,
-                        )
-                    }
+                    Spacer(Modifier.height(6.dp))
+                    Text(
+                        "包名 ink.yan.reader，独立签名。",
+                        style = MaterialTheme.typography.bodySmall,
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    )
                 }
             }
         }

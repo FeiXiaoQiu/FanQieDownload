@@ -47,7 +47,7 @@ class AppearanceLogicTest {
     }
 
     @Test
-    fun `观隅老格式 data_urlsList_url 仍然兼容`() {
+    fun `二级数组格式 data_urlsList_url 可取到值`() {
         val root = jsonObj(
             "data" to jsonArr(
                 jsonObj(

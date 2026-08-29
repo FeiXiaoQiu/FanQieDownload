@@ -3,4 +3,6 @@
 <paths xmlns:android="http://schemas.android.com/apk/res/android">
     <external-path name="downloads" path="Download/YanReader/" />
     <files-path name="cache" path="cache/" />
+    <!-- 更新包下在 cacheDir/update/，装的时候要授权给安装器读 -->
+    <cache-path name="apk" path="update/" />
 </paths>

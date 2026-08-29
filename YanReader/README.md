@@ -9,11 +9,11 @@
 | 命名空间 | `ink.yan.reader` |
 | 技术栈 | Kotlin 2.1.21 + Jetpack Compose Material 3（BOM 2026.06.01 / Compose 1.11.4） |
 | minSdk / targetSdk | 26 / 36 |
-| 版本 | 0.2.0（versionCode 2） |
-| 签名 | 独立密钥 `CN=YanReader`（与观隅 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
+| 版本 | 0.3.0（versionCode 3） |
+| 签名 | 独立密钥 `CN=YanReader`，与其它同类工具互不影响，可共存安装 |
 | 发布 | 推送 `yanreader-v*` tag 后由 GitHub Actions 自动构建并发布 |
 
-包名、应用名、签名与「观隅」「弦」均不相同，是独立应用。
+包名、应用名、签名均与任何既有项目不相同，是独立应用。
 
 ---
 
@@ -67,13 +67,13 @@ keyPassword=***
 
 CI 上这个文件由工作流从 GitHub Secrets 生成（`YANREADER_KEYSTORE_BASE64` / `YANREADER_STORE_PASSWORD` / `YANREADER_KEY_ALIAS` / `YANREADER_KEY_PASSWORD`）。
 
-> 私钥一旦提交到公开仓库就永远无法撤销，任何人都能冒名签发同名应用。观隅把 `android/keystore` 直接放进仓库的做法不建议延续到新项目。`.gitignore` 已排除 `keystore.properties`、`*.jks`、`*.keystore`、`*.p12`。
+> 私钥一旦提交到公开仓库就永远无法撤销，任何人都能冒名签发同名应用。把签名私钥直接放进公开仓库的做法不建议延续到任何项目。`.gitignore` 已排除 `keystore.properties`、`*.jks`、`*.keystore`、`*.p12`。
 
 ### 自动发布
 
 推送 `yanreader-v*` 形式的 tag 即触发 `.github/workflows/yanreader-release.yml`：单元测试 → release 构建 → 签名校验 → 打包为 `yanreader-{version}.apk` → 发布 Release。
 
-tag 前缀特意避开观隅的 `v*`，两个工作流互不触发。
+tag 前缀特意避开裸版本号 `v*`，与其它工作流互不触发。
 
 ---
 
@@ -97,12 +97,17 @@ app/src/main/java/ink/yan/reader/
 │   ├── BackgroundFetcher.kt   背景网络层（含 cache-bust）
 │   ├── HitokotoParser.kt      一言响应解析：多字段回退 + 兜底取句
 │   ├── HitokotoClient.kt      一言网络层
+│   ├── DownloadSource.kt      下载源模板 + 预置镜像 + 排序/候选生成（纯 Kotlin）
+│   ├── AppUpdate.kt           发布信息模型 + 版本号比较 + APK 挑选（纯 Kotlin）
+│   ├── ReleaseParser.kt       GitHub releases 响应解析（纯 Kotlin）
+│   ├── ApkFetcher.kt          更新包网络层：查版本 / 探测源 / 流式下载
 │   └── export/
 │       ├── TxtWriter.kt       流式 TXT 写出
 │       └── EpubWriter.kt      流式 EPUB 3.0 写出（零依赖，仅 java.util.zip）
 ├── store/
 │   ├── NodeStore.kt           DataStore 落盘（节点）
-│   └── AppearanceStore.kt     DataStore 落盘（外观 / 背景 / 一言 / 导出格式）
+│   ├── AppearanceStore.kt     DataStore 落盘（外观 / 背景 / 一言 / 导出格式）
+│   └── UpdateStore.kt         DataStore 落盘（下载源列表）
 ├── ui/
 │   ├── Glass.kt               液态玻璃材质 + LocalGlassStyle
 │   ├── Backdrop.kt            全屏背景渲染（FIT 用同图模糊填白）
@@ -110,19 +115,20 @@ app/src/main/java/ink/yan/reader/
 │   ├── SearchScreen.kt        搜索 / 下载 / 首页一言
 │   ├── SettingsScreen.kt      设置（组装各分区）
 │   ├── settings/
-│   │   ├── SettingsParts.kt   分区卡片 / 单选行 / 开关行 / 滑杆行
+│   │   ├── SettingsParts.kt   可折叠分区 / 单选行 / 开关行 / 滑杆行
 │   │   ├── LookSection.kt     外观风格
 │   │   ├── BackgroundSection.kt  背景源 + 显示参数 + 自定义接口
-│   │   └── HitokotoSection.kt 一言开关 + 源选择 + 自定义接口
+│   │   ├── HitokotoSection.kt 一言开关 + 源选择 + 自定义接口
+│   │   └── UpdateSection.kt    应用更新：检查 / 下载 / 安装 + 下载源管理
 │   └── theme/Theme.kt         配色（随风格预设切换）+ 下发玻璃参数
 └── vm/
-    └── MainViewModel.kt       引擎、外观、背景、一言的中枢
+    └── MainViewModel.kt       引擎、外观、背景、一言、应用更新的中枢
 ```
 
 > `JsonValue.kt` 存在的理由：org.json 在 Android 上是平台内置，JVM 单测里却是
 > android.jar 的 stub，一调用就抛 "Method ... not mocked"。把解析算法面向
 > [JsonVal] 编写、把 org.json 隔离到 `JsonAdapter.kt` 一个文件，背景与一言的
-> 解析逻辑才能写真正的单元测试（21 个用例）。
+> 解析逻辑才能写真正的单元测试（21 个用例）。更新解析同理，22 个用例。
 
 ---
 
@@ -194,9 +200,9 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 | JSON + 绝对路径 | `acg.yaohud.cn` | 解析 JSON 取图片地址 |
 | JSON + 相对路径 | 必应每日一图 | 取出的 `/th?id=...` 必须补 origin 才有效 |
 
-观隅的实现是硬编码 `data[].urlsList[].url` 一家的结构，换个接口就失效 —— 而「动态选择 + 自定义」恰恰要求支持任意接口。这里改成三层策略：
+常见的硬编码实现只认 `data[].urlsList[].url` 一家的结构，换个接口就失效 —— 而「动态选择 + 自定义」恰恰要求支持任意接口。这里改成三层策略：
 
-- **显式路径优先**：点分字段，遇数组自动展开。`images.url`、`data.urlsList.url`（兼容观隅老格式）、`data[0].url` 都认
+- **显式路径优先**：点分字段，遇数组自动展开。`images.url`、`data.urlsList.url`（兼容历史格式）、`data[0].url` 都认
 - **全树探测兜底**：路径取不到时不报错，退回遍历整棵树找像图片 URL 的字符串
 - **相对路径补全**：图片判定也刻意不要求扩展名在结尾 —— 必应的地址是 `.jpg&rf=...&pid=hp`，只认结尾会漏掉
 
@@ -206,11 +212,49 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 **本地图片不能直接存 URI**：相册返回的 `content://` 是一次性授权，进程重启后就没权限了，背景会静默变回纯色，而且极难排查。必须复制到私有目录再存路径。
 
-### 5. 滑杆只在松手时落盘
+### 5. 设置项默认折叠，靠摘要看当前值
+
+设置项摊平之后十几项堆在一起，找一项要滚很久。`CollapsibleSection` 默认收起，
+只在标题下留一行摘要（当前选了什么、参数多少）——**收起来不等于看不见**，
+如果折叠后非展开才知道状态，那只是把麻烦挪了个地方。
+
+展开状态存在 item 内部（`rememberSaveable`），所以宿主列表**必须给每个 item 设 key**，
+否则滚动出屏再回来，状态会串到别的分区上。
+
+### 6. 下载源是模板，不是写死的镜像域名
+
+`DownloadSource` 存的是 `{url}` 模板，替换后才是真地址。预置三条：直连、
+`gh.xmly.dev`、`gh-proxy.com`，都能单独停用，也能加自己的。
+
+镜像站寿命普遍不长，写死在代码里等于把可用性押在第三方身上。模板化之后
+哪家挂了，用户在设置里关掉或换一条就行，不必等发版。
+
+尝试顺序是「镜像优先，直连垫底」，判据是**模板是否就是占位符本身**而不是
+硬编码某个镜像域名 —— 这样用户自己加的镜像也能自动排在直连前面。
+
+### 7. 更新版本列表不取 `/releases/latest`
+
+这个仓库同时发布别的项目，`latest` 拿到的可能是别人的包。只能拉
+`/releases` 数组，再按 `yanreader-v` 前缀筛，并按版本号取最大而不是信任
+数组顺序（置顶 release 会打乱顺序）。草稿与预发布一并排除。
+
+版本号比较必须逐段比数字：**`0.10.0` > `0.9.0`，字符串比较会得出相反结论。**
+
+### 8. 滑杆只在松手时落盘
 
 `SliderRow` 把拖动中的高频回调（`onValue`，只改内存）与松手回调（`onCommit`，写 DataStore）分开 —— 一次拖动会产生几十次值变化，每次都写磁盘纯属浪费。
 
 同理，外观设置在 `MainViewModel` 里只读一次快照而不 `collect` 整条 flow：否则落盘回灌的旧值会把用户正在拖的数值拽回去，表现为「滑杆自己往回跳」。节点列表用的是同一个策略，理由见第四节第 7 条。
+
+### 9. 更新包的下载与安装
+
+下载用流式写盘而不是先读进 `byte[]`：APK 几 MB 到几十 MB，一次性读入在低内存
+机器上容易 OOM。写出时先落 `.part`，完成后改名，避免半成品被当成完整包。
+
+进度回调每 64KB 一次，直接回写 UI 会把界面刷到卡死，按整百分比节流。
+
+安装前先查 `canRequestPackageInstalls()`。**未授权时拉起安装意图会被系统直接拦掉**，
+用户只看到「点了没反应」，所以这里改成先引导去「允许未知来源」设置页。
 
 ---
 
@@ -235,13 +279,19 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 ./gradlew :app:testDebugUnitTest
 ```
 
-`app/src/test/java/ink/yan/reader/CoreLogicTest.kt` 是纯 JVM 单元测试，不依赖 Robolectric，覆盖三块最容易出错且肉眼难发现的地方：
+三个测试类共 **49 个用例**，都是纯 JVM 单元测试，不依赖 Robolectric —— 数据层刻意避开了 `android.*` 与 org.json。
+
+**`CoreLogicTest`（6 个）**
 
 1. **节点序列化** —— 往返一致、特殊字符（换行 / 分隔符本身 / emoji / URL 元字符）存活、脏数据容错
 2. **并发下载** —— 40 章全部成功、顺序与目录一致、缓存无丢写、第二轮零网络请求（续传生效）
 3. **EPUB 结构** —— `mimetype` 为首个未压缩条目、`container.xml` 与 OPF 存在、全部 XML（含章节 xhtml）良构、`<>&"'` 已正确转义
 
-`DownloadEngine` 的测试**故意传入普通 `HashMap`** 作为缓存容器，就是用来守住上面第 2 节那个并发丢写 bug 的。
+这里的测试**故意传入普通 `HashMap`** 作为缓存容器，就是用来守住第四节第 2 个并发丢写 bug 的。
+
+**`AppearanceLogicTest`（21 个）** —— 背景地址解析（必应相对路径、历史格式兼容、方括号下标、路径失效回退探测、非图片过滤、协议相对地址）、cache-bust 的有无 query 分支、一言解析（标准字段 / 备选字段 / data 包裹 / 纯文本 / 字段名未知时兜底）、外观预设与微调覆盖。
+
+**`UpdateLogicTest`（22 个）** —— 下载源模板替换与排序（自定义镜像是否排在直连前）、版本号归一化与逐段比较（`0.10.0` > `0.9.0`、缺位补 0、tag 前缀）、APK 资产挑选优先级、releases 解析（跨项目 tag 过滤、按版本号而非数组顺序取最大、草稿与预发布排除、坏条目跳过、非数组输入不崩）。
 
 ---
 
@@ -277,7 +327,7 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 **已完整构建通过**，不是"应该能编过"：
 
 ```
-./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（27 tests, 0 failures）
+./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（49 tests, 0 failures）
 ./gradlew :app:assembleRelease   → BUILD SUCCESSFUL（含 R8 混淆 + 真实签名）
 ```
 
@@ -287,23 +337,22 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 | --- | --- |
 | package | `ink.yan.reader` |
 | application-label | 砚 |
-| versionCode / versionName | 2 / 0.2.0 |
+| versionCode / versionName | 3 / 0.3.0 |
 | minSdk / targetSdk | 26 / 36 |
 | launchable-activity | `ink.yan.reader.MainActivity` |
 | 签名 SHA1 | `1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B` |
 | 签名 SHA256 | `C8:D0:8A:2C:5E:A6:08:48:CF:68:7F:F4:94:2E:9A:56:CC:8B:3A:24:9A:53:18:02:6D:0B:4C:9F:9A:34:FA:5C` |
-| APK 体积 | 1.8 MB（release，R8 后）/ 约 20 MB（debug） |
+| APK 体积 | 1.82 MB（release，R8 后）/ 约 20 MB（debug） |
 
-签名与 0.1.0 完全一致，可以直接覆盖安装升级。
+签名与 0.1.0 / 0.2.0 完全一致，可以直接覆盖安装升级。
 
-单元测试 27 个用例全部通过：
+单元测试 49 个用例全部通过（6 / 21 / 22，见第七节）。
 
-- **6 个**（`CoreLogicTest`）—— 节点序列化、并发下载、EPUB 结构
-- **21 个**（`AppearanceLogicTest`）—— 背景地址解析（必应相对路径、观隅老格式兼容、方括号下标、路径失效回退探测、非图片过滤、协议相对地址）、cache-bust 的有无 query 分支、一言解析（标准字段 / 备选字段 / data 包裹 / 纯文本 / 字段名未知时兜底）、外观预设与微调覆盖
-
-CI 上一次运行（run 33225938215）17 步全绿，Release 附件 `yanreader-0.1.0.apk`（1,517,666 字节）已发布。
-
-**未经真机验证的部分**：MediaStore 导出、DataStore 落盘、FileProvider 这些必须在设备上跑才知道对不对。建议第一次安装后先跑一遍完整流程：加节点 → 测速 → 下载 → 到 `Download/YanReader/` 下确认文件能打开。
+**未经真机验证的部分**：MediaStore 导出、DataStore 落盘、FileProvider、相册选图、
+以及应用内更新这条链路（版本列表解析已在 JVM 上测过，但网络请求、镜像探测、
+下载安装只能在设备上验证）。建议第一次安装后先跑一遍完整流程：加节点 → 测速 →
+下载 → 到 `Download/YanReader/` 下确认文件能打开；更新则进设置页「应用更新」
+点一次检查更新看看。
 
 ---
 
