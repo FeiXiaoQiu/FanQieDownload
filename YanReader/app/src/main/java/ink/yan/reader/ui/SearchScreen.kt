@@ -45,6 +45,7 @@ fun SearchScreen(
     vm: MainViewModel,
     onNodes: () -> Unit,
     onSettings: () -> Unit,
+    onBook: () -> Unit,
 ) {
     val ui by vm.ui.collectAsState()
 
@@ -207,14 +208,64 @@ fun SearchScreen(
             }
         }
 
+        // 全局提示条：节点增删、背景解析这类一次性反馈。
+        // 之前这些提示没有任何地方渲染，出了错界面上什么都不动，看着就像没反应。
+        ui.message?.let { msg ->
+            Row(
+                modifier = Modifier
+                    .fillMaxWidth()
+                    .padding(horizontal = 16.dp, vertical = 4.dp),
+                verticalAlignment = Alignment.CenterVertically,
+            ) {
+                Text(
+                    msg,
+                    style = MaterialTheme.typography.bodyMedium,
+                    color = MaterialTheme.colorScheme.onSurfaceVariant,
+                    modifier = Modifier.weight(1f),
+                )
+                Text(
+                    "关闭",
+                    color = MaterialTheme.colorScheme.primary,
+                    style = MaterialTheme.typography.labelLarge,
+                    modifier = Modifier.noRippleClick(vm::clearMessage),
+                )
+            }
+        }
+
         // 结果列表
         if (ui.results.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
-                Text(
-                    if (ui.searching) "搜索中…" else "输入关键词开始搜索",
-                    color = MaterialTheme.colorScheme.onSurfaceVariant,
-                    style = MaterialTheme.typography.bodyMedium,
-                )
+                when {
+                    ui.searching -> Text(
+                        "搜索中…",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+
+                    ui.searchError != null -> Column(
+                        horizontalAlignment = Alignment.CenterHorizontally,
+                        modifier = Modifier.padding(horizontal = 32.dp),
+                    ) {
+                        Text(
+                            ui.searchError!!,
+                            color = MaterialTheme.colorScheme.error,
+                            style = MaterialTheme.typography.bodyMedium,
+                        )
+                        Spacer(Modifier.height(12.dp))
+                        Text(
+                            "重试",
+                            color = MaterialTheme.colorScheme.primary,
+                            style = MaterialTheme.typography.labelLarge,
+                            modifier = Modifier.noRippleClick(vm::search),
+                        )
+                    }
+
+                    else -> Text(
+                        "输入关键词开始搜索",
+                        color = MaterialTheme.colorScheme.onSurfaceVariant,
+                        style = MaterialTheme.typography.bodyMedium,
+                    )
+                }
             }
         } else {
             LazyColumn(
@@ -226,6 +277,10 @@ fun SearchScreen(
                         Modifier
                             .fillMaxWidth()
                             .glass(cornerDelta = -4)
+                            .noRippleClick {
+                                vm.selectBook(book)
+                                onBook()
+                            }
                             .padding(14.dp),
                     ) {
                         Text(

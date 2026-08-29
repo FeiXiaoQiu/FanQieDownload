@@ -27,7 +27,9 @@ import androidx.navigation.NavBackStackEntry
 import androidx.navigation.compose.NavHost
 import androidx.navigation.compose.composable
 import androidx.navigation.compose.rememberNavController
+import ink.yan.reader.ui.BookScreen
 import ink.yan.reader.ui.NodeScreen
+import ink.yan.reader.ui.ReaderScreen
 import ink.yan.reader.ui.SearchScreen
 import ink.yan.reader.ui.SettingsScreen
 import ink.yan.reader.ui.YanBackdrop
@@ -68,6 +70,8 @@ class MainActivity : ComponentActivity() {
 private object Route {
     const val SEARCH = "search"
     const val NODES = "nodes"
+    const val BOOK = "book"
+    const val READER = "reader"
     const val SETTINGS = "settings"
 }
 
@@ -81,8 +85,12 @@ private fun YanNav(vm: MainViewModel) {
             enterTransition = { enter() },
             exitTransition = { exit() },
         ) {
-            SearchScreen(vm, onNodes = { nav.navigate(Route.NODES) },
-                onSettings = { nav.navigate(Route.SETTINGS) })
+            SearchScreen(
+                vm,
+                onNodes = { nav.navigate(Route.NODES) },
+                onSettings = { nav.navigate(Route.SETTINGS) },
+                onBook = { nav.navigate(Route.BOOK) },
+            )
         }
         composable(
             route = Route.NODES,
@@ -90,6 +98,24 @@ private fun YanNav(vm: MainViewModel) {
             exitTransition = { exit() },
         ) {
             NodeScreen(vm, onBack = { nav.popBackStack() })
+        }
+        composable(
+            route = Route.BOOK,
+            enterTransition = { enter() },
+            exitTransition = { exit() },
+        ) {
+            BookScreen(
+                vm,
+                onBack = { nav.popBackStack() },
+                onRead = { nav.navigate(Route.READER) },
+            )
+        }
+        composable(
+            route = Route.READER,
+            enterTransition = { enter() },
+            exitTransition = { exit() },
+        ) {
+            ReaderScreen(vm, onBack = { nav.popBackStack() })
         }
         composable(
             route = Route.SETTINGS,

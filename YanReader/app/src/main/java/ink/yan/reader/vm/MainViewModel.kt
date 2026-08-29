@@ -31,6 +31,7 @@ import ink.yan.reader.data.HitokotoClient
 import ink.yan.reader.data.HitokotoPresets
 import ink.yan.reader.data.HitokotoSource
 import ink.yan.reader.data.NodeConfig
+import ink.yan.reader.data.NodeClient
 import ink.yan.reader.data.NodeLatency
 import ink.yan.reader.data.NodePresets
 import ink.yan.reader.data.NodeRepository
@@ -72,8 +73,19 @@ data class UiState(
     val query: String = "",
     val searching: Boolean = false,
     val results: List<BookInfo> = emptyList(),
+    /**
+     * 搜索的负面反馈，包括"没搜到"和"请求失败"。
+     *
+     * 单独开一个字段而不是复用 [message]：搜索结果为空时列表区本来就是空的，
+     * 提示必须出现在那个位置才看得到；而 [message] 是全局提示，各处都在写，
+     * 混在一起会出现"节点已添加"顶掉"搜索失败"的情况。
+     */
+    val searchError: String? = null,
     val selected: BookInfo? = null,
     val chapters: List<Chapter> = emptyList(),
+    /** 正在拉目录。目录动辄几千章，不转圈的话点了像没反应 */
+    val catalogLoading: Boolean = false,
+    val catalogError: String? = null,
     val download: DownloadState? = null,
     val format: ExportFormat = ExportFormat.EPUB,
     val concurrency: Int = 5,
@@ -101,6 +113,14 @@ data class UiState(
     val apkMessage: String? = null,
     /** 已下好待安装的文件，UI 拉起安装后调 consumeApk() 清空 */
     val apkFile: File? = null,
+
+    // —— 在线阅读 ——
+    /** 当前阅读的章节正文；null 表示没在阅读 */
+    val reading: ChapterContent? = null,
+    /** 在 chapters 里的下标，用于上一章 / 下一章 */
+    val readingIndex: Int = -1,
+    val readingLoading: Boolean = false,
+    val readingError: String? = null,
 ) {
     /**
      * 查到的版本确实比当前新。
@@ -120,6 +140,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
     private val hitokotoClient = HitokotoClient()
     private val backgroundFetcher = BackgroundFetcher()
     private val apkFetcher = ApkFetcher()
+    private val nodeClient = NodeClient()
     private val repo = NodeRepository()
     private val engine = DownloadEngine(
         fetch = { ch -> fetchChapter(ch) },
@@ -254,27 +275,120 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
 
     fun onQueryChange(q: String) = _ui.update { it.copy(query = q) }
 
+    /**
+     * 全部启用的节点地址，按当前顺序。
+     *
+     * 交给 [NodeClient] 逐个回退：公益节点随时会挂或被限流，
+     * 绑死某一个等于把可用性押在别人身上。
+     */
+    private fun enabledBases(): List<String> =
+        repo.enabledNodes().map { it.baseUrl.trimEnd('/') }
+
     fun search() {
         val q = _ui.value.query.trim()
         if (q.isBlank()) return
+        val bases = enabledBases()
+        if (bases.isEmpty()) {
+            _ui.update { it.copy(searchError = "还没有启用任何数据源节点") }
+            return
+        }
         viewModelScope.launch {
-            _ui.update { it.copy(searching = true) }
-            runCatching {
-                // TODO: 对接真实数据源；这里保留占位，避免无节点时崩溃
-                emptyList<BookInfo>()
-            }.onSuccess { list ->
-                _ui.update { it.copy(searching = false, results = list) }
-            }.onFailure { e ->
-                _ui.update { it.copy(searching = false, message = "搜索失败：${e.message}") }
-            }
+            _ui.update { it.copy(searching = true, searchError = null) }
+            runCatching { nodeClient.search(bases, q) }
+                .onSuccess { page ->
+                    _ui.update {
+                        it.copy(
+                            searching = false,
+                            results = page.books,
+                            searchError = if (page.books.isEmpty()) {
+                                "没有找到「$q」相关的书"
+                            } else null,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    // 多节点全挂时 e 是最后一个节点的异常，带上它至少能判断是
+                    // 超时还是被拒；吞掉就只剩"点了没反应"。
+                    _ui.update { it.copy(searching = false, searchError = "搜索失败：${e.message}") }
+                }
         }
     }
 
-    private suspend fun fetchChapter(ch: Chapter): ChapterContent =
-        withContext(Dispatchers.IO) {
-            // TODO: 对接真实数据源
-            ChapterContent(ch.title, "")
+    /** 选中一本书并拉它的目录。目录为空视为失败 —— 空目录没法下载也没法读。 */
+    fun selectBook(book: BookInfo) {
+        val bases = enabledBases()
+        if (bases.isEmpty()) {
+            _ui.update { it.copy(message = "没有启用的数据源节点") }
+            return
         }
+        viewModelScope.launch {
+            _ui.update {
+                it.copy(selected = book, chapters = emptyList(), catalogLoading = true, catalogError = null)
+            }
+            runCatching { nodeClient.catalog(bases, book.id) }
+                .onSuccess { list ->
+                    _ui.update {
+                        it.copy(
+                            chapters = list,
+                            catalogLoading = false,
+                            // 空目录多半不是网络问题，而是这本在数据源里就没有章节
+                            // （聚合条目、已下架都会这样），提示要指向"换一本"而不是"重试"
+                            catalogError = if (list.isEmpty()) {
+                                "数据源没有返回这本书的章节，换一个搜索结果试试"
+                            } else null,
+                        )
+                    }
+                }
+                .onFailure { e ->
+                    _ui.update {
+                        it.copy(catalogLoading = false, catalogError = "目录加载失败：${e.message}")
+                    }
+                }
+        }
+    }
+
+    fun clearSelected() = _ui.update {
+        it.copy(selected = null, chapters = emptyList(), catalogError = null)
+    }
+
+    // —— 在线阅读 ——
+
+    fun openChapter(index: Int) {
+        val ch = _ui.value.chapters.getOrNull(index) ?: return
+        val bases = enabledBases()
+        viewModelScope.launch {
+            _ui.update { it.copy(readingIndex = index, readingLoading = true, readingError = null, reading = null) }
+            runCatching { nodeClient.content(bases, ch.itemId) }
+                .onSuccess { c ->
+                    _ui.update { it.copy(reading = c, readingLoading = false) }
+                }
+                .onFailure { e ->
+                    _ui.update { it.copy(readingLoading = false, readingError = "正文加载失败：${e.message}") }
+                }
+        }
+    }
+
+    /** 上一章。已在第一章时返回 false，UI 用它决定按钮是否可点。 */
+    fun prevChapter(): Boolean {
+        val i = _ui.value.readingIndex
+        if (i <= 0) return false
+        openChapter(i - 1)
+        return true
+    }
+
+    fun nextChapter(): Boolean {
+        val i = _ui.value.readingIndex
+        if (i < 0 || i >= _ui.value.chapters.lastIndex) return false
+        openChapter(i + 1)
+        return true
+    }
+
+    fun closeReader() = _ui.update {
+        it.copy(reading = null, readingIndex = -1, readingError = null, readingLoading = false)
+    }
+
+    private suspend fun fetchChapter(ch: Chapter): ChapterContent =
+        nodeClient.content(enabledBases(), ch.itemId)
 
     /**
      * 缓存文件格式：第一行是章节标题，其余是正文。

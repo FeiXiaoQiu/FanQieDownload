@@ -1,8 +1,11 @@
 package ink.yan.reader.ui
 
+import androidx.compose.foundation.clickable
+import androidx.compose.foundation.interaction.MutableInteractionSource
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.Immutable
 import androidx.compose.runtime.compositionLocalOf
+import androidx.compose.runtime.remember
 import androidx.compose.ui.Modifier
 import androidx.compose.ui.draw.drawWithCache
 import androidx.compose.ui.geometry.CornerRadius
@@ -208,3 +211,17 @@ fun Modifier.glassPressed(isPressed: Boolean, cornerDelta: Int = 0): Modifier {
         highlightAlpha = s.highlightAlpha,
     )
 }
+
+/**
+ * 无波纹的整行点击。
+ *
+ * 列表项本身就是一整块可点区域，再铺一层水波纹会显得脏，
+ * 而且波纹从手指位置扩散到整行的动画在快速滑动时很吵。
+ */
+@Composable
+fun Modifier.noRippleClick(onClick: () -> Unit): Modifier =
+    this.clickable(
+        interactionSource = remember { MutableInteractionSource() },
+        indication = null,
+        onClick = onClick,
+    )

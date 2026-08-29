@@ -9,7 +9,7 @@
 | 命名空间 | `ink.yan.reader` |
 | 技术栈 | Kotlin 2.1.21 + Jetpack Compose Material 3（BOM 2026.06.01 / Compose 1.11.4） |
 | minSdk / targetSdk | 26 / 36 |
-| 版本 | 0.3.1（versionCode 4） |
+| 版本 | 0.4.0（versionCode 5） |
 | 签名 | 独立密钥 `CN=YanReader`，与其它同类工具互不影响，可共存安装 |
 | 发布 | 推送 `yanreader-v*` tag 后由 GitHub Actions 自动构建并发布 |
 
@@ -100,6 +100,10 @@ app/src/main/java/ink/yan/reader/
 │   ├── HitokotoParser.kt      一言响应解析：多字段回退 + 兜底取句
 │   ├── HitokotoClient.kt      一言网络层
 │   ├── NodePresets.kt         预置数据源节点（首次启动 / 删空 / 损坏时回落）
+│   ├── NodeClient.kt          节点协议网络层：四接口 + 多节点回退 ← 核心
+│   ├── NodeParser.kt          节点响应解析：搜索 / 目录 / 正文 ← 核心
+│   ├── JsonAccess.kt          JsonVal 读取辅助（字段名回退集中在这里）
+│   ├── CharsetTable.kt        正文反混淆字符表（内联两张，供 JVM 单测）
 │   ├── DownloadSource.kt      下载源模板 + 预置镜像 + 排序/候选生成（纯 Kotlin）
 │   ├── AppUpdate.kt           发布信息模型 + 版本号比较 + APK 挑选（纯 Kotlin）
 │   ├── ReleaseParser.kt       GitHub releases 响应解析（纯 Kotlin）
@@ -116,6 +120,8 @@ app/src/main/java/ink/yan/reader/
 │   ├── Backdrop.kt            全屏背景渲染（FIT 用同图模糊填白）
 │   ├── NodeScreen.kt          数据源管理
 │   ├── SearchScreen.kt        搜索 / 下载 / 首页一言
+│   ├── BookScreen.kt          书籍详情：目录 + 下载
+│   ├── ReaderScreen.kt        在线阅读：正文 + 翻章
 │   ├── SettingsScreen.kt      设置（组装各分区）
 │   ├── settings/
 │   │   ├── SettingsParts.kt   可折叠分区 / 单选行 / 开关行 / 滑杆行
@@ -261,18 +267,34 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 ---
 
-## 六、已知未完成项
+## 六、搜索与在线阅读
 
-`MainViewModel.kt` 里有**两处刻意保留的占位**：
+预置节点提供 `/search`、`/info`、`/catalog`、`/content` 四个接口，`NodeClient` 负责发请求、`NodeParser` 负责解析，两者只认 `JsonVal`，不碰 org.json。
 
-| 位置 | 现状 | 为什么留 |
-| --- | --- | --- |
-| `search()` | 返回空列表 | 搜索接口取决于用户配置哪个节点、节点提供什么协议，没有可以写死的默认实现。预置节点只是地址，协议解析仍要在这里接 |
-| `fetchChapter()` | 返回空正文 | 同上 |
+**多节点回退**：逐个试到第一个「响应里有有效数据」的节点。判据由调用方给出而不是只看 HTTP 状态码 —— 被限流的节点常常返回 200 加一个空壳 JSON。全部失败时抛的是**最后一个**节点的异常，只抛第一个会让人误判成整体不可用。
 
-这两处是**设计选择而非疏漏**。应用定位就是「壳 + 管线」，节点协议由你填。接的时候改这两个函数即可，其余部分（并发、缓存、续传、导出、UI）都与之解耦。
+解析层要处理的现实问题，都固化成了 `NodeParserTest` 的用例：
 
-其余功能都是完整可用的：节点增删 / 启用 / 测速 / 排序 / 持久化、并发下载、断点续传、TXT 与 EPUB 导出到 `Download/YanReader/`。
+| 问题 | 处理 |
+| --- | --- |
+| 书名藏在 `book_data[0]` 里，外层只有 `book_id` | 展开嵌套后继承外层 id，两边拼成同一条记录 |
+| 结果按 tab 分类 | 优先取 `title=="书籍"` 或 `tab_type==3` 的那个，取不到再全树探测 |
+| 广告位混在结果里 | id 必须匹配 `\d{10,}`；书名与作者皆空视为空壳丢弃 |
+| 节点命名不统一 | 字段按下划线与驼峰各试一遍（见 `JsonAccess`） |
+| **正文是 HTML** | `<p>` / `<br>` 转换行、其余标签抹掉、实体解码、空行剔除 |
+| **正文被反爬混淆** | 部分常用字被映射进 Unicode 私有区，用两张字符表还原（见下） |
+
+### 正文的两个坑
+
+这两个都不是读代码能发现的，是抓真实响应才看出来的：
+
+**正文是 HTML，不是纯文本。** 节点返回的是 `<article><p idx="0"><span>…</span></p></article>`。把这段字符串直接交给 UI，读者看到的是满屏标签。最短正文判据也必须放在剥离**之后** —— HTML 原文很长不代表有内容，一屏空标签剥完什么都不剩。
+
+**部分正文被映射到 Unicode 私有区。** 服务端会把一些常用字换成 U+E400–U+E5DB 一带的码位，直接显示就是一片方块。混淆不是全量施加，同一本书里也可能只有某几章中招，抽一章没中不代表用不上。两张字符表内联在 `CharsetTable.kt`，用哪张由打分决定：解码后正常汉字越多、残留私有区字符越少得分越高；表里 `?` 表示该位无映射，保留原字符。表内联而不是放 assets，是为了这段逻辑能在 JVM 单测里跑。
+
+### 搜得到但没目录
+
+真实存在的情况：书能搜出来，`/catalog` 却返回空数组。跨节点重试也是空，不是解析问题 —— 聚合条目、已下架的书都会这样。提示语指向「换一个搜索结果」而不是「重试」，因为重试多半还是空。
 
 ---
 
@@ -282,7 +304,7 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 ./gradlew :app:testDebugUnitTest
 ```
 
-三个测试类共 **52 个用例**，都是纯 JVM 单元测试，不依赖 Robolectric —— 数据层刻意避开了 `android.*` 与 org.json。
+四个测试类共 **78 个用例**，都是纯 JVM 单元测试，不依赖 Robolectric —— 数据层刻意避开了 `android.*` 与 org.json。
 
 **`CoreLogicTest`（9 个）**
 
@@ -296,6 +318,10 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 **`AppearanceLogicTest`（21 个）** —— 背景地址解析（必应相对路径、历史格式兼容、方括号下标、路径失效回退探测、非图片过滤、协议相对地址）、cache-bust 的有无 query 分支、一言解析（标准字段 / 备选字段 / data 包裹 / 纯文本 / 字段名未知时兜底）、外观预设与微调覆盖。
 
 **`UpdateLogicTest`（22 个）** —— 下载源模板替换与排序（自定义镜像是否排在直连前）、版本号归一化与逐段比较（`0.10.0` > `0.9.0`、缺位补 0、tag 前缀）、APK 资产挑选优先级、releases 解析（跨项目 tag 过滤、按版本号而非数组顺序取最大、草稿与预发布排除、坏条目跳过、非数组输入不崩）。
+
+**`NodeParserTest`（26 个）** —— 搜索结构（`book_data` 嵌套展开并继承外层 id、`书籍` tab 优先、`tab_type` 兜底、非法 id 与空壳过滤、去重、无 tab 时全树探测、脏输入不抛异常）、目录解析（`item_data_list`、跳过空 id 且章号不出现空洞、空目录、驼峰字段）、正文（HTML 标签剥离、段落换行、`<br>` 与实体解码含 `&amp;` 最后解、数字实体、纯标签负载判空、`code` 非 0 拒绝、按 item_id 嵌套取值）、反混淆（私有区码位还原、普通正文不被改动）、封面地址归一化。
+
+其中「章号不出现空洞」和「`&amp;` 最后解」是写用例时才发现的：前者原先用数组下标当章号，跳过脏条目后章号会错位；后者若先解 `&amp;`，`&amp;lt;` 会被解成 `<` 而不是字面的 `&lt;`。
 
 ---
 
@@ -331,7 +357,7 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 **已完整构建通过**，不是"应该能编过"：
 
 ```
-./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（52 tests, 0 failures）
+./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（78 tests, 0 failures）
 ./gradlew :app:assembleRelease   → BUILD SUCCESSFUL（含 R8 混淆 + 真实签名）
 ```
 
@@ -341,7 +367,7 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 | --- | --- |
 | package | `ink.yan.reader` |
 | application-label | 砚 |
-| versionCode / versionName | 4 / 0.3.1 |
+| versionCode / versionName | 5 / 0.4.0 |
 | minSdk / targetSdk | 26 / 36 |
 | launchable-activity | `ink.yan.reader.MainActivity` |
 | 签名 SHA1 | `1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B` |
@@ -350,7 +376,7 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 
 签名与 0.1.0 / 0.2.0 / 0.3.0 完全一致，可以直接覆盖安装升级。
 
-单元测试 52 个用例全部通过（9 / 21 / 22，见第七节）。
+单元测试 78 个用例全部通过（9 / 21 / 22 / 26，见第七节）。
 
 **未经真机验证的部分**：MediaStore 导出、DataStore 落盘、FileProvider、相册选图、
 以及应用内更新这条链路（版本列表解析已在 JVM 上测过，但网络请求、镜像探测、
