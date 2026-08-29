@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <string name="app_name">砚</string>
+    <string name="app_name_full">砚 YanReader</string>
+    <string name="download_dir">YanReader</string>
+</resources>

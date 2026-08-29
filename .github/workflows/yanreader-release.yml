@@ -1,0 +1,151 @@
+# 砚 YanReader —— 独立 Android 应用
+#
+# 与观隅（android/）完全隔离：
+#   · 包名 ink.yan.reader        ≠ 观隅 com.feixiaoqiu.fanqiedl
+#   · 签名 独立密钥（GitHub Secrets）≠ 观隅仓库内的 android/keystore
+#   · tag 前缀 yanreader-v*      ≠ 观隅 v*（不会互相触发）
+#
+# 产物命名 yanreader-{version}.apk（GitHub Release 附件不支持中文文件名）
+
+name: 砚 YanReader Release
+
+on:
+  push:
+    tags: ["yanreader-v*"]
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "YanReader/**"
+      - ".github/workflows/yanreader-release.yml"
+
+permissions:
+  contents: write
+
+jobs:
+  build:
+    runs-on: ubuntu-latest
+    defaults:
+      run:
+        working-directory: YanReader
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Resolve version
+        id: ver
+        working-directory: .
+        run: |
+          if [[ "${GITHUB_REF}" == refs/tags/yanreader-v* ]]; then
+            VER="${GITHUB_REF_NAME#yanreader-v}"
+          else
+            VER=$(sed -n 's/.*versionName = "\([^"]*\)".*/\1/p' YanReader/app/build.gradle.kts | head -1)
+            VER="${VER:-0.0.0}"
+          fi
+          echo "version=$VER" >> "$GITHUB_OUTPUT"
+          echo "Resolved version: $VER"
+
+      - name: Set up JDK 17
+        uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Setup Gradle
+        uses: gradle/actions/setup-gradle@v4
+
+      - name: Install Android SDK components
+        # 装不上也让 AGP 自行下载兜底，不阻塞
+        continue-on-error: true
+        run: |
+          yes 2>/dev/null | sdkmanager --install "platforms;android-36" "build-tools;36.0.0" || true
+
+      - name: Grant execute permission for gradlew
+        run: chmod +x gradlew
+
+      - name: Restore signing key from Secrets
+        if: ${{ secrets.YANREADER_KEYSTORE_BASE64 != '' }}
+        run: |
+          echo "${{ secrets.YANREADER_KEYSTORE_BASE64 }}" | base64 -d > yanreader.jks
+          cat > keystore.properties <<EOF
+          storeFile=yanreader.jks
+          storePassword=${{ secrets.YANREADER_STORE_PASSWORD }}
+          keyAlias=${{ secrets.YANREADER_KEY_ALIAS }}
+          keyPassword=${{ secrets.YANREADER_KEY_PASSWORD }}
+          EOF
+          echo "密钥已还原：$(ls -l yanreader.jks | awk '{print $5}') 字节"
+
+      - name: Run unit tests
+        run: ./gradlew :app:testDebugUnitTest --stacktrace
+
+      - name: Build release APK
+        run: ./gradlew :app:assembleRelease --stacktrace
+
+      - name: Verify APK signature
+        run: |
+          APK=$(ls app/build/outputs/apk/release/*.apk | head -1)
+          echo "产物: $APK"
+          if command -v apksigner >/dev/null 2>&1; then
+            apksigner verify --print-certs "$APK" || true
+          fi
+          # 确认包名与观隅不同
+          if command -v aapt >/dev/null 2>&1; then
+            aapt dump badging "$APK" | head -2 || true
+          fi
+
+      - name: Package APK as yanreader-{version}.apk
+        run: |
+          VER="${{ steps.ver.outputs.version }}"
+          mkdir -p dist-apk
+          for f in app/build/outputs/apk/release/*.apk; do
+            cp -f "$f" "dist-apk/yanreader-${VER}.apk"
+          done
+          ls -lh dist-apk/
+          test -n "$(ls -A dist-apk)" || { echo "no apk produced"; exit 1; }
+
+      - name: Upload APK artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: yanreader-${{ steps.ver.outputs.version }}-apk
+          path: YanReader/dist-apk/*.apk
+          if-no-files-found: error
+
+      - name: Publish GitHub Release
+        if: startsWith(github.ref, 'refs/tags/yanreader-v')
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ github.ref_name }}
+          name: 砚 YanReader v${{ steps.ver.outputs.version }}
+          files: YanReader/dist-apk/*.apk
+          fail_on_unmatched_files: true
+          body: |
+            ## 砚 YanReader v${{ steps.ver.outputs.version }}
+
+            小说下载 / 导出工具，支持 TXT 与 EPUB 两种格式。
+
+            | 项 | 值 |
+            | --- | --- |
+            | 应用名 | 砚 |
+            | 包名 | `ink.yan.reader` |
+            | minSdk / targetSdk | 26 / 36 |
+            | 签名密钥 | 独立密钥（与本仓库观隅 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
+
+            ### 安装前须知
+
+            **本应用不内置任何内容源。** 首次启动需要在「数据源」页手动添加节点，
+            地址形如 `http://host:port`。搜索与抓章节对接节点协议，
+            请按你自己的服务端接口填 `MainViewModel` 中的 `search()` 与 `fetchChapter()`。
+
+            ### 功能
+
+            - 节点管理：增删 / 启用 / 一键测速 / 持久化
+            - 并发下载（默认 5 并发）+ 断点续传，结果与目录同序
+            - 导出 TXT / EPUB 到 `Download/YanReader/`
+            - 液态玻璃质感 UI（Compose 多层渐变叠绘实现）
+
+            ### 校验
+
+            - 包名：`ink.yan.reader`
+            - 签名 SHA1：`1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B`
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}

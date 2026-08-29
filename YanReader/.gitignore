@@ -1,0 +1,18 @@
+*.iml
+.gradle/
+/local.properties
+/.idea/
+.DS_Store
+/build
+/app/build
+/captures
+.externalNativeBuild
+.cxx
+local.properties
+
+# 签名密钥：绝不入库。release 密钥只存在 GitHub Secrets。
+keystore.properties
+*.jks
+*.keystore
+*.p12
+!app/src/**/*.jks

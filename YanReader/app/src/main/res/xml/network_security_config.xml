@@ -1,0 +1,18 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  数据源节点多数以 http://IP:端口 的形式提供，Android 9（API 28）起
+  默认禁止明文流量，不显式放开会导致所有 http 节点直接连接失败。
+
+  这里选择「全局允许明文」而非逐域名白名单，原因：
+  节点由用户在运行时自行添加，无法在编译期枚举域名。
+  风险是应用内的明文请求不受保护 —— 请知悉，若要收紧，
+  可改成 <domain-config cleartextTrafficPermitted="true"> 逐个放行。
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="true">
+        <trust-anchors>
+            <certificates src="system" />
+            <certificates src="user" />
+        </trust-anchors>
+    </base-config>
+</network-security-config>

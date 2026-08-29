@@ -1,0 +1,20 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- 「砚」字意象：一方砚台，中间一泓墨 -->
+<vector xmlns:android="http://schemas.android.com/apk/res/android"
+    android:width="108dp"
+    android:height="108dp"
+    android:viewportWidth="108"
+    android:viewportHeight="108">
+    <!-- 砚台外廓 -->
+    <path
+        android:fillColor="#6FD3C7"
+        android:pathData="M28,34 h52 a10,10 0 0 1 10,10 v30 a10,10 0 0 1 -10,10 h-52 a10,10 0 0 1 -10,-10 v-30 a10,10 0 0 1 10,-10 z" />
+    <!-- 墨池 -->
+    <path
+        android:fillColor="#0B0D10"
+        android:pathData="M36,48 h36 a6,6 0 0 1 6,6 v16 a6,6 0 0 1 -6,6 h-36 a6,6 0 0 1 -6,-6 v-16 a6,6 0 0 1 6,-6 z" />
+    <!-- 一泓墨 -->
+    <path
+        android:fillColor="#E4796B"
+        android:pathData="M48,58 a8,5 0 1 0 0.1,0 z" />
+</vector>

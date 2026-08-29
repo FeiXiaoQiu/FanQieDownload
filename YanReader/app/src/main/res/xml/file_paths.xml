@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!-- FileProvider 授权路径：仅放开下载目录与缓存，避免整盘暴露 -->
+<paths xmlns:android="http://schemas.android.com/apk/res/android">
+    <external-path name="downloads" path="Download/YanReader/" />
+    <files-path name="cache" path="cache/" />
+</paths>
