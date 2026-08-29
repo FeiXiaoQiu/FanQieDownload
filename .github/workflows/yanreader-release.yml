@@ -94,6 +94,36 @@ jobs:
           path: ${{ runner.temp }}/unit-test.log
           if-no-files-found: warn
 
+      - name: Archive log to repo on failure
+        if: steps.tests.outcome == 'failure'
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          python3 - <<'PYEOF'
+          import base64, json, os, urllib.request
+
+          log_path = os.path.join(os.environ["RUNNER_TEMP"], "unit-test.log")
+          data = open(log_path, "rb").read()[-150000:]
+          path = "ci-diag/unit-test-%s.log" % os.environ["GITHUB_RUN_ID"]
+          body = json.dumps({
+              "message": "ci: 诊断日志 run %s" % os.environ["GITHUB_RUN_ID"],
+              "content": base64.b64encode(data).decode(),
+              "branch": "main",
+          }).encode()
+          url = "https://api.github.com/repos/%s/contents/%s" % (
+              os.environ["GITHUB_REPOSITORY"], path)
+          req = urllib.request.Request(url, data=body, method="PUT", headers={
+              "Authorization": "token " + os.environ["GITHUB_TOKEN"],
+              "Accept": "application/vnd.github+json",
+              "Content-Type": "application/json",
+          })
+          try:
+              urllib.request.urlopen(req, timeout=60)
+              print("已写入 %s" % path)
+          except Exception as e:
+              print("写入失败: %s" % e)
+          PYEOF
+
       - name: Fail if tests failed
         if: steps.tests.outcome == 'failure'
         run: |
