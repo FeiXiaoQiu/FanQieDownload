@@ -10,8 +10,10 @@
 | 技术栈 | Kotlin 2.1.21 + Jetpack Compose Material 3（BOM 2026.06.01 / Compose 1.11.4） |
 | minSdk / targetSdk | 26 / 36 |
 | 版本 | 0.1.0（versionCode 1） |
+| 签名 | 独立密钥 `CN=YanReader`（与观隅 `com.feixiaoqiu.fanqiedl` 完全不同，两者可共存安装） |
+| 发布 | [yanreader-v0.1.0](https://github.com/FeiXiaoQiu/FanQieDownload/releases/tag/yanreader-v0.1.0)（GitHub Actions 自动构建并发布） |
 
-包名与应用名与「观隅」「弦」均不相同，是独立应用。
+包名、应用名、签名与「观隅」「弦」均不相同，是独立应用。
 
 ---
 
@@ -49,6 +51,29 @@
 > 这里有个坑值得记一下：**不要**写成 `google { url = uri("镜像地址") }`。语法上合法（Gradle 5.3+ 的 `google(Action)` 重载），但它会把 Google Maven 的地址整体替换掉，而公共镜像通常只代理 Maven Central，不保证含 AGP / AndroidX / Compose 工件，一旦缺失插件解析直接失败。用 `maven { url = ... }` 做加速、保留官方仓库兜底才稳。
 
 如果 `services.gradle.org` 拉不到 wrapper 分发包，把 `gradle/wrapper/gradle-wrapper.properties` 里的 `distributionUrl` 换成 `https://mirrors.cloud.tencent.com/gradle/gradle-8.13-bin.zip`。
+
+### 签名
+
+密钥**不进仓库**。项目根目录放 `keystore.properties` 即可启用真实签名：
+
+```properties
+storeFile=yanreader.jks
+storePassword=***
+keyAlias=yanreader
+keyPassword=***
+```
+
+四个键齐全且文件存在时走 `signingConfigs.release`，否则自动回退 debug 签名——所以没有密钥也能 `assembleRelease` 跑通，只是产物不能用。
+
+CI 上这个文件由工作流从 GitHub Secrets 生成（`YANREADER_KEYSTORE_BASE64` / `YANREADER_STORE_PASSWORD` / `YANREADER_KEY_ALIAS` / `YANREADER_KEY_PASSWORD`）。
+
+> 私钥一旦提交到公开仓库就永远无法撤销，任何人都能冒名签发同名应用。观隅把 `android/keystore` 直接放进仓库的做法不建议延续到新项目。`.gitignore` 已排除 `keystore.properties`、`*.jks`、`*.keystore`、`*.p12`。
+
+### 自动发布
+
+推送 `yanreader-v*` 形式的 tag 即触发 `.github/workflows/yanreader-release.yml`：单元测试 → release 构建 → 签名校验 → 打包为 `yanreader-{version}.apk` → 发布 Release。
+
+tag 前缀特意避开观隅的 `v*`，两个工作流互不触发。
 
 ---
 
@@ -189,11 +214,11 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 **已完整构建通过**，不是"应该能编过"：
 
 ```
-./gradlew :app:assembleDebug   → BUILD SUCCESSFUL
-./gradlew :app:testDebugUnitTest → 6 tests, 0 failures
+./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（6 tests, 0 failures）
+./gradlew :app:assembleRelease   → BUILD SUCCESSFUL（含 R8 混淆 + 真实签名）
 ```
 
-产物校验（用 `aapt dump badging` 实测 APK）：
+产物校验（`aapt dump badging` + `apksigner verify` 实测 release APK）：
 
 | 项 | 实测值 |
 | --- | --- |
@@ -202,10 +227,49 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 | versionCode / versionName | 1 / 0.1.0 |
 | minSdk / targetSdk | 26 / 36 |
 | launchable-activity | `ink.yan.reader.MainActivity` |
-| APK 体积 | 约 20 MB（debug） |
+| 签名 SHA1 | `1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B` |
+| 签名 SHA256 | `C8:D0:8A:2C:5E:A6:08:48:CF:68:7F:F4:94:2E:9A:56:CC:8B:3A:24:9A:53:18:02:6D:0B:4C:9F:9A:34:FA:5C` |
+| APK 体积 | 1.5 MB（release，R8 后）/ 约 20 MB（debug） |
 
 单元测试 6 个用例全部通过，覆盖节点序列化、并发下载、EPUB 结构三块（详见第六节）。
 
+CI 上一次运行（run 33225938215）17 步全绿，Release 附件 `yanreader-0.1.0.apk`（1,517,666 字节）已发布。
+
 **未经真机验证的部分**：MediaStore 导出、DataStore 落盘、FileProvider 这些必须在设备上跑才知道对不对。建议第一次安装后先跑一遍完整流程：加节点 → 测速 → 下载 → 到 `Download/YanReader/` 下确认文件能打开。
 
-> release 包需要你补签名配置，项目里没有写 `signingConfigs`。
+---
+
+## 九、CI 排查记录
+
+构建在 CI 上连续挂了六次，两个根因都值得记下来，因为本地 `gradlew` 与 GitHub runner 的行为不一致：
+
+**1. `secrets` 上下文不能用在 step 的 `if` 里**
+
+```yaml
+# 错：工作流文件解析失败，运行 0 秒即失败
+if: ${{ secrets.YANREADER_KEYSTORE_BASE64 != '' }}
+# 对：先在 job 级 env 里算好，step 用 env.* 判断
+env:
+  HAS_SIGNING_KEY: ${{ secrets.YANREADER_KEYSTORE_BASE64 != '' }}
+if: env.HAS_SIGNING_KEY == 'true'
+```
+
+**2. `build.gradle.kts` 不自动导入 `java.util.Properties`**
+
+Kotlin DSL 脚本的默认导入只有 `kotlin.*`、`org.gradle.*` 等几组，没有 `java.util.*`。漏掉这行：
+
+```kotlin
+import java.util.Properties
+```
+
+报错是 `Unresolved reference: Properties` / `Unresolved reference: load`。它的隐蔽之处在于**脚本编译失败会让所有 Gradle 任务一起挂**，包括跟签名毫无关系的单元测试——所以现象是"测试失败"，根因却在签名配置。
+
+**3. Kotlin DSL 的 `pluginManagement { }` 是独立脚本作用域**
+
+访问不到脚本顶层的 `val`，会报 `Unresolved reference: useMirror`。需要判断的条件请在块内内联写。
+
+**4. 日志拿不到怎么办**
+
+Actions 的日志与 artifact 域名（results-receiver.actions.githubusercontent.com、productionresultssa2.blob.core.windows.net、objects.githubusercontent.com）在部分网络环境不可达，`gh run view --log` 与 `gh run download` 都会失败。
+
+临时解法是让 CI 用 `PUT /repos/{repo}/contents/{path}` 把日志提交回仓库再读。本项目的 `ci-diag/` 就是这么来的，已于构建稳定后清除。
