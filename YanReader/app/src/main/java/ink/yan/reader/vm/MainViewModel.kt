@@ -32,6 +32,7 @@ import ink.yan.reader.data.HitokotoPresets
 import ink.yan.reader.data.HitokotoSource
 import ink.yan.reader.data.NodeConfig
 import ink.yan.reader.data.NodeLatency
+import ink.yan.reader.data.NodePresets
 import ink.yan.reader.data.NodeRepository
 import ink.yan.reader.data.NodeTester
 import ink.yan.reader.data.ReleaseInfo
@@ -138,7 +139,7 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
         // 若持续 collect，落盘回灌的旧快照会覆盖掉用户两次点击之间的内存改动，
         // 快速连点「添加」会丢节点。这里没有外部写入方，一次性读取更安全。
         viewModelScope.launch {
-            val saved = runCatching { store.nodes.first() }.getOrDefault(emptyList())
+            val saved = runCatching { store.nodes.first() }.getOrDefault(NodePresets.builtin())
             repo.replaceAll(saved)
             _ui.update { it.copy(nodes = repo.nodes) }
         }
@@ -182,6 +183,18 @@ class MainViewModel(app: Application) : AndroidViewModel(app) {
             runCatching { store.save(repo.nodes) }
                 .onFailure { _ui.update { s -> s.copy(message = "节点保存失败：${it.message}") } }
         }
+    }
+
+    /**
+     * 恢复预置节点。
+     *
+     * 直接替换而不是追加：追加会留下重复条目，用户得自己分辨哪条是旧的。
+     * 这是设置里的「重置」语义，不是「补充」。
+     */
+    fun restoreDefaultNodes() {
+        repo.replaceAll(NodePresets.builtin())
+        _ui.update { it.copy(nodes = repo.nodes, latencies = emptyMap(), message = "已恢复预置节点") }
+        persist()
     }
 
     fun addNode(name: String, url: String) {

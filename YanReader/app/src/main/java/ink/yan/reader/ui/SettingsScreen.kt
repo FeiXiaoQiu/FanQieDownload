@@ -95,9 +95,9 @@ fun SettingsScreen(vm: MainViewModel, onBack: () -> Unit) {
             item(key = "about") {
                 CollapsibleSection(title = "关于", summary = "砚 v${ui.currentVersion.ifBlank { "0.3.0" }}") {
                     Text(
-                        "本项目不内置任何内容源。所有数据源、背景接口与一言接口"
-                            + "均由用户自行配置，请遵守相关平台条款与版权法规，"
-                            + "仅限个人学习研究使用。",
+                        "预置节点均为第三方公开接口，可用性不受本项目控制，"
+                            + "可随时停用、删除或一键恢复。背景接口与一言接口同样可自由替换。"
+                            + "请遵守相关平台条款与版权法规，仅限个人学习研究使用。",
                         style = MaterialTheme.typography.bodyMedium,
                         color = MaterialTheme.colorScheme.onSurfaceVariant,
                     )

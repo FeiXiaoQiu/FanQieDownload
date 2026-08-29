@@ -9,7 +9,7 @@
 | 命名空间 | `ink.yan.reader` |
 | 技术栈 | Kotlin 2.1.21 + Jetpack Compose Material 3（BOM 2026.06.01 / Compose 1.11.4） |
 | minSdk / targetSdk | 26 / 36 |
-| 版本 | 0.3.0（versionCode 3） |
+| 版本 | 0.3.1（versionCode 4） |
 | 签名 | 独立密钥 `CN=YanReader`，与其它同类工具互不影响，可共存安装 |
 | 发布 | 推送 `yanreader-v*` tag 后由 GitHub Actions 自动构建并发布 |
 
@@ -21,7 +21,9 @@
 
 一句话：**把「找书 → 抓章节 → 导出成能看的书」这条链路做成可插拔的，数据源由用户自己配。**
 
-应用**不内置任何内容源，也不硬编码任何接口地址**。节点（数据源）是运行时由用户在「数据源」页添加、启用、测速、排序的，地址形如 `http://host:port`。这样节点挂了改地址就行，不用改代码、不用发版。
+应用**不硬编码任何接口行为**。节点（数据源）是运行时由用户在「数据源」页添加、启用、测速、排序的，地址形如 `http://host:port`。这样节点挂了改地址就行，不用改代码、不用发版。
+
+首次启动会预置 6 个公开节点，开箱即可搜书；但这些节点与自加的节点地位完全相同 —— 可停用、可删除、可被「恢复预置节点」一键还原，删空后下次启动也会重新长回来。它们是便利，不是锁定。
 
 ---
 
@@ -97,6 +99,7 @@ app/src/main/java/ink/yan/reader/
 │   ├── BackgroundFetcher.kt   背景网络层（含 cache-bust）
 │   ├── HitokotoParser.kt      一言响应解析：多字段回退 + 兜底取句
 │   ├── HitokotoClient.kt      一言网络层
+│   ├── NodePresets.kt         预置数据源节点（首次启动 / 删空 / 损坏时回落）
 │   ├── DownloadSource.kt      下载源模板 + 预置镜像 + 排序/候选生成（纯 Kotlin）
 │   ├── AppUpdate.kt           发布信息模型 + 版本号比较 + APK 挑选（纯 Kotlin）
 │   ├── ReleaseParser.kt       GitHub releases 响应解析（纯 Kotlin）
@@ -264,7 +267,7 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 
 | 位置 | 现状 | 为什么留 |
 | --- | --- | --- |
-| `search()` | 返回空列表 | 应用不内置内容源，搜索接口取决于用户配置哪个节点、节点提供什么协议，没有可以写死的默认实现 |
+| `search()` | 返回空列表 | 搜索接口取决于用户配置哪个节点、节点提供什么协议，没有可以写死的默认实现。预置节点只是地址，协议解析仍要在这里接 |
 | `fetchChapter()` | 返回空正文 | 同上 |
 
 这两处是**设计选择而非疏漏**。应用定位就是「壳 + 管线」，节点协议由你填。接的时候改这两个函数即可，其余部分（并发、缓存、续传、导出、UI）都与之解耦。
@@ -279,13 +282,14 @@ Compose 没有系统级 backdrop blur 原语。**不建议**为此叠加 `Modifi
 ./gradlew :app:testDebugUnitTest
 ```
 
-三个测试类共 **49 个用例**，都是纯 JVM 单元测试，不依赖 Robolectric —— 数据层刻意避开了 `android.*` 与 org.json。
+三个测试类共 **52 个用例**，都是纯 JVM 单元测试，不依赖 Robolectric —— 数据层刻意避开了 `android.*` 与 org.json。
 
-**`CoreLogicTest`（6 个）**
+**`CoreLogicTest`（9 个）**
 
 1. **节点序列化** —— 往返一致、特殊字符（换行 / 分隔符本身 / emoji / URL 元字符）存活、脏数据容错
 2. **并发下载** —— 40 章全部成功、顺序与目录一致、缓存无丢写、第二轮零网络请求（续传生效）
 3. **EPUB 结构** —— `mimetype` 为首个未压缩条目、`container.xml` 与 OPF 存在、全部 XML（含章节 xhtml）良构、`<>&"'` 已正确转义
+4. **预置节点** —— 6 条且 id 唯一、地址均为合法 http(s)、每次调用返回新列表（避免共享引用被改坏）、编解码往返一致
 
 这里的测试**故意传入普通 `HashMap`** 作为缓存容器，就是用来守住第四节第 2 个并发丢写 bug 的。
 
@@ -327,7 +331,7 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 **已完整构建通过**，不是"应该能编过"：
 
 ```
-./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（49 tests, 0 failures）
+./gradlew :app:testDebugUnitTest → BUILD SUCCESSFUL（52 tests, 0 failures）
 ./gradlew :app:assembleRelease   → BUILD SUCCESSFUL（含 R8 混淆 + 真实签名）
 ```
 
@@ -337,16 +341,16 @@ Dependency 'androidx.compose.ui:ui:1.12.0' requires ... compile against version 
 | --- | --- |
 | package | `ink.yan.reader` |
 | application-label | 砚 |
-| versionCode / versionName | 3 / 0.3.0 |
+| versionCode / versionName | 4 / 0.3.1 |
 | minSdk / targetSdk | 26 / 36 |
 | launchable-activity | `ink.yan.reader.MainActivity` |
 | 签名 SHA1 | `1A:0B:AE:E8:6F:81:D1:C1:7E:B5:45:E9:DF:97:2B:32:85:BB:56:2B` |
 | 签名 SHA256 | `C8:D0:8A:2C:5E:A6:08:48:CF:68:7F:F4:94:2E:9A:56:CC:8B:3A:24:9A:53:18:02:6D:0B:4C:9F:9A:34:FA:5C` |
 | APK 体积 | 1.82 MB（release，R8 后）/ 约 20 MB（debug） |
 
-签名与 0.1.0 / 0.2.0 完全一致，可以直接覆盖安装升级。
+签名与 0.1.0 / 0.2.0 / 0.3.0 完全一致，可以直接覆盖安装升级。
 
-单元测试 49 个用例全部通过（6 / 21 / 22，见第七节）。
+单元测试 52 个用例全部通过（9 / 21 / 22，见第七节）。
 
 **未经真机验证的部分**：MediaStore 导出、DataStore 落盘、FileProvider、相册选图、
 以及应用内更新这条链路（版本列表解析已在 JVM 上测过，但网络请求、镜像探测、

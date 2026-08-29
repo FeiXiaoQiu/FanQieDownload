@@ -31,6 +31,7 @@ import androidx.compose.material3.MaterialTheme
 import androidx.compose.material3.OutlinedTextField
 import androidx.compose.material3.Switch
 import androidx.compose.material3.Text
+import androidx.compose.material3.TextButton
 import androidx.compose.runtime.Composable
 import androidx.compose.runtime.collectAsState
 import androidx.compose.runtime.getValue
@@ -131,6 +132,12 @@ fun NodeScreen(vm: MainViewModel, onBack: () -> Unit) {
                 Spacer(Modifier.width(6.dp))
                 Text("添加节点")
             }
+
+            // 删空后下次启动会自动长回预置列表，但这个按钮能一步恢复，不用先逐个删
+            TextButton(
+                onClick = vm::restoreDefaultNodes,
+                modifier = Modifier.fillMaxWidth(),
+            ) { Text("恢复预置节点") }
         }
 
         Spacer(Modifier.height(8.dp))
@@ -139,7 +146,7 @@ fun NodeScreen(vm: MainViewModel, onBack: () -> Unit) {
         if (ui.nodes.isEmpty()) {
             Box(Modifier.fillMaxSize(), contentAlignment = Alignment.Center) {
                 Text(
-                    "还没有数据源\n添加一个才能开始使用",
+                    "列表是空的\n点上方「恢复预置节点」，或自己添加一个",
                     color = MaterialTheme.colorScheme.onSurfaceVariant,
                     style = MaterialTheme.typography.bodyMedium,
                 )

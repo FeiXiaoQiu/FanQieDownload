@@ -8,6 +8,8 @@ import ink.yan.reader.data.DownloadRequest
 import ink.yan.reader.data.ExportFormat
 import ink.yan.reader.data.NodeCodec
 import ink.yan.reader.data.NodeConfig
+import ink.yan.reader.data.NodePresets
+import ink.yan.reader.data.NodeTester
 import ink.yan.reader.data.export.EpubWriter
 import ink.yan.reader.data.export.TxtWriter
 import kotlinx.coroutines.runBlocking
@@ -150,5 +152,35 @@ class CoreLogicTest {
             }
         }
         assertTrue("标题中的 & 必须转义", xmls.values.any { it.contains("测试&amp;书名") })
+    }
+
+    // ---------- 预置节点 ----------
+
+    @Test
+    fun presets_areSixValidNodesWithUniqueIds() {
+        val nodes = NodePresets.builtin()
+        assertEquals(6, nodes.size)
+        assertEquals(6, nodes.map { it.id }.toSet().size)
+        nodes.forEach { n ->
+            assertTrue("${n.baseUrl} 必须是 http(s) 地址", NodeTester.isValidHttpUrl(n.baseUrl))
+            assertTrue("预置节点必须标记为内置", n.builtin)
+            assertTrue("预置节点必须默认启用", n.enabled)
+        }
+    }
+
+    @Test
+    fun presets_returnFreshListEachCall() {
+        // 共享引用会让「恢复默认」之后的改动污染下一次调用
+        val a = NodePresets.builtin()
+        val b = NodePresets.builtin()
+        assertTrue(a !== b)
+        assertEquals(a, b)
+    }
+
+    @Test
+    fun presets_surviveCodecRoundTrip() {
+        // 存进 DataStore 再读出来必须一模一样，否则每次启动都会当成「已损坏」而重置
+        val src = NodePresets.builtin()
+        assertEquals(src, NodeCodec.decode(NodeCodec.encode(src)))
     }
 }
