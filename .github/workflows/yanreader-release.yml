@@ -24,6 +24,10 @@ permissions:
 jobs:
   build:
     runs-on: ubuntu-latest
+    # secrets 上下文不能用在 step 的 if 里（会导致工作流文件解析失败），
+    # 先在 job 级 env 里算好，再由 step 用 env.* 判断。
+    env:
+      HAS_SIGNING_KEY: ${{ secrets.YANREADER_KEYSTORE_BASE64 != '' }}
     defaults:
       run:
         working-directory: YanReader
@@ -64,7 +68,7 @@ jobs:
         run: chmod +x gradlew
 
       - name: Restore signing key from Secrets
-        if: ${{ secrets.YANREADER_KEYSTORE_BASE64 != '' }}
+        if: env.HAS_SIGNING_KEY == 'true'
         run: |
           echo "${{ secrets.YANREADER_KEYSTORE_BASE64 }}" | base64 -d > yanreader.jks
           cat > keystore.properties <<EOF
